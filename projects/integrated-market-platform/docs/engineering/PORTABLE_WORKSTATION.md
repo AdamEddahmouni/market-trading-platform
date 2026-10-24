@@ -56,6 +56,36 @@ installation in `%APPDATA%\moomoo_OpenD`.
   (`codex/portable-workstation-readiness`, 2026-10-09); do not read its docs
   as current. Work happens in the task worktrees.
 
+### Disk load while collecting
+
+`D:` is a SATA hard drive, about 90% full. The live store, the worktrees, the
+backup and the model weights all share it. From 2026-10-21 to 10-23 heavy disk
+work saturated that drive while the collector ran, and every write to the
+store stalled (`database is locked`). Triggers seen:
+- a 32-thread `robocopy`;
+- `grep -r` and `du` over the whole `D:\IMP` tree;
+- worktree creation, `vitest` and `npm run build`;
+- `validate changed`;
+- 2.5 GB local-model loads;
+- full-table scans of `market_stream_records`.
+
+See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#storage-contention).
+
+The collector writes around the clock: Kraken is 24/7, and Moomoo collects
+from 04:00 to 20:00 ET on trading days. The writer now waits out up to
+10 minutes of contention, but a saturated drive still delays every write.
+
+**From 04:00 to 20:00 ET on trading days, while the collector runs:**
+- Search inside a named folder only. Never search or measure the whole
+  `D:\IMP` tree.
+- Do not run builds, `validate`, bulk copies, backups or large model loads.
+  Run them outside those hours, or stop collection first with the owner's OK.
+
+**Always:**
+- Never scan `market_stream_records` in full (`count(*)`, `GROUP BY symbol`).
+- Use `max(rowid)` (rows are never deleted) and `market_stream_checkpoints`
+  instead.
+
 ## Which tree is which
 
 | Tree | Path under the portable root | Git | Purpose | May agents edit it? |

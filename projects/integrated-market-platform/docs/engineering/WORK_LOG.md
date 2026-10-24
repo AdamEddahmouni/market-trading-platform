@@ -1,5 +1,53 @@
 # IMP Work Log
 
+## 2026-10-24 — Rebuild step 2: why the database said "locked"
+
+This is the second owner-approved rebuild step. It is built on step 1 (`claude/feed-watchdog-20261024`). Everything
+stays off and nothing was deployed. The investigation was read-only. Evidence and a disk benchmark are in
+`destination-tests/20261024-db-lock/DB-LOCK-INVESTIGATION.md` on the workstation.
+
+**Cause.**
+- No process held the lock on purpose: no VACUUM, backup, prune, migration or stuck transaction.
+- The `database is locked` lines are the platform's paper automation timing out after 5 s at `BEGIN IMMEDIATE`.
+- Since 10-21 the store has lived on D:, a SATA hard drive. Heavy disk work saturated it:
+  - 10-21: a 32-thread robocopy;
+  - 10-22 17:07Z: a session's `grep -r` and `du` over the tree;
+  - 10-22 19:58Z: worktree creation, vitest and a build;
+  - 10-23 22:31Z: local model loads and `validate`;
+  - every window: the evidence capture's full scans of `market_stream_records`.
+- The market writer alone used `synchronous=FULL`, so each commit flushed the disk while it held the only write lock.
+  It waited just 250 ms for the lock and gave up for good after six tries (about 30 s), which ended the child.
+- Every connection open also ran a full `integrity_check` of the 6.7 GB store, three times per child start.
+
+**Fix:**
+- The writer uses `synchronous=NORMAL` like every other connection.
+- Writer connection settings: a 2 s busy timeout (below the 5 s worker join), 256-record batches, and a 64 MiB
+  `journal_size_limit`.
+- Lock contention is retried for 10 minutes with a 5 s backoff cap (`IMP_MARKET_WRITER_RETRY_WINDOW_SEC`,
+  `IMP_NEWS_STORAGE_RETRY_WINDOW_SEC`). Other transient errors keep the six-try rule.
+- Writer status gains `lock_contention`, `retrying_seconds`, `lock_retry_window_seconds` and `last_flush_seconds`.
+- `LocalStateConnection(verify=None)` skips the integrity scan inside a supervised child (`IMP_PF01_SUPERVISOR_OWNER`
+  set). The first opener still checks.
+- `pf01_supervisor` appends child output to `child-YYYYMMDD.log` when `IMP_PF01_CHILD_LOG_DIR` is set.
+- Staged for the release, not applied (operator files outside git): `RUN_COLLECTOR.py` and `capture_evidence.py` use
+  `max(rowid)` and the checkpoints table instead of full scans, and set the child log directory.
+- A disk-load rule in `PORTABLE_WORKSTATION.md`.
+
+**Tests.**
+- 12 new tests in `tests/market_data/test_storage_contention.py`: writer and news contention windows, connection
+  settings, integrity-scan skip, child log.
+- `test_pf01_retry_limits` now pins a zero window and the 5 s cap. `test_pf01_integration_hardening` reads the batch
+  size instead of assuming 64.
+
+**Measured on D:** under a bulk write, the median lock hold fell from 2.3 s to 0.8 s, but single commits still reached
+5–9 s. The collector now waits instead of quitting. The disk itself remains the limit; moving the store to a faster
+disk is an open owner decision for the release.
+
+**Not covered.**
+- No live proof while everything is off.
+- Still unexplained: the 10-21 14:03Z child stall, the silent supervisor after 10-23 22:38Z, and the missing 10-22
+  15:55/16:05 ET captures.
+
 ## 2026-10-24 — Rebuild step 1: Moomoo data-flow watchdog; why 10-21 and 10-23 had no rows
 
 This is the owner-approved first rebuild step. Everything stays off and nothing

@@ -81,7 +81,27 @@ positions, $75k total, $2k daily loss stop, long only, SMA stop 20 × 1m
     [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#moomoo-data-flow-watchdog).
 - **`database is locked`** recurred: 17 events on 10-22 and 5 on 10-23
   (22:31–22:37Z), the same minutes that Kraken, news and market-stream
-  collection all stopped.
+  collection all stopped. Cause found 10-24, and fixed on
+  `claude/db-lock-20261024`, which is **not deployed**:
+  - **No process held the lock on purpose.** The store moved to D:, a SATA
+    hard drive, on 10-21. Heavy disk work then saturated that drive: bulk
+    copies, whole-tree searches and builds, model loads, and the evidence
+    capture's full-table scans.
+  - **The market writer flushed the disk inside every commit**
+    (`synchronous=FULL`), holding the only write lock for seconds. It then
+    gave up for good after about 30 s of lock waits, which stopped the child.
+  - **Fix:**
+    - the writer no longer flushes inside the commit (`NORMAL`, like every
+      other connection);
+    - lock contention is retried for 10 minutes instead of six attempts;
+    - supervised child connections skip the whole-store integrity scan;
+    - child output can be logged.
+  - **The disk is still the limit.** Measured on D: under a bulk write, single
+    commits still hold the lock for 5–9 s and drop observations. The
+    collector now waits instead of quitting. Heavy disk work during
+    collection stays off-limits, and moving the store to a faster disk is an
+    open owner decision for the release.
+  - See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#storage-contention).
 - **The AI Journal can never run**: its guard checks the paid request budget
   (zero by owner choice) even when the free local engine is available.
 - **End-of-day flatten gaps**: it is skipped when the provider is unhealthy,

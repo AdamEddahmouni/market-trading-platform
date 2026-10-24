@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import threading
 from pathlib import Path
@@ -17,6 +18,7 @@ class CorruptStateError(ValueError):
 
 # SQLite primary result codes a bounded retry can outlast: BUSY, LOCKED, IOERR, CANTOPEN, PROTOCOL.
 _TRANSIENT_SQLITE_CODES = frozenset({5, 6, 10, 14, 15})
+_CONTENTION_SQLITE_CODES = frozenset({5, 6})  # BUSY, LOCKED
 
 
 def transient_storage_error(exc: BaseException) -> bool:
@@ -37,9 +39,36 @@ def transient_storage_error(exc: BaseException) -> bool:
     return isinstance(exc, OSError)
 
 
+def lock_contention_error(exc: BaseException) -> bool:
+    """True when another connection held the write lock past this connection's busy timeout.
+
+    Contention means a busy neighbour or a slow disk, not a fault in the store (2026-10-21..23 stalls).
+    """
+    if not isinstance(exc, sqlite3.OperationalError):
+        return False
+    code = getattr(exc, "sqlite_errorcode", None)
+    if code is not None and code != 0:
+        return code & 0xFF in _CONTENTION_SQLITE_CODES
+    text = str(exc).lower()
+    return code == 0 or "locked" in text or "busy" in text
+
+
+def lock_retry_window_seconds(name: str) -> float:
+    """How long a worker keeps retrying lock contention before it reports that it gave up."""
+    return float(os.environ.get(name, "600"))
+
+
+def verified_by_supervisor() -> bool:
+    """A supervised collection child opens the store its supervisor's own connection verified moments earlier."""
+    return bool(os.environ.get("IMP_PF01_SUPERVISOR_OWNER"))
+
+
 class LocalStateConnection:
     def __init__(self, path: Path, *, require_existing: bool = False,
-                 expected_identity: tuple[int, int] | None = None) -> None:
+                 expected_identity: tuple[int, int] | None = None, verify: bool | None = None) -> None:
+        # A full integrity_check reads the whole file: about 75 s per open for the 6.7 GB store on a hard drive,
+        # three times per collector child start. The first opener (API, supervisor, unsupervised run) still checks.
+        verify = not verified_by_supervisor() if verify is None else verify
         self.path = path
         self._lock = threading.RLock()
         if require_existing:
@@ -60,7 +89,8 @@ class LocalStateConnection:
                 if (stat.st_dev, stat.st_ino) != expected_identity:
                     raise FileNotFoundError('STATE_STORAGE_REPLACED')
             self._configure()
-            self._verify_or_raise()
+            if verify:
+                self._verify_or_raise()
             apply_migrations(self._conn)
         except Exception:
             self._conn.close()

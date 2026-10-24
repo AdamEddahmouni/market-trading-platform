@@ -62,7 +62,7 @@ class PF01IntegrationHardeningTests(unittest.TestCase):
         gap = self.connection.execute(
             "SELECT observations FROM market_stream_gaps WHERE reason='QUEUE_OVERFLOW'").fetchone()
         self.assertEqual(gap['observations'], 1)
-        self.assertEqual(writer.status()['backlog'], 448)
+        self.assertEqual(writer.status()['backlog'], 512 - writer.batch_limit)  # one bounded batch committed
 
     def test_closed_writer_reports_stopped_and_refuses_restart(self):
         writer = self.writer()

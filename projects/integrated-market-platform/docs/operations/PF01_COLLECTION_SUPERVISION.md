@@ -348,14 +348,65 @@ data-flow watchdog could not revive (`MOOMOO_FEED_UNRECOVERABLE`, below) ends
 it, because only a new process has fresh SDK state; the supervisor restarts it
 within its restart budget.
 `RETRYING`, `IDLE` and `WAITING_FOR_OWNERSHIP` do not end it: those are the
-workers' own bounded recovery and standby states. A locked database or a
-briefly unreadable store is retried by the worker (six attempts over about 30
-seconds for the market writer, the same for news storage) and reaches the
-supervisor only if the worker gives up. A replaced store, the 512 MiB ceiling,
-a full disk, corruption and constraint failures are not retried. A writer that
-owns nothing and has nothing to store ignores a storage outage instead of
-spending its retries on it. Child output is discarded; the exit
-code and the durable job rows are the available cause evidence.
+workers' own bounded recovery and standby states.
+
+- **Locked database:** retried for a window (see
+  [Storage contention](#storage-contention)).
+- **Briefly unreadable store:** retried six times over about 30 seconds, by
+  both the market writer and news storage.
+- **Not retried:** a replaced store, the 512 MiB ceiling, a full disk,
+  corruption and constraint failures.
+
+A worker failure reaches the supervisor only if the worker gives up. A writer
+that owns nothing and has nothing to store ignores a storage outage instead of
+spending its retries on it.
+
+Child output is discarded unless `IMP_PF01_CHILD_LOG_DIR` (an absolute path) is
+set. When it is set, the child's stdout and stderr, which carry its reason
+codes and the Moomoo watchdog events, are appended to `child-YYYYMMDD.log` in
+that directory. Otherwise the exit code and the durable job rows are the
+available cause evidence.
+
+### Storage contention
+
+From 2026-10-21 to 10-23 the platform logged `database is locked` and the
+collector stalled. No process held the lock on purpose. The store sits on a
+hard drive (D:), and heavy disk work saturated it (bulk copies, whole-tree
+searches and builds, model loads, full-table scans). The market writer then
+held the only write lock for seconds per commit and gave up after about 30 s.
+
+- **No disk flush inside the commit.** The writer uses `synchronous=NORMAL`,
+  like every other connection, instead of `FULL`.
+  - A process crash loses nothing.
+  - A power cut or OS crash can lose the last commits; the next owner records
+    them as the unclean-restart gap.
+  - The file is never corrupted in WAL mode.
+- **The writer connection's settings:**
+  - busy timeout of 2 s, below the 5 s worker join, so a requested stop still
+    joins it;
+  - commits of up to 256 records;
+  - `journal_size_limit` of 64 MiB, so the WAL shrinks back after a backlog.
+- **Contention is waited out.**
+  - Lock contention (`SQLITE_BUSY` / `LOCKED`) is retried with a backoff capped
+    at 5 s. It gives up only after `IMP_MARKET_WRITER_RETRY_WINDOW_SEC`
+    (default 600) for the writer, or `IMP_NEWS_STORAGE_RETRY_WINDOW_SEC`
+    (default 600) for news storage. Other transient errors keep the six-attempt
+    rule.
+  - Observations dropped while the queue is full are still recorded as
+    `QUEUE_OVERFLOW` gaps.
+  - The writer status reports `lock_contention`, `retrying_seconds`,
+    `lock_retry_window_seconds` and `last_flush_seconds`.
+- **One integrity scan per supervisor, not per connection.** A full
+  `PRAGMA integrity_check` reads the whole store, about 75 s on the hard drive.
+  - Connections opened inside a supervised child (`IMP_PF01_SUPERVISOR_OWNER`
+    set) skip it, because the supervisor's own connection checked the same file.
+  - The API, the supervisor and an unsupervised `--collect-only` run still
+    check, and still fail closed on corruption.
+  - Trade-off: a child restarted hours after the supervisor started is not
+    re-checked.
+- **Operating rule.** While the collector runs during US hours, do not load
+  the store's drive. See
+  [Portable workstation](../engineering/PORTABLE_WORKSTATION.md#disk-load-while-collecting).
 
 ## Status
 

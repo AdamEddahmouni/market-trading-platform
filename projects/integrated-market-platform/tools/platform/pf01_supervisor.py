@@ -57,6 +57,22 @@ class OwnedProcess:
         finally:
             if self.process.stdin is not None: self.process.stdin.close()
 
+def child_log_dir(env) -> Path | None:
+    directory=env.get('IMP_PF01_CHILD_LOG_DIR','')
+    if not directory: return None
+    if not Path(directory).is_absolute(): raise ValueError('CHILD_LOG_DIR_NOT_ABSOLUTE')
+    return Path(directory)
+
+def child_output(env):
+    """Where the child's stdout and stderr go: a daily append-only file when IMP_PF01_CHILD_LOG_DIR is set.
+
+    Discarded output left the 2026-10-22 20:03Z exit code 1 without a cause; the child prints its reason codes.
+    """
+    directory=child_log_dir(env)
+    if directory is None: return subprocess.DEVNULL
+    directory.mkdir(parents=True,exist_ok=True)
+    return open(directory/time.strftime('child-%Y%m%d.log',time.gmtime()),'ab')  # noqa: SIM115 - closed after spawn
+
 def market_source_demand(env) -> str:
     """What the child would be asked to hold. Read-only; rights and provider state are decided in the child."""
     try: return 'EXPLICIT_TARGETS_CONFIGURED' if validate_supply(env) else 'DISABLED'
@@ -104,6 +120,7 @@ def main(argv=None) -> int:
     if os.environ.get('IMP_PF01_SUPERVISION_ENABLED')!='1': raise ValueError('SUPERVISION_DISABLED')
     reason=collection_only_reason(os.environ)
     if reason: raise ValueError(reason)
+    child_log_dir(os.environ)  # a misconfigured log location is refused before anything is owned
     path=storage_path(os.environ)  # Refuse automatic migration by this entrypoint.
     with LocalStateConnection(path,require_existing=True) as connection:
         supervisor=None
@@ -113,9 +130,13 @@ def main(argv=None) -> int:
             # Raw acquisition uses no AI credentials; do not forward those secrets.
             for key in list(env):
                 if key.startswith(AI_CREDENTIAL_PREFIXES): env.pop(key)
-            process=subprocess.Popen([sys.executable,'-B',str(ROOT/'tools/ui1/run_ui_api.py'),'--collect-only'],
-                cwd=ROOT,env=env,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
-                text=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            output=child_output(env)
+            try:
+                process=subprocess.Popen([sys.executable,'-B',str(ROOT/'tools/ui1/run_ui_api.py'),'--collect-only'],
+                    cwd=ROOT,env=env,stdin=subprocess.PIPE,stdout=output,stderr=output,
+                    text=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            finally:
+                if output is not subprocess.DEVNULL: output.close()  # the child holds its own handle
             return OwnedProcess(process)
         supervisor=own(connection,spawn)
         try:

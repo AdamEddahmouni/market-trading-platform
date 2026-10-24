@@ -17,7 +17,8 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 from uuid import uuid4
 
-from ..local_state.connection import LocalStateConnection, transient_storage_error
+from ..local_state.connection import (LocalStateConnection, lock_contention_error, lock_retry_window_seconds,
+                                      transient_storage_error)
 from ..market_data.capacity import configured_max_database_bytes
 from .knowledge import append_revision, article_identity
 from .rss_feeds import FEEDS
@@ -26,6 +27,7 @@ MAX_JOBS = 64
 MAX_BATCH_BYTES = 2 * 1024 * 1024
 LEASE_SECONDS = 120
 RETRY_LIMIT = 6  # consecutive recoverable storage failures before the collector reports BLOCKED
+CONTENTION_BACKOFF_CAP = 5  # lock contention: retried for IMP_NEWS_STORAGE_RETRY_WINDOW_SEC, not a count
 WORKER_JOIN_SECONDS = 10.0  # stop bound; part of news.supervision.child_stop_bound_seconds
 OUTAGE_BACKOFF_CAP = 3600  # an unreachable source is retried at least hourly
 OPERATOR_BACKOFF_CAP = 86400  # credentials, quota or configuration: at most daily until corrected
@@ -101,6 +103,8 @@ class NewsCollector:
         # A fetched batch whose write failed recoverably. Retried without another provider call.
         self._pending: tuple[CollectionJob, dict, list, dict] | None = None
         self._storage_failures, self._retry_at = 0, 0.0
+        self._storage_since: float | None = None  # clock() at the first failure of the current streak
+        self.lock_retry_window = lock_retry_window_seconds('IMP_NEWS_STORAGE_RETRY_WINDOW_SEC')
         self._fatal: str | None = None  # a storage failure retrying cannot fix; held until restart
         self._rows: list[dict[str, Any]] = []
         stat = connection.path.stat()
@@ -134,9 +138,15 @@ class NewsCollector:
         if not transient_storage_error(exc):
             self._block("COLLECTION_STORAGE_OR_CHECKPOINT_FAILED")
             return
+        now = self.clock()
+        if not self._storage_failures:
+            self._storage_since = now
         self._storage_failures += 1
-        self._retry_at = self.clock() + min(30, 2 ** (self._storage_failures - 1))
-        if self._storage_failures >= RETRY_LIMIT:
+        contention = lock_contention_error(exc)
+        self._retry_at = now + min(CONTENTION_BACKOFF_CAP if contention else 30, 2 ** min(self._storage_failures - 1, 5))
+        # A slow disk or a busy neighbour is waited out; only a fault, or contention past the window, gives up.
+        tolerated = contention and now - (self._storage_since or now) < self.lock_retry_window
+        if self._storage_failures >= RETRY_LIMIT and not tolerated:
             self._set_state("BLOCKED", "COLLECTION_STORAGE_RETRY_LIMIT_EXCEEDED")
         else:
             self._set_state("RETRYING", "COLLECTION_STORAGE_RETRY")
@@ -170,7 +180,7 @@ class NewsCollector:
                 return
             if self._pending is not None:
                 self._write_pending()
-                self._storage_failures = 0
+                self._storage_failures, self._storage_since = 0, None
                 return
             now = self.clock()
             selected = None
@@ -197,7 +207,7 @@ class NewsCollector:
                     self.connection.execute("UPDATE news_collection_jobs SET payload_json=?,lease_owner=?,lease_until=? WHERE job_id=?",
                         (json.dumps(state), self.owner, now + LEASE_SECONDS, job.id))
                     selected = job, state
-            self._storage_failures = 0  # the selection transaction committed: storage is usable
+            self._storage_failures, self._storage_since = 0, None  # the selection committed: storage is usable
             if selected is None:
                 self._set_state("WAITING")
                 return

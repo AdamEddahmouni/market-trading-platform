@@ -23,7 +23,8 @@ from pathlib import Path
 from typing import Any, Mapping
 from uuid import uuid4
 
-from ..local_state.connection import LocalStateConnection, transient_storage_error
+from ..local_state.connection import (LocalStateConnection, lock_contention_error, lock_retry_window_seconds,
+                                      transient_storage_error)
 from .capacity import configured_max_database_bytes
 
 MAX_RECORD_BYTES = 128 * 1024
@@ -31,6 +32,12 @@ MAX_BATCH_BYTES = 2 * 1024 * 1024
 LEASE_NS = 120 * 1_000_000_000
 IDLE_RELEASE_SECONDS = 120.0  # one lease interval without supply returns ownership
 RETRY_LIMIT = 6  # consecutive recoverable failures before the writer stops
+# Lock contention is retried for a window instead of a count (IMP_MARKET_WRITER_RETRY_WINDOW_SEC), with a short
+# backoff so commits resume soon after the neighbour lets go.
+CONTENTION_BACKOFF_CAP_SECONDS = 5
+# Below WORKER_JOIN_SECONDS, so a stop requested mid-wait still joins the writer thread.
+BUSY_TIMEOUT_MS = 2000
+WAL_SIZE_LIMIT_BYTES = 64 * 1024 * 1024
 # Stop bounds; part of news.supervision.child_stop_bound_seconds.
 WORKER_JOIN_SECONDS = 5.0
 FINAL_DRAIN_SECONDS = 5.0
@@ -122,10 +129,11 @@ def configured_selection(env: Mapping[str, str]) -> tuple[tuple[str, ...], tuple
 
 class MarketStreamWriter:
     def __init__(self, path: Path, *, sources: tuple[str, ...], symbols: tuple[str, ...],
-                 queue_limit: int = 512, batch_limit: int = 64,
+                 queue_limit: int = 512, batch_limit: int = 256,
                  max_database_bytes: int | None = None, acquire: bool = True,
                  idle_release_seconds: float | None = IDLE_RELEASE_SECONDS,
-                 suppress_unchanged_l1: bool | None = None) -> None:
+                 suppress_unchanged_l1: bool | None = None, busy_timeout_ms: int = BUSY_TIMEOUT_MS,
+                 lock_retry_window: float | None = None) -> None:
         validate_capture_selection(sources, symbols)
         if not 1 <= batch_limit <= 256 or not batch_limit <= queue_limit <= 4096:
             raise ValueError('MARKET_CAPTURE_LIMITS_INVALID')
@@ -164,12 +172,21 @@ class MarketStreamWriter:
         self._last_received = self._last_commit = None
         self._max_flush_seconds = 0.0
         self._consecutive_failures = self._transient_failures = 0
+        self.lock_retry_window = (lock_retry_window_seconds('IMP_MARKET_WRITER_RETRY_WINDOW_SEC')
+                                  if lock_retry_window is None else lock_retry_window)
+        self._retrying_since: float | None = None  # monotonic start of the current failure streak
+        self._contention = False  # the latest failure was lock contention
+        self._last_flush_seconds = 0.0
         self._ownership_waits = self._idle_releases = 0
         self.connection = LocalStateConnection(path, require_existing=True)
         try:
-            # FULL applies only to this writer connection. Preserve other callers' policy.
-            self.connection.execute('PRAGMA synchronous=FULL')
-            self.connection.execute('PRAGMA busy_timeout=250')
+            # synchronous stays NORMAL, as for every other connection. FULL flushed the disk inside each commit,
+            # while this connection held the store's only write lock. On the D: hard drive under load that took
+            # seconds and locked out the platform (2026-10-21..23). In WAL mode NORMAL never corrupts the file.
+            # A process crash loses nothing; a power cut can lose the last commits, shown as the unclean-restart gap.
+            self.connection.execute(f'PRAGMA busy_timeout={int(busy_timeout_ms)}')
+            # A backlog after contention grew the WAL to 176 MB; checkpoints now shrink it back.
+            self.connection.execute(f'PRAGMA journal_size_limit={WAL_SIZE_LIMIT_BYTES}')
             stat = path.stat()
             self._identity = (stat.st_dev, stat.st_ino)
             if acquire:
@@ -399,8 +416,11 @@ class MarketStreamWriter:
             self._owner_lock.release()
             recoverable = True
         with self._lock:
+            if not self._consecutive_failures:
+                self._retrying_since = time.monotonic()
             self._consecutive_failures += 1
             self._transient_failures += recoverable
+            self._contention = lock_contention_error(exc)
             self._state, self._error = ('RETRYING' if recoverable else 'FAILED'), code
         if not recoverable:
             self.gap('WRITER_FAILURE')
@@ -426,7 +446,7 @@ class MarketStreamWriter:
                     with self._lock:
                         if self._state != 'FAILED':
                             self._state, self._error = 'IDLE', None
-                            self._consecutive_failures = 0
+                            self._consecutive_failures, self._retrying_since = 0, None
                     return 0
                 if not self._storage_ok():
                     raise ValueError(self._storage_fault() or 'MARKET_STORAGE_UNAVAILABLE')
@@ -471,7 +491,9 @@ class MarketStreamWriter:
                         self._last_commit = now
                     self._state, self._error = 'READY', None
                     self._consecutive_failures = self._ownership_waits = 0
-                    self._max_flush_seconds = max(self._max_flush_seconds, time.perf_counter()-started)
+                    self._retrying_since = None
+                    self._last_flush_seconds = time.perf_counter()-started
+                    self._max_flush_seconds = max(self._max_flush_seconds, self._last_flush_seconds)
                     self._known_gaps = known_gaps
                     self._last_checkpoint = dict(checkpoint) if checkpoint else None
                     drained = not self._queue and not self._gaps
@@ -539,6 +561,11 @@ class MarketStreamWriter:
                     'max_database_bytes': self.max_database_bytes, 'max_flush_seconds': self._max_flush_seconds,
                     'capacity': capacity,
                     'consecutive_failures': self._consecutive_failures, 'retry_limit': RETRY_LIMIT,
+                    'lock_contention': self._contention and self._state == 'RETRYING',
+                    'retrying_seconds': (time.monotonic()-self._retrying_since
+                                         if self._retrying_since is not None else None),
+                    'lock_retry_window_seconds': self.lock_retry_window,
+                    'last_flush_seconds': self._last_flush_seconds,
                     'coverage': 'OBSERVED_ONLY_NOT_COMPLETE', 'recovery': 'NO_PROVIDER_REPLAY',
                     'checkpoint_semantics': 'COMMITTED_WATERMARK_NOT_REPLAY_CURSOR'}
 
@@ -550,7 +577,10 @@ class MarketStreamWriter:
                 self.flush()
                 with self._lock:
                     state, failures, waits = self._state, self._consecutive_failures, self._ownership_waits
-                if state == 'RETRYING' and failures >= RETRY_LIMIT:
+                    contention = self._contention
+                    tolerated = (contention and self._retrying_since is not None
+                                 and time.monotonic()-self._retrying_since < self.lock_retry_window)
+                if state == 'RETRYING' and failures >= RETRY_LIMIT and not tolerated:
                     self.gap('WRITER_RETRY_LIMIT_EXCEEDED')
                     with self._lock:
                         self._state, self._error = 'FAILED', 'WRITER_RETRY_LIMIT_EXCEEDED'
@@ -562,7 +592,8 @@ class MarketStreamWriter:
                     self._stop.set()
                     return
                 if state == 'RETRYING':
-                    self._stop.wait(min(30, 2 ** (failures-1)))
+                    cap = CONTENTION_BACKOFF_CAP_SECONDS if contention else 30
+                    self._stop.wait(min(cap, 2 ** min(failures-1, 5)))
                 elif state == 'WAITING_FOR_OWNERSHIP':
                     self._stop.wait(min(30, 2 ** min(waits, 5)))  # a live owner holds the lock
                 else:
