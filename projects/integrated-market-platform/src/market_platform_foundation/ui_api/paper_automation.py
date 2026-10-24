@@ -273,8 +273,14 @@ class PaperAutomationService:
         state = runtime.lifecycle.connection_state
         bad = state in {ProviderConnectionState.DISCONNECTED, ProviderConnectionState.RECONNECTING,
                         ProviderConnectionState.ERROR, ProviderConnectionState.DISABLED}
+        reasons = ['LIVE_FEED_UNHEALTHY'] if bad else []
+        # Connected is not flowing: the data-flow watchdog judges by receipts (2026-10-19..22 read CONNECTED for hours).
+        watchdog = getattr(runtime, 'feed_watchdog', None)
+        if watchdog is not None and watchdog.state in {'SILENT', 'UNRECOVERABLE'}:
+            bad = True
+            reasons.append('LIVE_FEED_SILENT')
         return dict(state='UNHEALTHY' if bad else 'CONNECTED', data_mode='LIVE_OBSERVATIONAL', connection_state=str(getattr(state, 'value', state)),
-                    reasons=['LIVE_FEED_UNHEALTHY'] if bad else [], quota=runtime.subscriptions.quota_report())
+                    reasons=reasons, quota=runtime.subscriptions.quota_report())
 
     # --- operator controls ---------------------------------------------------------------
     def configure(self, body):

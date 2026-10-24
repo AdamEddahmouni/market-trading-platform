@@ -499,6 +499,13 @@ class HeadlessMarketSupply:
     def alive(self) -> bool:
         return bool(self._thread and self._thread.is_alive())
 
+    def unrecoverable(self) -> str | None:
+        """A provider reason only a fresh process can clear (the Moomoo data-flow watchdog's last resort)."""
+        moomoo = self.providers.get('moomoo')
+        runtime = getattr(moomoo, 'runtime', None)
+        watchdog = getattr(runtime, 'feed_watchdog', None)
+        return getattr(watchdog, 'unrecoverable', None)
+
     def start(self) -> None:
         def run() -> None:
             while not self._stop.is_set():

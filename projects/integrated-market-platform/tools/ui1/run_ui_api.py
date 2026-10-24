@@ -464,6 +464,10 @@ def collect_only(stop: threading.Event) -> None:
             # Blocked, standby or stale supply is reported, not fatal: news and the writer keep running.
             if supply is not None and not supply.alive():
                 raise ValueError('COLLECTION_WORKER_UNHEALTHY')
+            # The exception: a Moomoo session that reconnecting cannot revive needs fresh SDK state, which only a
+            # restart gives; the supervisor restarts this process within its own budget.
+            if supply is not None and supply.unrecoverable():
+                raise ValueError(supply.unrecoverable())
     finally:
         # Producers first, so the writer drains what they already delivered.
         if supply is not None: stop_supply()

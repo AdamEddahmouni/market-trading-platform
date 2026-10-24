@@ -850,6 +850,7 @@ class MoomooFeedSupplyTests(SupplyCase):
     """Real LiveObservationalRuntime, subscription manager, push feed and admission over a synthetic OpenD."""
 
     ENV = {'IMP_LIVE_OBSERVATIONAL': '1', 'IMP_MOOMOO_LIVE': '1', 'IMP_LIVE_RECONNECT_BACKOFF_SEC': '0.05',
+           'IMP_MOOMOO_OPEND_CHECK_SEC': '0',  # notice a dropped OpenD on the next pass, not 15 s later
            'IMP_OBSERVATIONAL_PROVIDER': 'moomoo', 'IMP_IBKR_LIVE': '0', 'IMP_SHADOW_RECORDING': '0'}
 
     def runtime(self, opend, *, env=None, **probe):

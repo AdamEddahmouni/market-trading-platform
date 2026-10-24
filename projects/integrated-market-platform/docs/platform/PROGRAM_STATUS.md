@@ -66,10 +66,19 @@ positions, $75k total, $2k daily loss stop, long only, SMA stop 20 × 1m
 **Known problems (verified).**
 
 - **Moomoo equity data barely arrived all week.** `market_stream_records`
-  holds no Moomoo rows for 2026-10-21 or 2026-10-23, and long gaps on 10-19,
-  10-20 and 10-22, while the connection still read CONNECTED. The only stall
-  check runs inside the feed thread and fires on failed polls, not on
-  successful polls that return nothing.
+  holds no Moomoo rows in the regular session on 10-19, 10-21 or 10-23, and
+  long gaps on 10-20 and 10-22, while the connection still read CONNECTED.
+  Cause found 10-24, and fixed on `claude/feed-watchdog-20261024`, which is
+  **not deployed**:
+  - **10-19 to 10-22:** each time OpenD froze, the vendor SDK's failed
+    reconnect left the context CONNECTED-but-not-READY. The feed thread then
+    blocked forever inside a snapshot call, so the in-thread stall check (which
+    runs only after a call returns) never fired.
+  - **10-23:** a slow capability probe was recorded as "not entitled", and the
+    collector kept Moomoo out all session.
+  - **Fix:** bounded SDK calls, an out-of-thread data-flow watchdog, and
+    inconclusive probe results that never replace an answered report. See
+    [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#moomoo-data-flow-watchdog).
 - **`database is locked`** recurred: 17 events on 10-22 and 5 on 10-23
   (22:31–22:37Z), the same minutes that Kraken, news and market-stream
   collection all stopped.

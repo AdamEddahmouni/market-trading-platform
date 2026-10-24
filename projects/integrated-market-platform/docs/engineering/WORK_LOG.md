@@ -1,5 +1,58 @@
 # IMP Work Log
 
+## 2026-10-24 — Rebuild step 1: Moomoo data-flow watchdog; why 10-21 and 10-23 had no rows
+
+This is the owner-approved first rebuild step. Everything stays off and nothing
+was deployed. The investigation was read-only (state DB `mode=ro`, logs read
+in place); evidence is in
+`destination-tests/20261024-feed-watchdog/ZERO-ROWS-INVESTIGATION.md` on the
+workstation.
+
+**Cause, 10-19 to 10-22.** OpenD froze silently about ten times. Each time,
+the vendor SDK (`moomoo-api` 10.10.7008) failed its reconnect, closed the
+socket without resetting the status, and stayed CONNECTED. It then refused to
+reconnect, and every synchronous call spun forever in `sync_query_processor`,
+because no sync-query timeout was set. The collector's feed thread blocked
+inside `get_market_snapshot`, so R10's stall check, which runs only after a
+call returns, never fired. The OpenD watchdog relaunched OpenD within about
+5 minutes each time, but nothing reconnected the collector. Data resumed only
+at process restarts.
+
+**Cause, 10-23.** The 10-22 22:21Z capability probe got 11–27 s answers.
+`probe.py` recorded the timeouts as "not entitled". That report counted as
+fresh for 20 h, and the collector waits 6 h after a refusal, so Moomoo stayed
+out all session.
+
+**Fix:**
+- `open_quote_context` bounds synchronous calls.
+- The push feed records receipt and loop-heartbeat times, keeps its context
+  where another thread can close it, gains `force_reconnect` (close, or
+  abandon a thread that stays stuck, with generation-guarded state), and checks
+  OpenD's port every 15 s instead of every 0.5 s.
+- New `market_data/feed_watchdog.py` runs beside the feed in both processes.
+  It alarms (`DEGRADED`, a `MOOMOO_FEED_SILENT` gap, provider health
+  `UNHEALTHY`/`LIVE_FEED_SILENT`) and reconnects within a budget of 3 per hour.
+  In the collector child it then exits `MOOMOO_FEED_UNRECOVERABLE` for a
+  supervised restart.
+- `/provider/health` gains `data_flow`.
+- The probe reports timeouts as inconclusive, writes them beside the answered
+  report rather than over it, and exits 75.
+- A matching `RUN_COLLECTOR.py` patch (operator file, outside git) is staged
+  for the release, not applied: it handles exit 75 explicitly, adopts the
+  platform's newer report, and retries after 15 min (unavailable) or 1 h
+  (refused) instead of 1 h and 6 h.
+
+**Tests.** 17 new tests in `tests/market_data/test_moomoo_dataflow_watchdog.py`,
+including replays of a snapshot call that never returns and of a thread that
+ignores close. The existing feed, supply, stop-deadline and screener tests
+pass unchanged; the OpenD-loss supply test sets the reachability interval to 0.
+
+**Not covered.** No live proof is possible while everything is off; the
+release restart must include "kill OpenD mid-session, rows resume within about
+3 minutes". The OpenD freezes themselves are unexplained. The collector stalls
+at 10-21 14:30Z and 10-23 22:37Z coincide with `database is locked`, which is
+rebuild step 2.
+
 ## 2026-10-23 — Status reconciliation and owner decisions after shutdown
 
 The owner shut the workstation down after the session (controller clean stop

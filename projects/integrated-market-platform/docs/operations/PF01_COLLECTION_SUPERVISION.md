@@ -98,6 +98,14 @@ both of these hold:
    default report path (only when newer); a failed renewal is retried after
    `retry_minutes`.
 
+   A probe call that times out or loses its connection is not a refusal. The
+   probe then marks the capability `account_entitled: null` with
+   `PROBE_TRANSPORT_FAILURE`. If any core capability (L1, ticks, depth,
+   snapshot) is unanswered, it writes `capability-report.inconclusive.json`
+   beside the report instead of replacing it, and exits 75. The last answered
+   report stands. On 2026-10-23, slow OpenD answers were recorded as "not
+   entitled" and kept Moomoo out of collection for the whole session.
+
 Kraken public market data has no account, so only the first condition applies.
 The first Kraken request resolves the pair through the existing resolver, which
 fetches Kraken's public `AssetPairs` catalog once over HTTPS (retried at most
@@ -105,6 +113,49 @@ every 30 seconds on failure) before the WebSocket is opened.
 A configured key, a reachable OpenD or a passing synthetic test satisfies
 neither. A closed gate does not end the child: news keeps running and the
 supply reports `BLOCKED` with the reason.
+
+### Moomoo data-flow watchdog
+
+"Connected" is not "receiving". From 2026-10-19 to 10-22, the Moomoo feed
+reported `CONNECTED` for hours while nothing arrived. Each time OpenD froze, the
+vendor SDK's reconnect failed and left its status at CONNECTED-but-not-READY.
+Every synchronous call then waited forever, so the feed thread blocked inside
+`get_market_snapshot` and the in-thread poll-stall check never ran. Two layers
+now cover this, in both the collector child and the serving backend:
+
+- **Bounded SDK calls.** `open_quote_context` sets the vendor's
+  `set_sync_query_connect_timeout` (`IMP_MOOMOO_SYNC_QUERY_TIMEOUT_SEC`,
+  default 10). A stuck call returns an error, and the feed's 120 s poll-stall
+  reconnect fires.
+- **Data-flow watchdog** (`market_data/feed_watchdog.py`). Its own thread
+  checks every `IMP_MOOMOO_WATCHDOG_INTERVAL_SEC` (15 s) while US equity data is
+  expected and a quote is subscribed. The feed polls a snapshot every 2 s, so a
+  healthy session always receives records. The watchdog judges by receipts,
+  not by connection state or committed rows (unchanged quotes are not
+  inserted). A fault is either no receipt, or no session-loop pass, for
+  `IMP_MOOMOO_SILENCE_SEC` (90 s). The watchdog then works through four steps:
+  1. **Alarm.** The provider becomes `DEGRADED` with `MOOMOO_FEED_SILENT`, the
+     writer records a `MOOMOO_FEED_SILENT` gap, and Paper automation's provider
+     health reports `UNHEALTHY` / `LIVE_FEED_SILENT`.
+  2. **Reconnect.** `force_reconnect` closes the stuck context. A thread still
+     blocked after 15 s is abandoned: the generation moves on, so anything it
+     does when it wakes is dropped, and a fresh thread takes over.
+  3. **Budget.** Reconnects are limited to
+     `IMP_MOOMOO_WATCHDOG_RESTARTS_PER_HOUR` (3).
+  4. **Process restart (collector child only).** When silence survives two
+     reconnects, or the budget is spent, the watchdog sets
+     `MOOMOO_FEED_UNRECOVERABLE` and the child exits for a supervised restart.
+     A serving backend only alarms and reconnects; whole-stack restart is a
+     separate rebuild step.
+
+  A receipt after the last action clears the alarm, with a
+  `MOOMOO_FEED_RECOVERED` event. Events and receipt ages appear under
+  `data_flow` in `GET /provider/health`, and as JSON lines on the process log.
+  Past the 2025–2026 holiday table, the watchdog falls back to the weekday
+  session and does not end the process. `IMP_MOOMOO_WATCHDOG=0` turns it off.
+- The session loop checks OpenD's TCP port every `IMP_MOOMOO_OPEND_CHECK_SEC`
+  (15 s) instead of every 0.5 s. That was about 7,000 connections an hour,
+  a suspected (unproven) contributor to the OpenD freezes.
 
 ### Lifecycle
 
@@ -292,7 +343,10 @@ cooldowns) before the block latches. It is never restarted in a tight loop.
 The child stops when its parent's lease is lost, when a worker reports
 `BLOCKED`, `FAILED` or `STALE`, or when a worker thread (including the supply
 reconciler) is no longer alive. Blocked, standby or stale market supply is
-reported and does not end the child.
+reported and does not end the child, with one exception: a Moomoo session the
+data-flow watchdog could not revive (`MOOMOO_FEED_UNRECOVERABLE`, below) ends
+it, because only a new process has fresh SDK state; the supervisor restarts it
+within its restart budget.
 `RETRYING`, `IDLE` and `WAITING_FOR_OWNERSHIP` do not end it: those are the
 workers' own bounded recovery and standby states. A locked database or a
 briefly unreadable store is retried by the worker (six attempts over about 30

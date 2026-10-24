@@ -142,6 +142,35 @@ def probe_staleness_seconds() -> int:
     return int(os.environ.get("IMP_MOOMOO_PROBE_STALENESS_SEC", "86400"))
 
 
+def moomoo_sync_query_timeout_seconds() -> float:
+    """Bound on a synchronous SDK call waiting for a sendable connection.
+
+    The vendor default is no bound: a context whose reconnect failed stays CONNECTED-but-not-READY and every
+    synchronous call spins forever (2026-10-19..22 silent feeds)."""
+
+    return float(os.environ.get("IMP_MOOMOO_SYNC_QUERY_TIMEOUT_SEC", "10"))
+
+
+def moomoo_opend_check_seconds() -> float:
+    """Interval between OpenD TCP reachability checks inside a running feed session."""
+
+    return float(os.environ.get("IMP_MOOMOO_OPEND_CHECK_SEC", "15"))
+
+
+def moomoo_silence_seconds() -> float:
+    """No Moomoo receipt (or no session-loop pass) for this long while data is expected is a dead feed."""
+
+    return float(os.environ.get("IMP_MOOMOO_SILENCE_SEC", "90"))
+
+
+def moomoo_watchdog_interval_seconds() -> float:
+    return float(os.environ.get("IMP_MOOMOO_WATCHDOG_INTERVAL_SEC", "15"))
+
+
+def moomoo_watchdog_restarts_per_hour() -> int:
+    return int(os.environ.get("IMP_MOOMOO_WATCHDOG_RESTARTS_PER_HOUR", "3"))
+
+
 def reconnect_backoff_seconds(attempt: int = 0) -> float:
     schedule = os.environ.get("IMP_LIVE_RECONNECT_BACKOFF_SEC", "1,2,5,10,30")
     values = [float(item.strip()) for item in schedule.split(",") if item.strip()]
