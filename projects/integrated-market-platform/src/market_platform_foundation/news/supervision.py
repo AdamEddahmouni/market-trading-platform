@@ -7,9 +7,12 @@ Restart policy: at most RESTART_LIMIT automatic restarts per rolling
 RESTART_WINDOW_SECONDS, with doubling backoff. HEALTHY_RESET_SECONDS of
 continuous child uptime restores the allowance. COOLDOWN_LIMIT exhausted
 windows in a row, or a child that reports a configuration it cannot run, latch
-a block that only ``reset_restart_budget`` clears. So do UNHEALTHY_FAILURE_LIMIT
-child failures with no healthy period between them: a child that fails every
-twenty-odd minutes never fills a window, and must not restart for ever.
+a block. So do UNHEALTHY_FAILURE_LIMIT child failures with no healthy period
+between them: a child that fails every twenty-odd minutes never fills a window,
+and must not restart for ever. A rejected configuration stays latched until
+``reset_restart_budget``; persistent child failure clears itself after
+LATCH_EXPIRY_SECONDS (owner decision 3, 2026-10-23: unattended restart), so an
+unattended collector tries again a few times a day instead of never.
 """
 from __future__ import annotations
 import json
@@ -32,6 +35,9 @@ HEALTHY_RESET_SECONDS = 1800
 COOLDOWN_LIMIT = 3
 # The most restarts the windows above grant a child that never stays healthy.
 UNHEALTHY_FAILURE_LIMIT = RESTART_LIMIT * COOLDOWN_LIMIT
+# Latches that clear themselves after LATCH_EXPIRY_SECONDS; any other latch needs the operator's reset.
+EXPIRING_LATCHES = frozenset({'PERSISTENT_CHILD_FAILURE'})
+LATCH_EXPIRY_SECONDS = 7200
 STORAGE_GRACE_SECONDS = 900
 CHILD_EXIT_PERMANENT = 78  # the child refused its own configuration; restarting cannot help
 # Beyond the workers' own stop bounds: the child's 1 s stop poll, one 5 s storage busy wait in the
@@ -90,7 +96,7 @@ def child_exit_code(reason: str) -> int:
 def _defaults(evidence: dict[str,Any]) -> dict[str,Any]:
     """Rows written before the rolling budget carry only a lifetime crash count."""
     for key,value in (('crashes',0),('next_start',0),('events',[]),('restarts',[]),('cooldowns',0),
-                      ('pending_restart',False),('running_since',None),('latched',None),
+                      ('pending_restart',False),('running_since',None),('latched',None),('latched_at',None),
                       ('unhealthy_failures',0)):
         evidence.setdefault(key,value)
     return evidence
@@ -211,7 +217,20 @@ class CollectionSupervisor:
 
     def _latch(self, reason: str) -> None:
         self._event(reason)
-        self._evidence.update(state='BLOCKED',reason=reason,latched=reason)
+        self._evidence.update(state='BLOCKED',reason=reason,latched=reason,latched_at=self.clock())
+
+    def _latch_expired(self, now: float) -> bool:
+        """Clear an expiring latch whose time is up: a fresh allowance, recorded as its own event."""
+        latched=self._evidence['latched']
+        if latched not in EXPIRING_LATCHES: return False
+        if self._evidence['latched_at'] is None:
+            self._evidence['latched_at']=now  # latched before expiry existed: the clock starts now
+            return False
+        if now-self._evidence['latched_at']<LATCH_EXPIRY_SECONDS: return False
+        self._event('RESTART_LATCH_EXPIRED',cleared=latched,latched_at=self._evidence['latched_at'])
+        self._evidence.update(state='WAITING',reason=None,latched=None,latched_at=None,restarts=[],cooldowns=0,
+                              unhealthy_failures=0,pending_restart=False,next_start=0)
+        return True
 
     def tick(self) -> None:
         if self._stopped: return
@@ -242,7 +261,7 @@ class CollectionSupervisor:
                 self._save(); return
             reason=collection_only_reason(self.env)
             if reason: self._halt(reason); self._save(); return
-            if self._evidence['latched']:
+            if self._evidence['latched'] and not self._latch_expired(now):
                 self._halt(self._evidence['latched']); self._save(); return
             if self.child is not None:
                 exit_code=self.child.poll()
@@ -286,6 +305,7 @@ class CollectionSupervisor:
         return json.loads(json.dumps({**self._evidence,'restart_limit':RESTART_LIMIT,'lease_seconds':LEASE_SECONDS,
             'restart_window_seconds':RESTART_WINDOW_SECONDS,'healthy_reset_seconds':HEALTHY_RESET_SECONDS,
             'cooldown_limit':COOLDOWN_LIMIT,'unhealthy_failure_limit':UNHEALTHY_FAILURE_LIMIT,
+            'latch_expiry_seconds':LATCH_EXPIRY_SECONDS,
             'restarts_in_window':sum(now-at<RESTART_WINDOW_SECONDS for at in self._evidence['restarts']),
             'process_alive':self.child is not None and self.child.poll() is None,
             'execution_authority':'NONE','ai_required':False}))
@@ -317,7 +337,7 @@ def reset_restart_budget(connection: LocalStateConnection, *, clock: Callable[[]
         evidence['events']=(evidence['events']+[{'at':now,'reason':'OPERATOR_RESTART_BUDGET_RESET',
             'cleared':evidence['latched'] or evidence.get('reason')}])[-32:]
         evidence.update(state='STOPPED',reason='OPERATOR_RESTART_BUDGET_RESET',restarts=[],cooldowns=0,unhealthy_failures=0,
-                        pending_restart=False,latched=None,next_start=0,running_since=None)
+                        pending_restart=False,latched=None,latched_at=None,next_start=0,running_since=None)
         connection.execute('UPDATE news_collection_jobs SET payload_json=? WHERE job_id=?',(json.dumps(evidence),SUPERVISION_JOB))
     return evidence
 
@@ -335,7 +355,7 @@ def supervision_status(env: Mapping[str,str] | None = None, *, clock: Callable[[
         if row is None: return {'enabled':False,'state':'DISABLED'}
         evidence=json.loads(row[0])
         if row[1] and row[2]<clock(): evidence.update(state='STALE',reason='SUPERVISOR_LEASE_EXPIRED')
-        return {**evidence,'enabled':bool(row[1]),'lease_until':row[2],
+        return {**evidence,'enabled':bool(row[1]),'lease_until':row[2],'latch_expiry_seconds':LATCH_EXPIRY_SECONDS,
                 'health_basis':'PERSISTED_PARENT_LEASE_NOT_SOURCE_COVERAGE','execution_authority':'NONE','ai_required':False}
     except Exception:
         return {'enabled':False,'state':'UNKNOWN','reason':'SUPERVISION_STATUS_UNAVAILABLE'}

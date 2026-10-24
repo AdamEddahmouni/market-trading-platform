@@ -10,9 +10,12 @@ Escalation, each step logged in ``events``:
 1. alarm — the provider is DEGRADED with ``MOOMOO_FEED_SILENT`` (health stops saying CONNECTED) and the
    market writer records a ``MOOMOO_FEED_SILENT`` gap;
 2. reconnect — ``feed.force_reconnect`` closes the stuck context, or abandons a thread that stays stuck;
-3. in a collection-only process, when silence survives two reconnects or the hourly reconnect budget
-   is spent: ``unrecoverable`` is set, supply reports it, and the process exits so its supervisor
-   restarts it with fresh SDK state. A serving process only alarms and reconnects.
+3. when silence survives two reconnects or the hourly reconnect budget is spent, and something outside
+   the process can restart it: ``unrecoverable`` is set and reported. A collection-only process then
+   exits so its supervisor restarts it with fresh SDK state. A serving process started by the keeper
+   (``IMP_PLATFORM_RESTARTER=keeper``) keeps serving and reports it in its health; the keeper
+   (tools/platform/imp_keeper.py) restarts the platform. Any other serving process only alarms and
+   reconnects.
 
 Collection eligibility only: this grants no trading authority and contacts no provider itself.
 """
@@ -73,8 +76,12 @@ class MoomooDataFlowWatchdog:
         reconnect_join_seconds: float | None = None,
     ) -> None:
         self.runtime, self.clock, self.expected = runtime, clock, expected
-        # Only a supervised collection-only process may end itself; a serving process has no restarter yet.
-        self.escalate = os.environ.get("IMP_MARKET_SUPPLY_ENABLED") == "1" if escalate is None else escalate
+        # Escalate only where a restarter exists: the PF-01 supervisor of a collection-only process, or the keeper
+        # that started this serving process. Without one, giving up on reconnecting would leave the feed dead.
+        if escalate is None:
+            escalate = (os.environ.get("IMP_MARKET_SUPPLY_ENABLED") == "1"
+                        or os.environ.get("IMP_PLATFORM_RESTARTER") == "keeper")
+        self.escalate = escalate
         self.reconnect_join_seconds = reconnect_join_seconds
         self.state = "IDLE"
         self.fault: str | None = None
@@ -147,7 +154,7 @@ class MoomooDataFlowWatchdog:
         elif in_session and heartbeat is not None and now - max(heartbeat, baseline) >= threshold:
             fault = "SESSION_LOOP_BLOCKED"
         if self.unrecoverable is not None:
-            return self.state  # terminal: the supervising process restarts this one
+            return self.state  # terminal: the supervisor or the keeper restarts this process
         if fault is None:
             if self.state != "SILENT":
                 self.state = "WATCHING"

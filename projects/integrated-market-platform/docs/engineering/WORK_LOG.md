@@ -1,5 +1,61 @@
 # IMP Work Log
 
+## 2026-10-24 — Rebuild step 4: automatic restart after a reboot or a frozen feed
+
+This is the fourth owner-approved rebuild step (owner decision 3), built on step 3
+(`claude/opportunity-shortlist-20261024`). Everything stays off and nothing was deployed.
+
+**Problem.**
+- Nothing restarted the platform. The start was one-shot with a 60 s wait; on 10-22 a reboot left it down
+  overnight, and the R12 deploy needed three tries.
+- The collector came back only through a 30-minute task repeat, and its supervisor's persistent-failure latch
+  needed a manual reset.
+- A serving process with a dead Moomoo session only reconnected, for ever.
+- The Paper controller gave up after any startup refusal other than its predecessor's lease, and a worker that
+  died stayed dead.
+- Restarts were recorded in five places.
+- The OpenD program was missing: on 10-23 a session moved `D:\IMP-tools\Moomoo-OpenD` without noticing that
+  `%APPDATA%\moomoo_OpenD` is a junction to it.
+
+**Built:**
+- `tools/platform/imp_keeper.py`, the keeper.
+  - Every 30 s it checks OpenD, then the collector, then the platform, and starts what is down. OpenD health is
+    checked in a child process with a timeout. The platform is restarted when it stops answering, or when its feed
+    watchdog reports `UNRECOVERABLE` while OpenD is healthy.
+  - Restarts are bounded: backoff 1/2/4/8 min; 4 per 6 h (OpenD), 6 per hour (collector), 4 per hour (platform);
+    then a cool-off and a fresh allowance.
+  - Controls: pause, stop and dry run.
+  - It never arms or starts Paper; it only records what the controller did.
+- `tools/platform/restart_log.py`: one bounded JSONL log of every restart (5 MiB × 5), and a plain-table `report`.
+- `market_data/feed_watchdog.py`: a serving process started by the keeper (`IMP_PLATFORM_RESTARTER=keeper`)
+  escalates to `UNRECOVERABLE`; it reports this and keeps serving.
+- `ui_api/paper_automation.py`:
+  - Startup refusals time can clear are retried every 30 s for at most 15 min.
+  - A worker that ends on its own is recorded (`WORKER_EXITED`, which also fixes the silent `ValueError` exit) and
+    revived in-process, 3 times an hour at most. A lost lease, a stop or an emergency latch is never revived.
+- `tools/ui1/run_ui_api.py` with `AiScreenerRuns.recover_at_boot`: universe runs a dead process left open are closed
+  at boot, before the controller resumes.
+- `news/supervision.py`: `PERSISTENT_CHILD_FAILURE` clears itself after 2 h (`RESTART_LATCH_EXPIRED`), while
+  `CHILD_CONFIGURATION_REJECTED` still needs the operator. Two existing tests that held the latch for 2–3 h now
+  hold it for 1 h 45 min.
+- Outside git:
+  - The OpenD folder moved back to `D:\IMP\IMP-tools\Moomoo-OpenD`. The junction could not be recreated from
+    this session: the Claude desktop app redirects writes under `%APPDATA%` into its own private copy (MSIX
+    virtualization), and opening a file through that copy fails with WinError 649. The real junction is missing;
+    `FIX_OPEND_SHORTCUT.cmd` is staged for the owner to run from an ordinary Command Prompt. OpenD was not started.
+  - Staged in `destination-tests/20261024-auto-restart/` (not applied): the `IMP-Keeper` task, a `RUN_IMP.py` change
+    (keeps the keeper marker; 300 s readiness), `START/STOP_PORTABLE.cmd` with keeper resume/pause, deploy hooks,
+    release notes and the owner's auto sign-in guide.
+
+**Tests.**
+- New: `tests/platform/test_imp_keeper.py`, `test_restart_log.py` and `test_platform_boot_recovery.py`.
+- New cases in `test_paper_automation.py`, `test_pf01_restart_budget.py` and `test_moomoo_dataflow_watchdog.py`.
+- A dry run on the stopped PC reported all three as down and started nothing.
+
+**Not covered.** No live proof while everything is off: reboot, closing OpenD, killing the backend and freezing the
+feed are release checks. After a reboot nothing runs until someone signs in to Windows; automatic sign-in is the
+owner's decision at the release.
+
 ## 2026-10-24 — Rebuild step 3: opportunity shortlist before the AI
 
 This is the third owner-approved rebuild step (owner decision 5), built on step 2 (`claude/db-lock-20261024`). R13

@@ -123,6 +123,18 @@ ranks every eligible row and sends the top 20 (local) or 50 (paid) to the model.
 It is on `claude/opportunity-shortlist-20261024`, **not deployed**, and carries
 R13.
 
+**Rebuild step 4 (2026-10-24).** A keeper program brings back Moomoo OpenD, the
+collector and the platform after a reboot or a frozen feed. Its restarts are
+bounded and it logs every one of them; the Paper controller resumes only if it
+was armed and running
+([Automatic restart](../operations/AUTO_RESTART.md)). It is on
+`claude/auto-restart-20261024`, **not deployed**. Its scheduled task and
+operator-file changes are staged for the release, not applied. The OpenD
+program folder, which an earlier session had moved by mistake on 10-23, was
+put back; its shortcut `%APPDATA%\moomoo_OpenD` still has to be recreated
+from an ordinary Command Prompt (staged as `FIX_OPEND_SHORTCUT.cmd`). OpenD
+was not started.
+
 **Next.** The rebuild order agreed with the owner (data-flow watchdog,
 database locking, opportunity-engine shortlist, automatic restart, switchable
 AI, short selling, selective overnight holds, evaluation report, journal fix,

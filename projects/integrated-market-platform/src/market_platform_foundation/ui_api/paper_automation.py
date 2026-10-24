@@ -46,6 +46,17 @@ LEASE_SECONDS = 180
 # Consecutive busy/locked shared-store errors outside a cycle's own accounting before the worker ends.
 TRANSIENT_STORE_RETRIES = 5
 LEASE_GRACE_SECONDS = 5  # a restarted process retries this long after its predecessor's lease expiry
+# Unattended restart (owner decision 3, 2026-10-23). A startup refusal that time can clear -- another owner's lease
+# or loop that will expire, a busy store -- is retried every STARTUP_RESUME_RETRY_SECONDS for at most
+# STARTUP_RESUME_RETRY_LIMIT_SECONDS; every other refusal is final at once, as before.
+STARTUP_RESUME_RETRY_SECONDS = 30
+STARTUP_RESUME_RETRY_LIMIT_SECONDS = 900
+TRANSIENT_RESUME_CODES = frozenset({'AUTOMATION_ALREADY_OWNED', 'REEVALUATION_LOOP_ALREADY_OWNED', 'OperationalError'})
+# A worker that ends on its own while the owner still wants it running is started again in-process after
+# WORKER_REVIVE_DELAY_SECONDS, at most WORKER_REVIVE_LIMIT times per WORKER_REVIVE_WINDOW_SECONDS.
+WORKER_REVIVE_DELAY_SECONDS = 60
+WORKER_REVIVE_LIMIT = 3
+WORKER_REVIVE_WINDOW_SECONDS = 3600
 CANDIDATE_QUOTE_CONSUMER = 'paper-automation-candidates'
 _WORKING = ('ACTIVATED', 'WORKING', 'PARTIALLY_FILLED', 'REPLACE_PENDING', 'REPLACED')
 _ENDED_UNFILLED = ('REJECTED', 'CANCELLED', 'EXPIRED', 'RISK_REJECTED')
@@ -144,6 +155,7 @@ class PaperAutomationService:
         self.cycle_lock = threading.Lock()
         self.control_lock = threading.RLock()
         self.worker = None
+        self._revives = []
         self._scope_services = {}
         self._scope_context = ContextVar('paper_scope_' + self.owner_id, default=None)
         self._session_context = ContextVar('paper_session_' + self.owner_id, default=None)
@@ -501,52 +513,114 @@ class PaperAutomationService:
             return dict(resumed=False, reason='NOT_RUNNING_BEFORE_RESTART')
         try:
             self.start(threaded=threaded)
-        except ValueError as exc:
+        except (ValueError, sqlite3.OperationalError) as exc:
             code = _code(exc)
+            if code not in TRANSIENT_RESUME_CODES:
+                return self._refuse_resume(code)
+            deadline = self.clock() + STARTUP_RESUME_RETRY_LIMIT_SECONDS
             remaining = (controller.get('lease_until') or 0) - self.clock()
             if code == 'AUTOMATION_ALREADY_OWNED' and 0 < remaining <= LEASE_SECONDS and controller.get('owner_id') != self.owner_id:
                 # A restarted process meets its predecessor's unexpired lease (a stop does not run the predecessor's
-                # cleanup). The contract is to wait that lease out once, then take the same atomic start: a live
-                # owner that keeps renewing still wins, and every start check is evaluated again at that time.
+                # cleanup). The contract is to wait that lease out, then take the same atomic start: a live owner
+                # that keeps renewing still wins, and every start check is evaluated again at that time.
+                wait, reason = remaining + LEASE_GRACE_SECONDS, 'WAITING_FOR_PREVIOUS_LEASE'
                 self._event('STARTUP_RESUME_WAITING_FOR_LEASE', lease_until=_iso(controller['lease_until']),
-                            wait_seconds=round(remaining + LEASE_GRACE_SECONDS, 3))
-                if threaded:
-                    threading.Thread(target=self._resume_after_lease, args=(remaining + LEASE_GRACE_SECONDS, True),
-                                     name='paper-automation-resume', daemon=True).start()
-                    return dict(resumed=False, reason='WAITING_FOR_PREVIOUS_LEASE')
-                return self._resume_after_lease(remaining + LEASE_GRACE_SECONDS, False)
-            self._event('STARTUP_RESUME_REFUSED', reason=code)
-            with self.control_lock:
-                fresh = self._controller()
-                fresh['last_error'] = dict(at=_iso(self.clock()), code=code)
-                self._save(fresh)
-            return dict(resumed=False, reason=code)
+                            wait_seconds=round(wait, 3))
+            else:
+                wait, reason = STARTUP_RESUME_RETRY_SECONDS, 'RETRYING'
+                self._event('STARTUP_RESUME_RETRYING', reason=code, attempt=1, retry_in_seconds=wait,
+                            gives_up_at=_iso(deadline))
+            if threaded:
+                threading.Thread(target=self._resume_after_lease, args=(wait, True, deadline),
+                                 name='paper-automation-resume', daemon=True).start()
+                return dict(resumed=False, reason=reason)
+            return self._resume_after_lease(wait, False, deadline)
         self._event('STARTUP_RESUMED', run_id=self._controller()['run']['run_id'])
         return dict(resumed=True, reason=None)
 
-    def _resume_after_lease(self, wait_seconds, threaded):
-        """The one retry after a predecessor's lease. Re-reads everything; a refusal is recorded as before."""
-        self.sleep(max(0.0, float(wait_seconds)))
-        controller = self.repository.get_controller(self._account())
-        if controller is None or not controller.get('arming') or controller['desired_state'] != 'RUNNING' or controller.get('emergency'):
-            # The operator stopped, paused, disarmed or latched it while this process waited: nothing is resumed.
-            reason = 'NOT_ARMED' if controller is None or not controller.get('arming') else 'NOT_RUNNING_BEFORE_RESTART'
-            self._event('STARTUP_RESUME_REFUSED', reason=reason)
-            return dict(resumed=False, reason=reason)
-        if self.worker and self.worker.alive():
+    def _refuse_resume(self, code):
+        self._event('STARTUP_RESUME_REFUSED', reason=code)
+        with self.control_lock:
+            fresh = self._controller()
+            fresh['last_error'] = dict(at=_iso(self.clock()), code=code)
+            self._save(fresh)
+        return dict(resumed=False, reason=code)
+
+    def _resume_after_lease(self, wait_seconds, threaded, deadline=None):
+        """The retries after a refusal time can clear. Each re-reads everything; the last refusal is recorded."""
+        attempt = 1
+        while True:
+            self.sleep(max(0.0, float(wait_seconds)))
+            controller = self.repository.get_controller(self._account())
+            if controller is None or not controller.get('arming') or controller['desired_state'] != 'RUNNING' or controller.get('emergency'):
+                # The operator stopped, paused, disarmed or latched it while this process waited: nothing is resumed.
+                reason = 'NOT_ARMED' if controller is None or not controller.get('arming') else 'NOT_RUNNING_BEFORE_RESTART'
+                self._event('STARTUP_RESUME_REFUSED', reason=reason)
+                return dict(resumed=False, reason=reason)
+            if self.worker and self.worker.alive():
+                return dict(resumed=True, reason=None)
+            try:
+                self.start(threaded=threaded)
+            except (ValueError, sqlite3.OperationalError) as exc:
+                code = _code(exc)
+                if code in TRANSIENT_RESUME_CODES and deadline is not None and self.clock() + STARTUP_RESUME_RETRY_SECONDS <= deadline:
+                    attempt += 1
+                    wait_seconds = STARTUP_RESUME_RETRY_SECONDS
+                    if attempt % 2 == 0:  # one record a minute, not one per attempt
+                        self._event('STARTUP_RESUME_RETRYING', reason=code, attempt=attempt, retry_in_seconds=wait_seconds,
+                                    gives_up_at=_iso(deadline))
+                    continue
+                return self._refuse_resume(code)
+            self._event('STARTUP_RESUMED', run_id=self._controller()['run']['run_id'], after_lease_wait=True, attempts=attempt)
             return dict(resumed=True, reason=None)
+
+    def _worker_ended(self, worker, *, threaded=True):
+        """A worker ended on its own. While the owner still wants it running, record why and start it again.
+
+        Never revived: a requested stop, a lost lease (another owner holds the account), an emergency latch, a
+        controller that is no longer armed and running, or a fourth end inside the hour. Each revive is the
+        ordinary start, so every start check is evaluated again and the downtime is recorded, not backfilled.
+        """
+        if worker is not self.worker or worker.stop_event.is_set():
+            return None
+        reason = worker.exit_reason or 'WORKER_ENDED'
         try:
-            self.start(threaded=threaded)
-        except ValueError as exc:
-            code = _code(exc)
-            self._event('STARTUP_RESUME_REFUSED', reason=code)
-            with self.control_lock:
-                fresh = self._controller()
-                fresh['last_error'] = dict(at=_iso(self.clock()), code=code)
-                self._save(fresh)
-            return dict(resumed=False, reason=code)
-        self._event('STARTUP_RESUMED', run_id=self._controller()['run']['run_id'], after_lease_wait=True)
-        return dict(resumed=True, reason=None)
+            controller = self.repository.get_controller(self._account())
+        except Exception:  # noqa: BLE001 - an unreadable store leaves the worker ended, as before
+            return None
+        if not controller or not controller.get('arming') or controller['desired_state'] != 'RUNNING' or controller.get('emergency'):
+            return None
+        self._event('WORKER_EXITED', reason=reason, run_id=(controller.get('run') or {}).get('run_id'))
+        if reason == 'AUTOMATION_LEASE_LOST':
+            return dict(revived=False, reason=reason)
+        now = self.clock()
+        self._revives = [at for at in self._revives if now - at < WORKER_REVIVE_WINDOW_SECONDS]
+        if len(self._revives) >= WORKER_REVIVE_LIMIT:
+            self._event('WORKER_REVIVE_BUDGET_SPENT', reason=reason, revives=len(self._revives),
+                        window_seconds=WORKER_REVIVE_WINDOW_SECONDS)
+            return dict(revived=False, reason='WORKER_REVIVE_BUDGET_SPENT')
+        self._revives.append(now)
+        if threaded:
+            threading.Thread(target=self._revive_worker, args=(worker, reason, True),
+                             name='paper-automation-revive', daemon=True).start()
+            return dict(revived=None, reason='WORKER_REVIVE_SCHEDULED')
+        return self._revive_worker(worker, reason, False)
+
+    def _revive_worker(self, worker, reason, threaded):
+        self.sleep(WORKER_REVIVE_DELAY_SECONDS)
+        with self.control_lock:
+            if self.worker is not worker:
+                return dict(revived=False, reason='SUPERSEDED')  # the operator stopped or started it meanwhile
+            controller = self.repository.get_controller(self._account())
+            if not controller or not controller.get('arming') or controller['desired_state'] != 'RUNNING' or controller.get('emergency'):
+                return dict(revived=False, reason='NOT_RUNNING_ANY_MORE')
+            try:
+                self.start(threaded=threaded)
+            except (ValueError, sqlite3.OperationalError) as exc:
+                self._event('WORKER_REVIVE_REFUSED', reason=_code(exc), exited_for=reason)
+                return dict(revived=False, reason=_code(exc))
+            self._event('WORKER_REVIVED', exited_for=reason, run_id=self._controller()['run']['run_id'])
+            return dict(revived=True, reason=None)
 
     # --- the cycle --------------------------------------------------------------------------
     def run_cycle(self, *, scheduled=None, trigger='SCHEDULED_CADENCE', missed=0):
@@ -1669,16 +1743,23 @@ class AutomationWorker:
                 self.slot += steps * self.cadence
         except Exception as exc:  # the worker died: say so in liveness instead of looking merely idle
             _record_worker_fault(service, exc, phase='WORKER_EXIT', transient=False, consecutive=self.transient_failures, slot=self.slot)
+            self.exit_reason = 'WORKER_' + type(exc).__name__
             try:
                 with service.control_lock:
                     current = service._controller()
-                    current['last_error'] = dict(at=_iso(service.clock()), code='WORKER_' + type(exc).__name__)
+                    current['last_error'] = dict(at=_iso(service.clock()), code=self.exit_reason)
                     service._save(current)
             except Exception:  # noqa: BLE001
                 pass
             self.finished = True
         finally:
             self.finished = self.finished or max_cycles is None or self.stop_event.is_set() or self.exit_reason is not None
+            if self.thread is not None and threading.current_thread() is self.thread:
+                # Only the scheduling thread itself reports its end; a direct run() (tests, tools) never revives.
+                try:
+                    service._worker_ended(self)
+                except Exception:  # noqa: BLE001 - reporting the end never raises from a finished worker
+                    pass
 
 
 def _record_worker_fault(service, exc, *, phase, transient, consecutive, slot):

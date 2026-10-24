@@ -157,6 +157,35 @@ class WatchdogJudgementTests(unittest.TestCase):
         watchdog.check()
         self.assertEqual(len(self.runtime.feed.reconnects), 4)  # budget renewed
 
+    def test_only_a_process_with_a_restarter_escalates(self) -> None:
+        # Owner decision 3 (2026-10-23): the keeper restarts a serving process it started, so that process may give
+        # up on reconnecting; a serving process nobody restarts keeps reconnecting for ever, as before.
+        cases = (({}, False), ({"IMP_MARKET_SUPPLY_ENABLED": "1"}, True), ({"IMP_PLATFORM_RESTARTER": "keeper"}, True),
+                 ({"IMP_PLATFORM_RESTARTER": "someone-else"}, False))
+        for env, escalates in cases:
+            with self.subTest(env=env), patch.dict(os.environ, env):
+                for key in ("IMP_MARKET_SUPPLY_ENABLED", "IMP_PLATFORM_RESTARTER"):
+                    if key not in env:
+                        os.environ.pop(key, None)
+                self.assertIs(MoomooDataFlowWatchdog(StandInRuntime()).escalate, escalates)
+
+    def test_a_keeper_started_serving_process_reports_unrecoverable_and_keeps_serving(self) -> None:
+        with patch.dict(os.environ, {"IMP_PLATFORM_RESTARTER": "keeper"}):
+            os.environ.pop("IMP_MARKET_SUPPLY_ENABLED", None)
+            self.runtime = StandInRuntime()
+            watchdog = MoomooDataFlowWatchdog(self.runtime, clock=lambda: self.now, expected=IN_SESSION)
+        watchdog.check()
+        self.receive()
+        for _ in range(2):
+            self.now += 90 * S
+            watchdog.check()
+        self.now += 90 * S
+        self.assertEqual(watchdog.check(), "UNRECOVERABLE")
+        status = watchdog.status()  # what /provider/health shows the keeper as data_flow
+        self.assertEqual((status["state"], status["unrecoverable"], status["escalates_to_process_restart"]),
+                         ("UNRECOVERABLE", "MOOMOO_FEED_UNRECOVERABLE", True))
+        self.assertEqual(self.events(watchdog)[-1], "MOOMOO_FEED_UNRECOVERABLE")
+
     def test_nothing_is_owed_outside_the_session_or_without_quote_demand(self) -> None:
         closed = [False]
         watchdog = self.make(expected=lambda now: (not closed[0], "CLOSED" if closed[0] else "REGULAR", False))

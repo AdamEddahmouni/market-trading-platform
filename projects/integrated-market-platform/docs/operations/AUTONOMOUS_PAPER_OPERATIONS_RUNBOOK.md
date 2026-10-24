@@ -114,6 +114,22 @@ no live worker here is `ERROR`, never `RUNNING`.
   running, and only if every start check passes again. A refusal is recorded
   (`STARTUP_RESUME_REFUSED`) and leaves the controller stopped — prior authorization never
   overrides a changed safety condition. A crash costs at most the lease wait (≤180 s).
+- A refusal that time can clear is retried (rebuild step 4, owner decision 3): the
+  predecessor's lease or reevaluation loop still held, or a busy store
+  (`AUTOMATION_ALREADY_OWNED`, `REEVALUATION_LOOP_ALREADY_OWNED`, `OperationalError`). Retries
+  run every 30 s for at most 15 minutes, recorded about once a minute as
+  `STARTUP_RESUME_RETRYING`; each re-reads the controller, so a Stop, Pause, Disarm or
+  Emergency Stop meanwhile still wins. Every other refusal is final at once, as before.
+- Before resuming, the serving process closes full-universe AI runs a dead process left open
+  (`ui_api.boot_recovery`), so a stuck run no longer holds the shared AI slot.
+- A worker that ends on its own (a cycle error, five store errors in a row) while the
+  controller is still armed and running is recorded as `WORKER_EXITED` with its reason and
+  started again in-process after 60 s (`WORKER_REVIVED`), at most 3 times an hour
+  (`WORKER_REVIVE_BUDGET_SPENT`, then `ERROR` as before). A lost lease, a stop or an emergency
+  latch is never revived. A revive is the ordinary start: every check runs again and the gap
+  is recorded as `NOT_OBSERVED`.
+- The platform itself is brought back by the keeper ([AUTO_RESTART.md](AUTO_RESTART.md)). The
+  keeper never arms, starts or stops the controller; it records what the controller did.
 - Downtime is recorded as one `NOT_OBSERVED` event with the window and the count of missed
   slots, with `evaluations_backfilled: 0` and `orders_backfilled: 0`.
 

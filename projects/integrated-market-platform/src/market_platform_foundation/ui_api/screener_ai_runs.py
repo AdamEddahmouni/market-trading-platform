@@ -99,9 +99,16 @@ class AiScreenerRuns:
         self._reservations: dict[str, int] = {}
         self._recovered: list[dict[str, Any]] = []
 
+    def recover_at_boot(self) -> list[dict[str, Any]]:
+        """Once, when the serving process starts: close the runs a dead process left open, so none of them holds
+        the shared AI slot until somebody presses Run or Stop. Returns the runs closed."""
+        before = len(self._recovered)
+        self._recover(self._service())
+        return list(self._recovered[before:])
+
     def _recover(self, service: Any) -> None:
-        """Close full-universe runs a previous process left open and release their unused holds. Called only from
-        an operator write (Run, Stop), never from a status read."""
+        """Close full-universe runs a previous process left open and release their unused holds. Called from an
+        operator write (Run, Stop) and once at boot (``recover_at_boot``), never from a status read."""
         if not callable(getattr(service, "run_universe", None)):
             return
         try:

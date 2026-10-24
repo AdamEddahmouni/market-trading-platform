@@ -145,8 +145,10 @@ now cover this, in both the collector child and the serving backend:
   4. **Process restart (collector child only).** When silence survives two
      reconnects, or the budget is spent, the watchdog sets
      `MOOMOO_FEED_UNRECOVERABLE` and the child exits for a supervised restart.
-     A serving backend only alarms and reconnects; whole-stack restart is a
-     separate rebuild step.
+     A serving backend started by the keeper (`IMP_PLATFORM_RESTARTER=keeper`)
+     reports the same state in its health and keeps serving; the keeper
+     restarts the platform ([AUTO_RESTART.md](AUTO_RESTART.md)). Any other
+     serving backend only alarms and reconnects.
 
   A receipt after the last action clears the alarm, with a
   `MOOMOO_FEED_RECOVERED` event. Events and receipt ages appear under
@@ -284,6 +286,7 @@ and the last 32 events.
 | `HEALTHY_RESET_SECONDS` | 1,800 | Continuous child uptime that restores the full allowance |
 | `COOLDOWN_LIMIT` | 3 | Exhausted windows in a row before the block latches |
 | `UNHEALTHY_FAILURE_LIMIT` | 9 | Child failures with no healthy period between them before the block latches (`RESTART_LIMIT` x `COOLDOWN_LIMIT`) |
+| `LATCH_EXPIRY_SECONDS` | 7,200 | How long a `PERSISTENT_CHILD_FAILURE` latch lasts before it clears itself (rebuild step 4) |
 | `STORAGE_GRACE_SECONDS` | 900 | How long the supervisor waits for unavailable storage |
 
 These are constants in `news/supervision.py`; there is no environment override.
@@ -312,12 +315,19 @@ These are constants in `news/supervision.py`; there is no environment override.
   is reported as `SCHEMA_CHECK_STORAGE_INVALID`, not as a missing migration. A
   store that could not be read at child start is an ordinary failure, not a
   rejection.
-- A latched block survives supervisor restarts. Nothing restarts until the
-  operator clears it.
+- A latched block survives supervisor restarts. `CHILD_CONFIGURATION_REJECTED`
+  stays until the operator clears it: restarting cannot fix a configuration.
+  `PERSISTENT_CHILD_FAILURE` clears itself `LATCH_EXPIRY_SECONDS` (2 h) after
+  it latched, with a `RESTART_LATCH_EXPIRED` event and a fresh allowance (owner
+  decision 3, 2026-10-23: the collector restarts unattended). The latch time is
+  `latched_at`; a latch recorded before expiry existed starts its two hours
+  when a supervisor first sees it. The keeper does not start a collector while
+  the latch holds.
 
 A child that fails immediately every time is started at most six times in
 about 70 minutes (the first start, three restarts, then one after each of two
-cooldowns) before the block latches. It is never restarted in a tight loop.
+cooldowns) before the block latches, and at most six more after each two-hour
+latch. It is never restarted in a tight loop.
 
 ### Storage and lease loss
 
@@ -428,8 +438,9 @@ prerequisites read-only before a run; both are described in
 parent's pipe also stops the child, so an orphan cannot continue unattended.
 A blocked or disabled state keeps its original reason when the lease is released.
 
-To recover from a latched block, first find and correct the cause, using
-`--status` and the job rows. Then, with no supervisor running:
+To recover from a latched block now (or from `CHILD_CONFIGURATION_REJECTED`,
+which never expires), first find and correct the cause, using `--status` and
+the job rows. Then, with no supervisor running:
 
 ```text
 python tools/platform/pf01_supervisor.py --reset-restart-budget
@@ -477,7 +488,8 @@ connection and would upgrade it.
   supervisor to block after the grace period and need a restart.
 - A supervisor that dies while its child is running does not charge a restart
   for the next supervisor's first start. Whatever restarts the supervisor
-  itself is outside this budget.
+  itself is outside this budget: since rebuild step 4 that is the keeper, with
+  its own bounded allowance ([AUTO_RESTART.md](AUTO_RESTART.md)).
 - A clock set backwards delays a pending backoff, cooldown or lease expiry by
   the size of the jump.
 - An invalid market-persistence configuration still stops serving-backend
