@@ -1,5 +1,38 @@
 # IMP Work Log
 
+## 2026-10-24 — Rebuild step 3: opportunity shortlist before the AI
+
+This is the third owner-approved rebuild step (owner decision 5), built on step 2 (`claude/db-lock-20261024`). R13
+(`7f0a07e4`) was already in its history. Everything stays off and nothing was deployed.
+
+**Problem.** The universe run sent every eligible row to the model in hash order. On 10-23 that was 2,524 equities,
+one local request each, and the 171 finalists overflowed the 8,192-token window
+(`GLOBAL_REDUCTION_INCOMPLETE:LOCAL_CONTEXT_EXCEEDED`).
+
+**Built:**
+- `intelligence/inference/opportunity_shortlist.py` (`opportunity-shortlist/1.0.0`), a pure module.
+  - It scores each eligible row on movement, unusual volume, tradability, catalyst news and quote freshness (0–100),
+    from admitted evidence only.
+  - It adds a tradability floor ($1 equity price, $1M dollar volume).
+  - Size is 20 for the local engine and 50 for a paid one; `IMP_AI_SCREENER_SHORTLIST_SIZE` overrides it (1–200).
+- `ScreenerAiCoverage` changes:
+  - It sends only the shortlist, best first. The other rows become `NOT_SHORTLISTED`, in the `ineligible` bucket.
+  - It reads cached news only for rows a full catalyst could lift into the shortlist (at most 10× the size), with no
+    provider call.
+  - Results record method `ai-screener-coverage/2.0.0` (`OPPORTUNITY_SHORTLIST_THEN_AI`) and the shortlist.
+  - It is on by default. `IMP_AI_SCREENER_SHORTLIST=0` restores the full tournament: 334 existing tests pass
+    unchanged with it.
+- The Paper controller needed no change. `NOT_SHORTLISTED` rows do not count toward its coverage epoch.
+
+**Tests.**
+- New: `tests/intelligence/test_opportunity_shortlist.py` and `tests/platform/test_screener_ai_shortlist.py`, plus one
+  epoch test in `test_paper_automation.py`.
+  - One case replays the 10-23 size: 2,524 rows give 20 local requests, one comparison and a global selection.
+- Five tournament test modules now pin `IMP_AI_SCREENER_SHORTLIST=0` through `tests/support/coverage_universe.py`.
+
+**Not covered.** No live proof while everything is off. The score weights are a first version and should be reviewed
+against the evaluation report (rebuild step 8).
+
 ## 2026-10-24 — Rebuild step 2: why the database said "locked"
 
 This is the second owner-approved rebuild step. It is built on step 1 (`claude/feed-watchdog-20261024`). Everything

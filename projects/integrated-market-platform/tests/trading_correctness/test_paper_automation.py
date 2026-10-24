@@ -532,6 +532,15 @@ class RollingSliceControllerTests(AutoBase):
         event = a.events('UNIVERSE_EPOCH_COMPLETED')[0]
         self.assertEqual((event['eligible'], event['evaluated'], event['turns']), (3, 1, 3))
 
+    def test_rows_outside_the_opportunity_shortlist_need_no_turn(self):
+        # The shortlist decides which eligible rows the model sees; the rest must not hold the epoch open.
+        a = self.start_run()
+        screened = ('NOT_SHORTLISTED', ['BELOW_SHORTLIST_CUTOFF'])
+        a.select('AAPL', evaluated=2, rows={'AAPL': 'AI_EVALUATED', 'NVDA': screened, 'MSFT': 'AI_EVALUATED'}, **self.SLICE)
+        epoch = a.cycle()['universe']['last_result']['epoch']
+        self.assertTrue(epoch['epoch_completed'])
+        self.assertEqual((epoch['eligible'], epoch['evaluated_in_epoch'], epoch['turns_in_epoch']), (2, 2, 2))
+
     def test_a_deferred_row_keeps_the_epoch_open(self):
         a = self.start_run()
         deferred = ('UNPROCESSED', ['DEFERRED_TO_NEXT_SLICE'])

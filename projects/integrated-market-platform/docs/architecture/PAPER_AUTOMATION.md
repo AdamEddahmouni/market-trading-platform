@@ -185,6 +185,12 @@ blockers together; the state label alone is not a complete readiness answer.
 - Candidates come **only** from an adopted full-universe selection. While the
   loop is driven, the first-50 intake reduction is not run and a previous
   intake-head selection is dropped on attach.
+- Since 2026-10-24 that run sends the model only the
+  [opportunity shortlist](SCREENER_AI_FULL_UNIVERSE_COVERAGE.md#opportunity-shortlist):
+  every eligible row is scored without a model, and the top 20 (local engine) or
+  50 (paid engine) go to the model, which still makes the final pick. Rows left
+  out are `NOT_SHORTLISTED`; they are not "eligible" for the coverage epoch
+  below, so they never hold it open.
 - A run is started (or an operator's run joined) when
   `universe_evaluation_interval_seconds` has passed. Its terminal coverage is
   recorded as it is: counts, percentage, status, model, tokens.

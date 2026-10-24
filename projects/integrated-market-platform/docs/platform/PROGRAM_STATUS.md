@@ -116,6 +116,13 @@ positions, $75k total, $2k daily loss stop, long only, SMA stop 20 × 1m
   #504 and #506 each fail two UI tests; #500 is a draft that fails Python
   validation. The owner is holding all of them.
 
+**Rebuild step 3 (2026-10-24).** The AI no longer sees the whole market by
+default. A numeric
+[opportunity shortlist](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md#opportunity-shortlist)
+ranks every eligible row and sends the top 20 (local) or 50 (paid) to the model.
+It is on `claude/opportunity-shortlist-20261024`, **not deployed**, and carries
+R13.
+
 **Next.** The rebuild order agreed with the owner (data-flow watchdog,
 database locking, opportunity-engine shortlist, automatic restart, switchable
 AI, short selling, selective overnight holds, evaluation report, journal fix,
