@@ -1,5 +1,60 @@
 # IMP Work Log
 
+## 2026-10-23 — Status reconciliation and owner decisions after shutdown
+
+The owner shut the workstation down after the session (controller clean stop
+19:29 ET; all six `IMP-*` scheduled tasks disabled) and asked for the project
+overview to be checked against the real code and state. Verified read-only:
+the deployed copy is R12 `e8892eb3`; R13 `7f0a07e4` is undeployed; the Paper
+line is not on `origin/main` (`b4743f68`); the Paper account has never had an
+order or fill; Moomoo stored no rows on 10-21 or 10-23; `database is locked`
+recurred on 10-23; the AI Journal guard checks the paid budget even with the
+local engine. #504 and #506 fail two UI tests each (earlier notes said green).
+The `C:\Users\Adam\.git` that broke two `test_git_ref.py` discovery tests was
+the owner's own July `cursor` repository, moved to `C:\Users\Adam\cursor`; both
+tests pass. The 6.08 GB archived backend log was zipped to 50 MB.
+`PROGRAM_STATUS.md` gains a current operating-state section and
+[Owner decisions 2026-10-23](../platform/OWNER_DECISIONS_20261023.md) records
+the eleven answers and the rebuild order. Docs only; no behavior change.
+
+## 2026-10-23 — R13: reclaim a dead owner's runtime lock; comparisons fit the local window
+
+From 10-21 11:16 ET every local AI batch failed
+`LOCAL_RUNTIME_ALREADY_OWNED_OR_INTERRUPTED`: the runtime lock was created with
+exclusive-create and its owner (pid 31944) had died before a reboot. The lock
+is now set aside and retaken when its recorded owner is gone, and a stopping
+owner never removes a lock a later owner took. With the full universe, the
+equity run failed `GLOBAL_REDUCTION_INCOMPLETE:LOCAL_CONTEXT_EXCEEDED` (171
+provisional finalists in an 8,192-token window): after a refused comparison,
+groups are planned one smaller than the smallest refused size, a finalist too
+large to compare alone is deferred within the slice, and a round that advances
+everyone is retried with new pairs at most twice. Five regression tests; one
+existing assertion updated. Commit `7f0a07e4`; validated, rehearsal tooling in
+`destination-tests/20261023-full-paper/release-r13/`; **not deployed** (owner
+chose to keep the workstation off).
+
+## 2026-10-23 — R12: owner-authorized AI-direct Paper entries and end-of-day flatten
+
+With `IMP_PAPER_AI_DIRECT=1`, Paper execution on and an internal-simulation
+ledger, an AI ENTER no longer needs a governed Opportunity
+(`NO_GOVERNED_OPPORTUNITY` is the only gate bypassed); grounding, direction,
+quote, authority and pre-trade risk gates still apply. `_eod_flatten` submits
+one idempotent market SELL per long equity position 10 minutes before the
+regular close (client ids `PAI-EOD-`); crypto is skipped. Known gaps: skipped
+when the provider is unhealthy, and it also closes manual positions. Deployed
+10-23 as `e8892eb3` with policy `PAP-8b83faf0…` (all US equities and crypto,
+$5k / 15 / $75k / $2k, long only, SMA 20 × 1m). Result for the day: zero
+fills; see the 10-23 reconciliation entry above.
+
+## 2026-10-21 — Installation moved from the E: SSD to D:\IMP
+
+The portable root and its migration-backup sibling were copied to `D:\IMP`
+(file counts and store hashes verified), the 9 absolute junctions and 40 git
+worktrees repaired, the six scheduled tasks re-registered with D: paths, and
+the collector's canonical-store identity pin updated for the new volume. The
+backup folder stays unpacked beside the portable root because launchers load
+packages and model weights from it.
+
 ## 2026-10-20 — Shared universe run slot: a waiting in-session scope gets the next turn
 
 Scopes run in policy order (US_EQUITIES, then CRYPTO), and each closes only its
