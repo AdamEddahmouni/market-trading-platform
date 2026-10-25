@@ -441,6 +441,7 @@ os._exit(8)
              patch.object(run_ui_api, '_install_process_diagnostics'), patch.object(run_ui_api, '_load_store', return_value=store), \
              patch.object(run_ui_api, 'SingleBindHTTPServer', return_value=server), \
              patch.object(run_ui_api, 'start_screener_warmup'), patch.object(run_ui_api, 'resume_paper_automation'), \
+             patch.object(run_ui_api, 'recover_interrupted_runs', return_value={}), \
              patch('market_platform_foundation.market_data.persistence.start_persistence', return_value=object()), \
              patch('market_platform_foundation.market_data.persistence.stop_persistence') as stop, \
              patch('market_platform_foundation.news.collection.start_collection', side_effect=ValueError('fixture startup')):

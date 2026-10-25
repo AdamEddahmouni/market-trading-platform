@@ -230,7 +230,8 @@ export function ProviderSetupList({ enabled }: { enabled: boolean }) {
       <button type="button" className="setup-copy" onClick={() => void query.refetch()}>Retry</button></p>;
   }
   if (!query.data) return <p className="setup-summary">Loading provider settings…</p>;
-  const providers = query.data.providers;
+  // The paid AI dollar caps live on the "Which AI decides" card, next to the choice they gate.
+  const providers = query.data.providers.filter((item) => item.provider !== "paid_ai");
   return <section className="setup-providers" aria-label="Provider settings">
     <h3 className="setup-section-title">Provider settings</h3>
     {GROUPS.map(([group, title]) => {

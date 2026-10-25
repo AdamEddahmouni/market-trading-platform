@@ -665,7 +665,7 @@ describe("S11 News & Analysis panel", () => {
     const select = within(region).getByRole("combobox", { name: "AI engine" }) as HTMLSelectElement;
     expect(select.value).toBe("openai|gpt-6-luna");
     fireEvent.change(select, { target: { value: "anthropic|claude-sonnet-5-5" } });
-    expect(within(region).getByRole("alertdialog")).toHaveTextContent("This is a paid API: its calls count against the shared daily budget.");
+    expect(within(region).getByRole("alertdialog")).toHaveTextContent("This is a paid API. Each call first sets aside its worst-case cost");
     fireEvent.click(within(region).getByRole("button", { name: "Switch engine" }));
     expect(await within(region).findByRole("alert")).toHaveTextContent("Could not switch the AI engine.");
   });

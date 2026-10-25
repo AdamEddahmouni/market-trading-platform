@@ -116,6 +116,11 @@ class HostedChatSynthesisProvider:
             return self._error(code, f"HTTP_{status}", ParsingStatus.PROVIDER_ERROR, started)
         usage_block = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
         usage = (usage_block.get("prompt_tokens"), usage_block.get("completion_tokens"))
+        total = usage_block.get("total_tokens")
+        if all(type(item) is int for item in (*usage, total)) and total - usage[0] > usage[1]:
+            # Thinking billed as output but reported outside completion_tokens (Gemini's compatible endpoint):
+            # charge everything that is not prompt as output, so the dollar ledger is never under the bill.
+            usage = (usage[0], total - usage[0])
         choices = payload.get("choices") if isinstance(payload.get("choices"), list) else []
         choice = choices[0] if choices and isinstance(choices[0], dict) else {}
         if choice.get("finish_reason") == "length":

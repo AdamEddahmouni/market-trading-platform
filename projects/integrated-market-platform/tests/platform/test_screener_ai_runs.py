@@ -27,9 +27,12 @@ from market_platform_foundation.ui_api.screener_ai_runs import RUN_SCHEMA, STAGE
 from market_platform_foundation.ui_api.server import UiApiHandler  # noqa: E402
 from market_platform_foundation.ui_api.store import ReplayStore  # noqa: E402
 from tests.support.coverage_universe import (  # noqa: E402
-    NOW, SCOPE, GatedProvider, News, PagingReader, RankingProvider, instrument_id, universe,
+    NOW, SCOPE, GatedProvider, News, PagingReader, RankingProvider, full_tournament, instrument_id, universe,
 )
 from tests.ui1.test_ui_api import COLLECTION_ROOT  # noqa: E402
+
+# Run tracking over the full tournament; the opportunity shortlist is tested in test_screener_ai_shortlist.
+setUpModule, tearDownModule = full_tournament()
 
 
 def settled(runs: AiScreenerRuns, account: str, run_id: str) -> dict:

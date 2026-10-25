@@ -93,8 +93,12 @@ def snapshot_from_paper_ledger(
     unrealized_total = 0
     for row in positions_raw:
         qty = quantity_number(row["quantity"])
-        if str(row.get("side")) == "SHORT":
+        # The Paper ledger already reports a short as a negative quantity with side SHORT. Negating it again
+        # turned every real short into a long; the sign is kept, and only an unsigned SHORT row is negated.
+        if str(row.get("side")) == "SHORT" and qty > 0:
             qty = -qty
+        if (str(row.get("side")) == "LONG" and qty < 0) or (str(row.get("side")) == "SHORT" and qty > 0):
+            raise ValueError("PAPER_POSITION_SIDE_SIGN_MISMATCH")
         mark = int(row.get("mark_minor") or row.get("average_fill_minor") or 0)
         if row.get("market_value_minor") is not None:
             market_value = abs(int(row["market_value_minor"]))

@@ -9,8 +9,8 @@ from unittest.mock import patch
 from market_platform_foundation.local_state.connection import LocalStateConnection
 from market_platform_foundation.news import supervision
 from market_platform_foundation.news.supervision import (CHILD_EXIT_PERMANENT, COOLDOWN_LIMIT, HEALTHY_RESET_SECONDS,
-    RESTART_LIMIT, RESTART_WINDOW_SECONDS, STORAGE_GRACE_SECONDS, SUPERVISION_JOB, UNHEALTHY_FAILURE_LIMIT,
-    CollectionSupervisor, reset_restart_budget)
+    LATCH_EXPIRY_SECONDS, RESTART_LIMIT, RESTART_WINDOW_SECONDS, STORAGE_GRACE_SECONDS, SUPERVISION_JOB,
+    UNHEALTHY_FAILURE_LIMIT, CollectionSupervisor, reset_restart_budget, supervision_status)
 
 
 class Process:
@@ -116,7 +116,8 @@ class RestartBudgetTests(SupervisorCase):
                          ('BLOCKED', 'PERSISTENT_CHILD_FAILURE', 'PERSISTENT_CHILD_FAILURE'))
         total = len(self.children)
         self.assertEqual(total, 1+RESTART_LIMIT+COOLDOWN_LIMIT-1)
-        self.run_for(owner, 2*RESTART_WINDOW_SECONDS)
+        # Latched well past a rolling window (the latch itself expires only after LATCH_EXPIRY_SECONDS).
+        self.run_for(owner, LATCH_EXPIRY_SECONDS-900)
         self.assertEqual(len(self.children), total)
         # Never more than the limit inside any rolling window, even while failing continuously.
         starts = [e['at'] for e in self.saved()['events'] if e['reason'] == 'CHILD_START_ATTEMPT']
@@ -142,6 +143,58 @@ class RestartBudgetTests(SupervisorCase):
         replacement = self.supervisor(); replacement.tick()
         self.assertEqual(replacement.status()['state'], 'RUNNING')
         self.assertEqual(replacement.status()['crashes'], evidence['crashes'])  # history is kept
+
+    def latch(self, owner):
+        self.exhaust(owner)
+        for _ in range(COOLDOWN_LIMIT-1):
+            self.run_for(owner, owner.status()['next_start']-self.now); self.crash(owner)
+        self.assertEqual(owner.status()['latched'], 'PERSISTENT_CHILD_FAILURE')
+
+    def test_persistent_failure_latch_expires_after_its_time_with_a_fresh_allowance(self):
+        # Owner decision 3 (2026-10-23): unattended restart. The collector tries again a few times a day, never spins.
+        owner = self.supervisor(); self.latch(owner)
+        latched_at = owner.status()['latched_at']; self.assertEqual(latched_at, self.now)
+        total = len(self.children)
+        self.run_for(owner, LATCH_EXPIRY_SECONDS-30)
+        self.assertEqual((owner.status()['latched'], len(self.children)), ('PERSISTENT_CHILD_FAILURE', total))
+        self.run_for(owner, 30)
+        status = owner.status()
+        self.assertEqual((status['state'], status['latched'], status['restarts'], status['cooldowns'], status['unhealthy_failures']),
+                         ('RUNNING', None, [], 0, 0))
+        self.assertEqual(len(self.children), total+1)
+        expired = [e for e in self.saved()['events'] if e['reason'] == 'RESTART_LATCH_EXPIRED']
+        self.assertEqual((len(expired), expired[0]['cleared'], expired[0]['latched_at']), (1, 'PERSISTENT_CHILD_FAILURE', latched_at))
+
+    def test_an_expired_latch_lets_a_fresh_supervisor_start(self):
+        owner = self.supervisor(); self.latch(owner); owner.stop(); total = len(self.children)
+        self.now += LATCH_EXPIRY_SECONDS
+        replacement = self.supervisor(); replacement.tick()
+        self.assertEqual((replacement.status()['state'], len(self.children)), ('RUNNING', total+1))
+
+    def test_a_rejected_configuration_stays_latched_until_the_operator_resets_it(self):
+        owner = self.supervisor(); owner.tick(); self.crash(owner, CHILD_EXIT_PERMANENT)
+        self.assertEqual(owner.status()['latched'], 'CHILD_CONFIGURATION_REJECTED')
+        self.run_for(owner, 2*LATCH_EXPIRY_SECONDS, step=300)
+        self.assertEqual((owner.status()['latched'], len(self.children)), ('CHILD_CONFIGURATION_REJECTED', 1))
+        self.assertNotIn('RESTART_LATCH_EXPIRED', [e['reason'] for e in self.saved()['events']])
+
+    def test_a_latch_recorded_before_expiry_existed_starts_its_clock_when_first_seen(self):
+        owner = self.supervisor(); self.latch(owner); owner.stop(); total = len(self.children)
+        evidence = self.saved(); evidence.pop('latched_at')
+        with self.db.transaction():
+            self.db.execute('UPDATE news_collection_jobs SET payload_json=? WHERE job_id=?', (json.dumps(evidence), SUPERVISION_JOB))
+        self.now += 3*LATCH_EXPIRY_SECONDS
+        replacement = self.supervisor(); replacement.tick()
+        status = replacement.status()
+        self.assertEqual((status['latched'], status['latched_at'], len(self.children)), ('PERSISTENT_CHILD_FAILURE', self.now, total))
+        self.run_for(replacement, LATCH_EXPIRY_SECONDS)
+        self.assertEqual(len(self.children), total+1)
+
+    def test_status_reports_when_an_expiring_latch_clears(self):
+        owner = self.supervisor(); self.latch(owner)
+        status = supervision_status(self.env, clock=lambda: self.now)
+        self.assertEqual((status['latched'], status['latched_at'], status['latch_expiry_seconds']),
+                         ('PERSISTENT_CHILD_FAILURE', self.now, LATCH_EXPIRY_SECONDS))
 
     def test_supervisor_stopped_during_backoff_keeps_the_remaining_backoff(self):
         owner = self.supervisor(); owner.tick(); self.crash(owner); self.run_for(owner, 120)
@@ -292,7 +345,7 @@ class MediumDurationFailureTests(SupervisorCase):
         self.assertLess(status['restarts_in_window'], RESTART_LIMIT)
         total = len(self.children)
         self.assertEqual(total, UNHEALTHY_FAILURE_LIMIT)
-        self.run_for(owner, 3*RESTART_WINDOW_SECONDS)
+        self.run_for(owner, LATCH_EXPIRY_SECONDS-900)  # the latch expires only after LATCH_EXPIRY_SECONDS
         self.assertEqual(len(self.children), total)
         reasons = [event['reason'] for event in self.saved()['events']]
         self.assertEqual(reasons.count('CHILD_PROCESS_EXIT_GAP_UNVERIFIED'), UNHEALTHY_FAILURE_LIMIT)

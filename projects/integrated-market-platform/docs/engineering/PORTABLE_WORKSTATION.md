@@ -33,8 +33,16 @@ Both folder names are fixed. Keep them side by side.
 Since 2026-10-21 both folders live on the owner's PC under `D:\IMP\` (copied
 off the E: SSD; the SSD was returned). Everything IMP-related belongs under
 `D:\IMP\`; Oct 9 PC-setup leftovers are filed in
-`D:\IMP\_legacy-pc-setup-20261009\`. The live Moomoo OpenD runs from its host
-installation in `%APPDATA%\moomoo_OpenD`.
+`D:\IMP\_legacy-pc-setup-20261009\`. The live Moomoo OpenD is started from
+`%APPDATA%\moomoo_OpenD`, a junction to `D:\IMP\IMP-tools\Moomoo-OpenD`. On
+2026-10-23 an earlier session moved that folder into the legacy area without
+seeing the junction. On 2026-10-24 the folder was moved back, but the junction
+itself is **missing** until it is recreated from an ordinary Command Prompt
+(staged as `FIX_OPEND_SHORTCUT.cmd` for the release). An agent started from
+the Claude desktop app cannot do it: that app's packaging redirects writes
+under `%APPDATA%` into its own private copy, which no other program sees.
+Never move the folder without re-pointing the junction. Its remembered login
+is kept in `%APPDATA%\com.moomoo.OpenD`.
 
 - **The backup is a runtime dependency.** Launchers load the `.venv`
   site-packages and the FinBERT / Qwen weights from the backup's `payload/`.
@@ -52,9 +60,47 @@ installation in `%APPDATA%\moomoo_OpenD`.
   `RUN_COLLECTOR.py stop`; start through the scheduled tasks. The launcher's
   readiness wait is 60–300 s depending on how the API fails; a slow first
   start can be reported as a failure while the API is still coming up.
+- **Automatic restart (rebuild step 4, not yet deployed).** From the step-10
+  release one task, `IMP-Keeper`, runs `tools/platform/imp_keeper.py`. It
+  brings back OpenD, the collector and the platform, and logs every restart.
+  It replaces the triggers of `IMP-Platform`, `IMP-PF01-Collector` and
+  `IMP-OpenD-Watchdog`. Pause it before any planned stop
+  (`imp_keeper.py pause`; the staged `STOP_PORTABLE.cmd` does this), or it
+  starts the platform again within about 90 s. See
+  [AUTO_RESTART.md](../operations/AUTO_RESTART.md).
 - `development/monorepo/` itself sits on an old branch
   (`codex/portable-workstation-readiness`, 2026-10-09); do not read its docs
   as current. Work happens in the task worktrees.
+
+### Disk load while collecting
+
+`D:` is a SATA hard drive, about 90% full. The live store, the worktrees, the
+backup and the model weights all share it. From 2026-10-21 to 10-23 heavy disk
+work saturated that drive while the collector ran, and every write to the
+store stalled (`database is locked`). Triggers seen:
+- a 32-thread `robocopy`;
+- `grep -r` and `du` over the whole `D:\IMP` tree;
+- worktree creation, `vitest` and `npm run build`;
+- `validate changed`;
+- 2.5 GB local-model loads;
+- full-table scans of `market_stream_records`.
+
+See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#storage-contention).
+
+The collector writes around the clock: Kraken is 24/7, and Moomoo collects
+from 04:00 to 20:00 ET on trading days. The writer now waits out up to
+10 minutes of contention, but a saturated drive still delays every write.
+
+**From 04:00 to 20:00 ET on trading days, while the collector runs:**
+- Search inside a named folder only. Never search or measure the whole
+  `D:\IMP` tree.
+- Do not run builds, `validate`, bulk copies, backups or large model loads.
+  Run them outside those hours, or stop collection first with the owner's OK.
+
+**Always:**
+- Never scan `market_stream_records` in full (`count(*)`, `GROUP BY symbol`).
+- Use `max(rowid)` (rows are never deleted) and `market_stream_checkpoints`
+  instead.
 
 ## Which tree is which
 

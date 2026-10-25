@@ -1,13 +1,15 @@
-"""Full-universe AI Screener run: enumerate, account, batch, reduce globally, report truthfully.
+"""Full-universe AI Screener run: enumerate, account, shortlist, batch, reduce globally, report truthfully.
 
-One run reads every row of the active Screener query, classifies each with the gates that already exist,
-sends every eligible row to the model in bounded batches, and compares the batch finalists until one
-request holds them all. That last request's answer, made on evidence acquired for it, is the only thing
-stored as a ``candidate_run`` and so the only thing the Action Decision layer can load. Anything short of
-that is reported as what it is: batch finalists are provisional and are never stored as a candidate run.
+One run reads every row of the active Screener query and classifies each with the gates that already exist.
+By default the deterministic opportunity shortlist (``opportunity_shortlist``) then ranks every eligible row
+and only its model-sized head is sent; ``IMP_AI_SCREENER_SHORTLIST=0`` sends every eligible row as before.
+Rows are sent in bounded batches, and the batch finalists are compared until one request holds them all.
+That last request's answer, made on evidence acquired for it, is the only thing stored as a
+``candidate_run`` and so the only thing the Action Decision layer can load. Anything short of that is
+reported as what it is: batch finalists are provisional and are never stored as a candidate run.
 
 Every model call is the existing ``CandidateReducer`` request (prompt v3, ``ai-screener-wire/3.0.0``).
-This module adds no retry, no ranking score and no trading threshold, and has no execution authority.
+This module adds no retry and no trading threshold, and has no execution authority.
 """
 from __future__ import annotations
 
@@ -21,9 +23,10 @@ from ..intelligence.inference.candidate_reduction import (
     MAX_INTAKE, MAX_PACKET_BYTES, MAX_SELECTED, PROMPT_ID, SCHEMA_VERSION as OUTPUT_SCHEMA_VERSION, WIRE_SCHEMA_VERSION,
 )
 from ..intelligence.inference.coverage_plan import (
-    AI_EVALUATED, AI_REJECTED, ELIGIBLE, INELIGIBLE, METHOD_NAME, METHOD_VERSION, PROVIDER_UNAVAILABLE, UNPROCESSED,
-    budget_requirement, chunks, classify, fair_order, reconciles, reduction_rounds, tally,
+    AI_EVALUATED, AI_REJECTED, ELIGIBLE, INELIGIBLE, METHOD_NAME, METHOD_VERSION, NOT_SHORTLISTED, PROVIDER_UNAVAILABLE,
+    UNPROCESSED, budget_requirement, chunks, classify, fair_order, reconciles, reduction_rounds, tally,
 )
+from ..intelligence.inference import opportunity_shortlist
 from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.evidence_compaction import OPTIMIZER_VERSION, semantic_hash
 from ..intelligence.inference.run_progress import relabelled, report_stage
@@ -59,7 +62,7 @@ REJECTION_SYSTEMIC_MIN_REJECTED = 20
 # its picks are still finalists, because the final round re-acquires evidence for every finalist.
 _ANSWERED = frozenset({"CURRENT", "NO_GROUNDED_CANDIDATES", "EXPIRED"})
 _BUDGET_REASONS = frozenset({"SYNTHESIS_RUN_HOLD_EXHAUSTED", "SYNTHESIS_RUN_HOLD_MISSING", "SYNTHESIS_DAILY_REQUEST_LIMIT",
-                             "SYNTHESIS_DAILY_TOKEN_LIMIT"})
+                             "SYNTHESIS_DAILY_TOKEN_LIMIT", "PAID_AI_DAILY_DOLLAR_CAP", "PAID_AI_MONTHLY_DOLLAR_CAP"})
 # A free token count that failed for a reason unrelated to the request itself; the plan keeps its estimate.
 _PREFLIGHT_SKIPPED = frozenset({"API_KEY_MISSING", "COUNT_TOKENS_UNSUPPORTED", "ANTHROPIC_TIMEOUT", "ANTHROPIC_UNREACHABLE",
                                 "ANTHROPIC_AUTH_FAILED"})
@@ -145,13 +148,15 @@ class _Run:
         # True once this run, under a slice plan, ends with eligible rows the model did not answer.
         self.sliced = False
         self.timings: dict[str, float] = {}
+        # The opportunity shortlist this run applied, or None when every eligible row was sent.
+        self.shortlist: dict[str, Any] | None = None
         self.terminal: dict[str, Any] | None = None
         self.cutoffs: dict[str, str | None] = {"classification": None, "first_batch": None, "last_batch": None, "final": None}
 
 
 class ScreenerAiCoverage:
     def __init__(self, service: Any, *, ledger: Any | None = None, software_sha: str | None = None,
-                 repository: Any | None = None, adaptive_batches: bool | None = None) -> None:
+                 repository: Any | None = None, adaptive_batches: bool | None = None, shortlist: bool | None = None) -> None:
         self.service = service
         self._ledger = ledger
         self._software_sha = software_sha
@@ -159,6 +164,7 @@ class ScreenerAiCoverage:
         self._repository = repository
         self.adaptive_batches = (os.environ.get("IMP_AI_SCREENER_ADAPTIVE_BATCHES") == "1"
                                  if adaptive_batches is None else adaptive_batches)
+        self.shortlist = opportunity_shortlist.enabled() if shortlist is None else shortlist
 
     def ledger(self) -> Any:
         if self._ledger is None:
@@ -188,13 +194,18 @@ class ScreenerAiCoverage:
         run = _Run(run_id, account_id)
         run.scope = service._scope(query, {"result_set_id": query["result_set"]})
         run.query = query
+        runtime = (getattr(provider, "runtime", None) or "PAID_API") if provider is not None else None
+        # Sized to the engine that will run; an invalid override refuses the run before anything is recorded.
+        self._shortlist_size = opportunity_shortlist.size_for(runtime) if self.shortlist else None
         self.identity = {
-            "account_id": account_id, "method_version": METHOD_VERSION, "method_name": METHOD_NAME,
+            "account_id": account_id,
+            "method_version": opportunity_shortlist.METHOD_VERSION if self.shortlist else METHOD_VERSION,
+            "method_name": opportunity_shortlist.METHOD_NAME if self.shortlist else METHOD_NAME,
+            "shortlist": {"policy_id": opportunity_shortlist.POLICY_ID, "size": self._shortlist_size} if self.shortlist else None,
             "optimizer_version": OPTIMIZER_VERSION, "compact_input": reducer.compact_input,
             "software_sha": self._software_sha or _software_sha(),
             "provider_id": getattr(provider, "provider_id", None), "model_id": getattr(provider, "model_id", None),
-            "runtime": (getattr(provider, "runtime", None) or "PAID_API") if provider is not None else None,
-            "prompt_id": prompt.prompt_id, "prompt_version": prompt.version, "prompt_hash": prompt.content_hash,
+            "runtime": runtime, "prompt_id": prompt.prompt_id, "prompt_version": prompt.version, "prompt_hash": prompt.content_hash,
             "wire_schema_version": WIRE_SCHEMA_VERSION, "output_schema_version": OUTPUT_SCHEMA_VERSION,
             "limits": {"max_batch_rows": MAX_INTAKE, "max_selected": MAX_SELECTED, "max_packet_bytes": MAX_PACKET_BYTES},
             "query": {key: query[key] for key in ("universe", "search", "sort", "descending", "filters", "view", "screen")},
@@ -254,6 +265,14 @@ class ScreenerAiCoverage:
             if run.provider_reason:
                 return self._terminal(run, EVIDENCE_PROVIDER_UNAVAILABLE, run.provider_reason)
             return self._terminal(run, NO_ELIGIBLE_ROWS)
+        if self.shortlist:
+            mark = time.perf_counter()
+            report_stage("SHORTLIST", eligible_count=run.eligible_count)
+            eligible = self._shortlist(run, eligible, candidates)
+            run.timings["shortlist_ms"] = (time.perf_counter() - mark) * 1000
+            report_stage("SHORTLIST", eligible_count=run.eligible_count, shortlisted_count=len(eligible))
+            if not eligible:
+                return self._terminal(run, NO_ELIGIBLE_ROWS, "NO_ROW_ABOVE_TRADABILITY_FLOOR")
         refusal = self._engine_refusal()
         if refusal:
             for key in eligible:
@@ -274,6 +293,8 @@ class ScreenerAiCoverage:
                 return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
             self._unprocessed(run, batches, "PROVIDER_PREFLIGHT_REJECTED")
             return self._terminal(run, FAILED, run.plan["preflight_rejected"])
+        if run.shortlist is not None:
+            run.plan["shortlist"] = run.shortlist
         if not batches:
             return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "NO_ROW_FITS_ONE_REQUEST")
         limit = getattr(self, "_spend_limit", None)
@@ -589,6 +610,46 @@ class ScreenerAiCoverage:
         self._record_rows(run, "CLASSIFIED")
         return kept
 
+    def _shortlist(self, run: _Run, eligible: list[str], candidates: dict[str, dict[str, Any]]) -> list[str]:
+        """Score every eligible row and keep the model-sized head, best first. The rest are NOT_SHORTLISTED.
+
+        News already received is attached from the cache only (no provider is asked) for every row a full catalyst
+        part could still lift into the shortlist, so a row's catalyst does not depend on whether the classification
+        happened to read news for it. Nothing here is a trading threshold: the score decides which rows the model
+        sees, and the model still makes the pick."""
+        from .screener_news_evidence import attach_news
+
+        service = self.service
+        now = run.cutoffs["classification"]
+        size, salt = int(self._shortlist_size), str(run.scope["result_set"])
+        scored = {key: opportunity_shortlist.score(candidates[key], run.rows[key], now=now) for key in eligible}
+        unread = {key for key in eligible if "news" not in candidates[key]}
+        reach, capped = opportunity_shortlist.news_reach(scored, size=size, salt=salt, unread=unread)
+        for group in chunks(reach):
+            news = service._news_for(run.universe, [run.rows[key] for key in group], refresh=False)
+            for key in group:
+                if key in news:
+                    attach_news(candidates[key], news[key], now=now)
+                scored[key] = opportunity_shortlist.score(candidates[key], run.rows[key], now=now)
+        chosen = opportunity_shortlist.shortlist(scored, size=size, salt=salt)
+        kept = set(chosen)
+        floored = 0
+        for key in eligible:
+            if key in kept:
+                continue
+            reason = scored[key]["floor_reason"] or opportunity_shortlist.BELOW_SHORTLIST_CUTOFF
+            floored += reason == opportunity_shortlist.BELOW_TRADABILITY_FLOOR
+            run.classes[key] = (NOT_SHORTLISTED, [reason])
+        run.shortlist = {
+            "policy_id": opportunity_shortlist.POLICY_ID, "size": size, "eligible_before_shortlist": len(eligible),
+            "shortlisted": len(chosen), "below_tradability_floor": floored,
+            "news_read": len(reach), "news_read_capped": capped,
+            "cutoff_score": scored[chosen[-1]]["total"] if chosen else None,
+            "ranked": [{"instrument_id": key, "rank": index + 1, "total": scored[key]["total"], "parts": scored[key]["parts"],
+                        "missing": scored[key]["missing"]} for index, key in enumerate(chosen)],
+        }
+        return chosen
+
     def _engine_refusal(self) -> str | None:
         if self._provider is None:
             return self._reducer.reason
@@ -614,6 +675,11 @@ class ScreenerAiCoverage:
         window = (current or {}).get("context_window")
         return int(window) if isinstance(window, int) and window > 0 else None
 
+    @staticmethod
+    def _order_label(run: _Run) -> str:
+        return "opportunity_score_desc_then_sha256(result_set|instrument_id)" if run.shortlist is not None \
+            else "sha256(result_set|instrument_id)"
+
     def _plan(self, run: _Run, eligible: list[str], candidates: dict[str, dict[str, Any]], *,
               should_stop: Callable[[], bool] = lambda: False) -> list[dict[str, Any]]:
         """Bounded batches in an order no sort or page can bias, sized by rows, bytes and the model's window."""
@@ -625,7 +691,8 @@ class ScreenerAiCoverage:
         now = run.cutoffs["classification"]
         window = self._context_window()
         output = int(reducer.config.max_tokens) + int(getattr(self._provider, "reasoning_headroom", 0) or 0)
-        ordered = fair_order(str(run.scope["result_set"]), eligible)
+        # A shortlist arrives best first; otherwise no sort or page may bias the order.
+        ordered = list(eligible) if run.shortlist is not None else fair_order(str(run.scope["result_set"]), eligible)
         pending = chunks(ordered)
         batches: list[dict[str, Any]] = []
         thinned = 0
@@ -751,7 +818,7 @@ class ScreenerAiCoverage:
                               input_tokens=expected_inputs,output_tokens=reserved_outputs+reserved_reasoning,now=now)
         sizes = [len(batch["instrument_ids"]) for batch in batches]
         run.plan = {
-            "order": "sha256(result_set|instrument_id)", "batches_planned": len(batches), "reduction_rounds_planned": rounds,
+            "order": self._order_label(run), "batches_planned": len(batches), "reduction_rounds_planned": rounds,
             "rows_planned": sum(sizes), "batch_rows_max": max(sizes, default=0),
             "batch_rows_average": round(sum(sizes) / len(sizes), 2) if sizes else 0,
             "packet_bytes_max": max((batch["packet_bytes"] for batch in batches), default=0),
@@ -785,7 +852,7 @@ class ScreenerAiCoverage:
         the 8,192-token window, and the reducer's own cache still answers unchanged packets at send time.
         A local engine carries no token budget, so nothing is reserved from these figures."""
         reducer = self._reducer
-        ordered = fair_order(str(run.scope["result_set"]), eligible)
+        ordered = list(eligible) if run.shortlist is not None else fair_order(str(run.scope["result_set"]), eligible)
         if self._slice:
             turns = self._slice.get("last_turn")
             last = (self._slice.get("last_evaluated") or {}) if turns is None else turns
@@ -797,7 +864,7 @@ class ScreenerAiCoverage:
         calls = len(batches) + sum(rounds)
         window = self._context_window()
         run.plan = {
-            "order": "sha256(result_set|instrument_id)", "batches_planned": len(batches), "reduction_rounds_planned": rounds,
+            "order": self._order_label(run), "batches_planned": len(batches), "reduction_rounds_planned": rounds,
             "rows_planned": len(batches), "batch_rows_max": 1 if batches else 0, "batch_rows_average": 1 if batches else 0,
             "packet_bytes_max": None, "batch_tokens_max": None, "largest_batch_tokens": None,
             "context_window": window, "reserved_output_tokens": int(reducer.config.max_tokens),
@@ -814,7 +881,8 @@ class ScreenerAiCoverage:
             "budget_basis": "UNCAPPED_ENGINE", "provider_count": None, "preflight_rejected": None,
             "slice": None if not self._slice else {
                 "deadline": _iso(float(self._slice["deadline_epoch"])) if self._slice.get("deadline_epoch") else None,
-                "order": "NO_RECENT_TURN_FIRST_THEN_OLDEST_TURN_THEN_FAIR_ORDER",
+                "order": "NO_RECENT_TURN_FIRST_THEN_OLDEST_TURN_THEN_" + (
+                    "OPPORTUNITY_SCORE" if run.shortlist is not None else "FAIR_ORDER"),
                 "epoch": self._slice.get("epoch"),
                 "evaluated_in_epoch": sum(1 for key in eligible if key in (self._slice.get("last_evaluated") or {}))},
         }
@@ -1055,8 +1123,9 @@ class ScreenerAiCoverage:
         slice_complete = reconciled and status in SLICE_STATUSES and not run.excluded_finalists
         deferred = sum(1 for name, codes in run.classes.values() if name == UNPROCESSED and "DEFERRED_TO_NEXT_SLICE" in codes)
         return {
-            "method_version": METHOD_VERSION, "method_name": METHOD_NAME, "coverage_run_id": run.run_id,
-            "software_sha": self.identity["software_sha"], "status": status, "reason": reason,
+            "method_version": self.identity["method_version"], "method_name": self.identity["method_name"],
+            "coverage_run_id": run.run_id, "software_sha": self.identity["software_sha"], "status": status, "reason": reason,
+            "shortlist": None if run.shortlist is None else {key: value for key, value in run.shortlist.items() if key != "ranked"},
             "universe_count": run.universe_count, "enumeration": run.enumeration, "assessed_count": len(run.classes),
             "eligible_count": run.eligible_count, "counts": counts, "reconciled": reconciled,
             "ai_evaluated_count": counts["evaluated"],
@@ -1171,7 +1240,8 @@ def interrupt_open_runs(ledger: Any, *, tracked: Any, release: Callable[[str], A
             "unknown_provider_outcomes": [{"call_id": item["call_id"], "instrument_ids": item["instrument_ids"],
                                            "planned_tokens": item["planned_tokens"]} for item in unfinished],
             "calls_completed": len(completed), "hold_released": released,
-            "universe_coverage": {"method_version": METHOD_VERSION, "method_name": METHOD_NAME, "coverage_run_id": run_id,
+            "universe_coverage": {"method_version": head.get("method_version") or METHOD_VERSION,
+                                  "method_name": head.get("method_name") or METHOD_NAME, "coverage_run_id": run_id,
                                   "status": INTERRUPTED, "reason": "SERVER_RESTARTED_DURING_RUN",
                                   "coverage_complete": False, "selection_complete": False},
             "scope": None})

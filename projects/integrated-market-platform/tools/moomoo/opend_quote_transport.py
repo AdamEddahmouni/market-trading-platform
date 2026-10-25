@@ -216,10 +216,33 @@ def open_quote_context(ft: Any, *, host: str, port: int,
     deadline = time.monotonic() + ready_timeout
     while time.monotonic() < deadline:
         if str(ctx.status) == "READY":
+            bound_sync_queries(ctx)
             return ctx
         time.sleep(0.05)
     _close_quote_context(ctx)
     return None
+
+
+def bound_sync_queries(ctx: Any) -> None:
+    """Make synchronous calls fail instead of spinning forever on a connection that can no longer send.
+
+    After a failed reconnect the SDK closes its socket without resetting the status, which stays CONNECTED;
+    its own reconnect then refuses to run and every synchronous call waits, unbounded by default, for a
+    connection that never becomes READY. Observed 2026-10-19..22: the feed thread blocked inside
+    get_market_snapshot, so neither the poll-stall reconnect nor anything else ran again.
+    """
+
+    setter = getattr(ctx, "set_sync_query_connect_timeout", None)
+    if not callable(setter):
+        return
+    try:
+        from market_platform_foundation.market_data.live_config import moomoo_sync_query_timeout_seconds
+    except ImportError:  # standalone tool run without src on the path
+        import os
+
+        setter(float(os.environ.get("IMP_MOOMOO_SYNC_QUERY_TIMEOUT_SEC", "10")))
+        return
+    setter(moomoo_sync_query_timeout_seconds())
 
 
 class OpendQuoteKlineSession:

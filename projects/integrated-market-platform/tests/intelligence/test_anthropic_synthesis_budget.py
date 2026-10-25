@@ -125,8 +125,11 @@ class RequestShapeTests(unittest.TestCase):
     def test_key_and_model_come_from_the_same_configuration_source(self):
         with tempfile.TemporaryDirectory() as directory:
             values = {"ANTHROPIC_API_KEY": "from-private-file", "IMP_SYNTHESIS_ANTHROPIC_MODEL": "claude-haiku-4-5-20251001",
-                      "IMP_SYNTHESIS_DAILY_REQUESTS": "5", "IMP_SYNTHESIS_DAILY_TOKENS": "50000"}
-            chosen = select_synthesis_provider(values.get, cache_dir=Path(directory))
+                      "IMP_SYNTHESIS_DAILY_REQUESTS": "5", "IMP_SYNTHESIS_DAILY_TOKENS": "50000",
+                      "IMP_PAID_AI_DAILY_USD": "1", "IMP_PAID_AI_MONTHLY_USD": "5"}
+            # A saved key alone selects nothing paid: automatic is local, Claude only when chosen.
+            self.assertNotEqual(select_synthesis_provider(values.get, cache_dir=Path(directory)).runtime, "PAID_API")
+            chosen = select_synthesis_provider(values.get, cache_dir=Path(directory), engine="anthropic")
             self.assertEqual((chosen.runtime, chosen.provider.model_id), ("PAID_API", "claude-haiku-4-5-20251001"))
             self.assertEqual(chosen.provider._provider._api_key, "from-private-file")   # not only os.environ
             status = chosen.provider.budget_status()

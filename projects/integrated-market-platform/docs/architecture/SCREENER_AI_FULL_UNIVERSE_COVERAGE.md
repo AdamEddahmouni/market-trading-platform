@@ -1,7 +1,9 @@
 # Screener AI full-universe coverage
 
 Classification: CURRENT_CANONICAL_TRUTH, SOFTWARE_CONTROLLED software contract.
-Method: `ai-screener-coverage/1.0.0` (`FULL_UNIVERSE_TOURNAMENT_REDUCTION`).
+Method: `ai-screener-coverage/2.0.0` (`OPPORTUNITY_SHORTLIST_THEN_AI`) by default;
+`ai-screener-coverage/1.0.0` (`FULL_UNIVERSE_TOURNAMENT_REDUCTION`) with
+`IMP_AI_SCREENER_SHORTLIST=0`. See [Opportunity shortlist](#opportunity-shortlist).
 This document does not establish empirical provider proof, forecasts,
 profitability or trading authority. No paid model generation has been made
 under this method; every test and the acceptance receipt use controlled engines.
@@ -111,9 +113,63 @@ explicitly unavailable; its clock is never filled in. Shared news (Finviz,
 RSS) is refreshed under its own TTL; per-instrument news providers stay
 cache-only.
 
+## Opportunity shortlist
+
+Owner decision 5 of [2026-10-23](../platform/OWNER_DECISIONS_20261023.md):
+a fast numeric screen ranks the whole market, and only a shortlist sized to
+the model reaches it; the model still makes the final pick. On 2026-10-23 the
+local engine was given all 2,524 eligible equities one at a time and could not
+compare its 171 finalists inside its 8,192-token window.
+
+Since 2026-10-24 this is the default (`IMP_AI_SCREENER_SHORTLIST=0` restores the
+full tournament unchanged). After classification,
+`intelligence/inference/opportunity_shortlist.py` scores every `ELIGIBLE` row
+from evidence the gates already admitted. The score is a coverage filter, not a
+signal: it decides which rows the model sees, never what is traded, and it adds
+nothing to a model packet.
+
+| Part | Points | Rule |
+|---|---|---|
+| Movement | 0–25 | `abs(change_pct) × 2.5`; a 10% move scores full |
+| Unusual volume | 0–25 | `rel_volume × 5`; admitted evidence first, else the Screener row's reference value (`basis` says which) |
+| Tradability | 0–20 | `(log10(dollar volume) − 5) × 3.75`, at most 15, plus `5 − spread_pct × 10`, at least 0 |
+| Catalyst | 0–20 | 10 per current news story, 5 per delayed one |
+| Freshness | 0–10 | 10 for a quote observed at the cutoff, 0 at 60 s |
+
+- Only non-weak current evidence is read, with the provider-clocked OpenD
+  snapshot ahead of any other source. A missing input scores 0 and is named in
+  `missing`; nothing is filled in.
+- **Tradability floor:** an equity or ETF under $1, or any row trading under $1M
+  of dollar volume, is never shortlisted (`BELOW_TRADABILITY_FLOOR`).
+- **Size:** 20 for the local engine (each row is its own request, and twenty
+  finalists fit one comparison) and 50 for a paid engine (one request).
+  `IMP_AI_SCREENER_SHORTLIST_SIZE` overrides it (1–200); any other value refuses
+  the run before anything is recorded.
+- **Order:** highest total first, with ties in `sha256(result_set | instrument_id)`
+  order. A local slice still takes rows with no recent turn first.
+- **News:** cached news is read, with no provider call, only for rows that a
+  full catalyst part could still lift into the shortlist. At most ten times the
+  size is read, best first, and `news_read_capped` says when that bound cut the
+  list.
+- **Accounting:** eligible rows left out are `NOT_SHORTLISTED`
+  (`BELOW_SHORTLIST_CUTOFF` or `BELOW_TRADABILITY_FLOOR`) in the `ineligible`
+  bucket, so the four buckets still add up to the universe.
+  - A run where nothing clears the floor ends `NO_ELIGIBLE_ROWS` with reason
+    `NO_ROW_ABOVE_TRADABILITY_FLOOR` and calls no model.
+  - "Complete" and "global selection" mean every shortlisted row was answered
+    and compared.
+  - The Paper controller's coverage epoch counts only rows that were sent.
+- **Record:**
+  - the run head and every result carry `method_version`, `method_name` and
+    `shortlist` (`policy_id` `opportunity-shortlist/1.0.0`, size, counts, cutoff
+    score);
+  - the plan record also lists every shortlisted row's rank, total and parts.
+
+  Runs under the two methods are never pooled.
+
 ## Batch planning
 
-Eligible rows are ordered by `sha256(result_set | instrument_id)`. Batch
+Without the shortlist, eligible rows are ordered by `sha256(result_set | instrument_id)`. Batch
 membership therefore does not depend on sort, page, position, symbol length or
 how much metadata a provider returns for a row. A partial run covers an
 unbiased slice, never "the top of the list".

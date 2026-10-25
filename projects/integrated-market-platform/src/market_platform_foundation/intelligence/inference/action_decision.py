@@ -14,7 +14,7 @@ from ...market_data.freshness_contract import timestamp
 from .hashing import input_hash_from_dict
 from .screener_synthesis import unsupported_certainty
 
-PROMPT_ID = 'screener.action_decision.v3'
+PROMPT_ID = 'screener.action_decision.v4'
 POLICY_ID = 'action-decision-policy/1.0.0'
 # OCT1-08: a deterministic risk fact. The server establishes it; a model can neither select nor veto it.
 STOP_BREACH_CONDITION = 'SMA_TRAILING_STOP_BREACHED'

@@ -20,8 +20,11 @@ from market_platform_foundation.ui_api.prospective_evaluation import Prospective
 from market_platform_foundation.ui_api.screener_ai import ScreenerAiService
 from market_platform_foundation.ui_api.screener_ai_coverage import ScreenerAiCoverage
 from tests.intelligence.test_action_decision import proposal, wire
-from tests.support.coverage_universe import SCOPE, News, PagingReader, RankingProvider, universe
+from tests.support.coverage_universe import SCOPE, News, PagingReader, RankingProvider, full_tournament, universe
 from tests.trading_correctness.test_trade_lifecycle import A, N, _Lifecycle, iso
+
+# The lifecycle is proven over the full tournament (IMP_AI_SCREENER_SHORTLIST=0); the shortlist is tested on its own.
+setUpModule, tearDownModule = full_tournament()
 
 
 class ActionModel:

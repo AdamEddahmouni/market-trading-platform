@@ -27,6 +27,7 @@ from .exposure import (
 )
 from .identity import derive_risk_decision_id, derive_trade_proposal_id
 from .sizing import (
+    is_risk_reducing,
     reference_price_for_side,
     size_fixed_fraction_nav_with_caps,
     validate_position_interaction,
@@ -425,7 +426,11 @@ class PreTradeRiskEngine:
         post = compute_exposure(projected)
         max_gross = int(portfolio.equity_minor * policy.max_gross_exposure_fraction)
         max_net = int(portfolio.equity_minor * policy.max_net_exposure_fraction)
-        if post.gross_exposure_minor > max_gross:
+        # Closing is always allowed: a cover or sell-to-close within the held size never trips an exposure or
+        # cash cap, and a cap only bites on a trade that raises the exposure it limits.
+        current_qty = symbol_position_quantity(portfolio.positions, instrument_id=proposal.instrument_id)
+        reducing = is_risk_reducing(side=proposal.side, current_quantity=current_qty) and approved_qty <= abs(current_qty)
+        if not reducing and post.gross_exposure_minor > max_gross and post.gross_exposure_minor > pre.gross_exposure_minor:
             if policy.allow_size_reduction:
                 excess = post.gross_exposure_minor - max_gross
                 reduce_qty = min(approved_qty, ((Decimal(excess) / proposal.reference_price_minor / exact_quantity(proposal.metadata["quantity_step"])).to_integral_value(rounding=ROUND_CEILING) * exact_quantity(proposal.metadata["quantity_step"]) if proposal.metadata.get("quantity_step") is not None else excess // proposal.reference_price_minor + 1))
@@ -437,7 +442,8 @@ class PreTradeRiskEngine:
                 decision = RiskDecisionKind.REJECT
                 approved_qty = 0
                 reason_codes.append(RiskReasonCode.MAX_GROSS_EXPOSURE)
-        if approved_qty > 0 and abs(post.net_exposure_minor) > max_net:
+        if (not reducing and approved_qty > 0 and abs(post.net_exposure_minor) > max_net
+                and abs(post.net_exposure_minor) > abs(pre.net_exposure_minor)):
             if policy.allow_size_reduction:
                 approved_qty = max(0, (Decimal(approved_qty) / 2 / exact_quantity(proposal.metadata["quantity_step"])).to_integral_value(rounding=ROUND_FLOOR) * exact_quantity(proposal.metadata["quantity_step"]) if proposal.metadata.get("quantity_step") is not None else approved_qty // 2)
                 decision = RiskDecisionKind.REDUCE if approved_qty > 0 else RiskDecisionKind.REJECT
@@ -448,7 +454,7 @@ class PreTradeRiskEngine:
                 approved_qty = 0
                 reason_codes.append(RiskReasonCode.MAX_NET_EXPOSURE)
 
-        if proposal.side == "BUY":
+        if proposal.side == "BUY" and not reducing:
             required_cash = approved_qty * proposal.reference_price_minor
             available = portfolio.cash_minor - portfolio.reserved_cash_minor
             if required_cash > available:
@@ -821,14 +827,21 @@ class PaperExecutionOrchestrator:
         entry_allocation_decision: Any | None = None,
         runtime_governance: RuntimeGovernanceState | None = None,
     ) -> PaperExecutionResult:
-        """Submit a supplied canonical SELL opportunity as a bounded close."""
-        if opportunity.side != OpportunitySide.SHORT:
+        """Submit a supplied canonical opposite-side opportunity as a bounded close.
+
+        A SHORT (SELL) opportunity closes a long; a LONG (BUY) opportunity covers a short.
+        """
+        if opportunity.side == OpportunitySide.SHORT:
+            closes = lambda quantity: quantity > 0  # noqa: E731 - sell-to-close a long
+        elif opportunity.side == OpportunitySide.LONG:
+            closes = lambda quantity: quantity < 0  # noqa: E731 - buy-to-cover a short
+        else:
             raise OpportunityGateError("CLOSE_SELL_OPPORTUNITY_REQUIRED")
         if close_quantity is None:
             close_quantity = sum(
                 abs(position.quantity)
                 for position in portfolio.positions
-                if position.instrument_id == instrument_id and position.quantity > 0
+                if position.instrument_id == instrument_id and closes(position.quantity)
             )
         if close_quantity <= 0:
             raise OpportunityGateError("CLOSE_QUANTITY_UNAVAILABLE")

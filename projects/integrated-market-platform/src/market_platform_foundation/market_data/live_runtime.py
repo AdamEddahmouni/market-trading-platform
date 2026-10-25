@@ -79,6 +79,7 @@ class LiveObservationalRuntime:
     ibkr_transport: Any | None = field(default=None, repr=False)
     ibkr_adapter_config: Any | None = field(default=None, repr=False)
     feed: Any | None = field(default=None, repr=False)
+    feed_watchdog: Any | None = field(default=None, repr=False)
     feed_metrics: dict[str, Any] = field(default_factory=dict)
     shadow_recorder: Any | None = field(default=None, repr=False)
     observation_ingress_router: Any | None = field(default=None, repr=False)
@@ -305,6 +306,12 @@ class LiveObservationalRuntime:
             on_overflow=self._on_feed_overflow,
         )
         self.feed.start()
+        if os.environ.get("IMP_MOOMOO_WATCHDOG", "1") != "0":
+            from .feed_watchdog import MoomooDataFlowWatchdog
+
+            # Outside the feed thread: a session blocked inside the SDK cannot judge itself.
+            self.feed_watchdog = MoomooDataFlowWatchdog(self)
+            self.feed_watchdog.start()
 
     def _on_feed_connected(self) -> None:
         generation = self.feed.provider_generation if self.feed else 0
@@ -795,6 +802,8 @@ class LiveObservationalRuntime:
             "scope_symbols": list(self.scope_symbols),
             "service_liveness": self.observational_liveness_view(),
         }
+        if self.feed_watchdog is not None:
+            report["data_flow"] = self.feed_watchdog.status()
         if self.shadow_recorder is not None:
             report["shadow"] = self.shadow_recorder.health()
         else:
@@ -803,6 +812,8 @@ class LiveObservationalRuntime:
 
     def stop(self) -> None:
         self._stop_event.set()
+        if self.feed_watchdog is not None:
+            self.feed_watchdog.stop()  # before the feed, so a stopping feed is not judged silent
         if self.composition is not None:
             self.composition.shutdown()
         if self.feed is not None:

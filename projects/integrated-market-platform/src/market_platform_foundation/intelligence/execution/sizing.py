@@ -21,6 +21,11 @@ class SizingResult:
     capped_by: tuple[str, ...] = ()
 
 
+def is_risk_reducing(*, side: str, current_quantity: int | Decimal) -> bool:
+    """A BUY against a short or a SELL against a long reduces the position it trades."""
+    return (side == "BUY" and current_quantity < 0) or (side == "SELL" and current_quantity > 0)
+
+
 def reference_price_for_side(*, bid_minor: int, ask_minor: int, side: str) -> int:
     if side == "BUY":
         return ask_minor
@@ -39,6 +44,9 @@ def size_fixed_fraction_nav_with_caps(
 ) -> SizingResult:
     if policy.sizing_policy != SizingPolicyKind.FIXED_FRACTION_NAV_WITH_CAPS:
         raise ValueError("SIZING_POLICY_UNSUPPORTED")
+
+    current_qty = symbol_position_quantity(portfolio.positions, instrument_id=instrument_id)
+    reducing_floor = abs(current_qty) if is_risk_reducing(side=side, current_quantity=current_qty) else 0
 
     equity = portfolio.equity_minor
     base_notional = int(equity * policy.trade_fraction_nav)
@@ -127,6 +135,12 @@ def size_fixed_fraction_nav_with_caps(
     else:
         quantity = target_notional // reference_price_minor if reference_price_minor > 0 else 0
         notional = quantity * reference_price_minor
+    if quantity < reducing_floor:
+        # Closing never needs headroom: a cover or a sell-to-close may always take the whole held size, whatever
+        # the position, concentration, exposure and cash caps say. Reversal rules still apply afterwards.
+        quantity = reducing_floor
+        notional = int((Decimal(quantity) * reference_price_minor).to_integral_value(rounding=ROUND_CEILING))
+        capped_by.append("RISK_REDUCING_FLOOR")
     return SizingResult(quantity=quantity, notional_minor=notional, capped_by=tuple(capped_by))
 
 
@@ -169,6 +183,7 @@ def validate_position_interaction(
 
 __all__ = [
     "SizingResult",
+    "is_risk_reducing",
     "reference_price_for_side",
     "size_fixed_fraction_nav_with_caps",
     "validate_position_interaction",

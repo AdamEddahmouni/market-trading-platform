@@ -37,7 +37,7 @@ export function EngineSwitchConfirm({ pending, fit, busy, onConfirm, onCancel }:
   return <div className="engine-switch-confirm" role="alertdialog" aria-label="Confirm AI engine change">
     <p><strong>Switch the AI engine to {pending.engine.label}{pending.model ? ` · ${pending.model}` : ""}?</strong></p>
     <p>This applies to every AI panel on this machine (News synthesis, AI Screener, Action Decisions and automatic passes), starting with the next request. A call already in flight finishes on the current engine.</p>
-    {pending.engine.runtime === "PAID_API" ? <p>This is a paid API: its calls count against the shared daily budget.</p> : <p>This is the local model: no API cost.</p>}
+    {pending.engine.runtime === "PAID_API" ? <p>This is a paid API. Each call first sets aside its worst-case cost at the model's list price and is refused if that would cross your daily or monthly dollar cap.</p> : <p>This is the local model: no API cost.</p>}
     {unfit && <p className="engine-switch-warning">The {unfit}. An AI Screener run on it would be refused or cut short.</p>}
     {unsupported && <p className="engine-switch-warning">This model {unsupported}. An AI Screener run on it is refused before any request; no other model is used in its place.</p>}
     <div><button type="button" disabled={busy} onClick={onConfirm}>Switch engine</button> <button type="button" disabled={busy} onClick={onCancel}>Keep current engine</button></div>

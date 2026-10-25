@@ -163,7 +163,7 @@ class ScreenerActionService:
         context = dict(position=self._position(body['instrument_id'],now), candidate_valid_until=run['valid_until'],
                        opportunity=self._opportunity(candidate,int(timestamp(now).timestamp()*1e9),body.get('opportunity_id'),admission=forecast_admission),
                        forecast_admission=forecast_admission,
-                       authority=authority, allow_short=bool(ledger.policy.get('allow_short',False)),
+                       authority=authority, allow_short=ledger.allows_short(),
                        ai_direct=ai_direct_enabled(ledger),
                        portfolio_revision=portfolio_state_revision(ledger), risk_policy=copy.deepcopy(ledger.policy))
         risk = self._risk_facts(body['instrument_id'])
@@ -399,7 +399,7 @@ class ScreenerActionService:
             price = decimal_to_minor_units(str(record['reference_quote']['source_value']),scale=scale)
         # Existing BUILD 22 defaults govern NAV/exposure; ledger hard caps remain
         # an additional independent authority in the interactive preview below.
-        policy=build_execution_policy(allow_short=bool(ledger.policy.get('allow_short',False)),
+        policy=build_execution_policy(allow_short=ledger.allows_short(),
             max_total_open_orders=int(ledger.policy['max_open_orders']),
             max_open_orders_per_symbol=int(ledger.policy['max_open_orders']),
             max_trade_notional_minor=int(ledger.policy['max_order_shares'])*price,

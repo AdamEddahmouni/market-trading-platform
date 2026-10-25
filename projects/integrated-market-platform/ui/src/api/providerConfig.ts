@@ -82,6 +82,7 @@ const ERRORS: Record<string, string> = {
   VALUE_IS_PLACEHOLDER: "That looks like a placeholder, not a real value.",
   VALUE_NOT_ALLOWED: "Pick one of the listed values.",
   INVALID_MODEL_ID: "Enter a model name such as the provider lists it.",
+  SPENDING_CAP_INVALID: "Enter dollars from 0 to 10000, with at most two decimals (for example 1.50).",
   SEC_USER_AGENT_REQUIRED: "Enter your name and a contact email.",
   SEC_USER_AGENT_MUST_IDENTIFY_CONTACT: "Include a name and a full contact email, e.g. IMP Screener Jane Doe jane@example.com.",
   SEC_USER_AGENT_NEEDS_NAME: "Add your name or firm before the email.",

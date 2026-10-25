@@ -386,6 +386,7 @@ def serve(*, host: str, port: int) -> None:
     try:
         writer = start_persistence(store.data_mode)
         start_screener_warmup(store=store)
+        print(json.dumps({"event": "ui_api.boot_recovery", **recover_interrupted_runs()}), flush=True)
         print(json.dumps({"event": "ui_api.paper_automation_startup", **resume_paper_automation(store)}), flush=True)
         from market_platform_foundation.ui_api.paper_forecast_corpus import start_paper_forecast_corpus
 
@@ -464,6 +465,10 @@ def collect_only(stop: threading.Event) -> None:
             # Blocked, standby or stale supply is reported, not fatal: news and the writer keep running.
             if supply is not None and not supply.alive():
                 raise ValueError('COLLECTION_WORKER_UNHEALTHY')
+            # The exception: a Moomoo session that reconnecting cannot revive needs fresh SDK state, which only a
+            # restart gives; the supervisor restarts this process within its own budget.
+            if supply is not None and supply.unrecoverable():
+                raise ValueError(supply.unrecoverable())
     finally:
         # Producers first, so the writer drains what they already delivered.
         if supply is not None: stop_supply()
@@ -479,6 +484,21 @@ def collect_only(stop: threading.Event) -> None:
         if news_stopped is False and sys.exc_info()[0] in (None, KeyboardInterrupt):
             # A news worker that outlived its join may hold an uncommitted batch: not a verified drain.
             raise ValueError('COLLECTION_SHUTDOWN_INCOMPLETE')
+
+
+def recover_interrupted_runs() -> dict[str, Any]:
+    """Close full-universe AI runs a dead process left open, before the Paper controller resumes.
+
+    Otherwise such a run held the shared AI slot until an operator Run or Stop (2026-10-20: 3.7 h).
+    Bookkeeping only: nothing is evaluated or retried. A failure is reported and never prevents serving.
+    """
+    try:
+        from market_platform_foundation.ui_api.screener_ai_runs import ai_screener_runs
+
+        closed = ai_screener_runs().recover_at_boot()
+        return {"interrupted_runs": len(closed), "run_ids": [row.get("run_id") for row in closed]}
+    except Exception as exc:  # noqa: BLE001 - startup recovery never blocks the API
+        return {"interrupted_runs": None, "reason": type(exc).__name__}
 
 
 def resume_paper_automation(store: ReplayStore) -> dict[str, Any]:

@@ -20,8 +20,11 @@ from market_platform_foundation.platform.security.leak_audit import assert_no_se
 from market_platform_foundation.ui_api.screener_ai import ScreenerAiService  # noqa: E402
 from market_platform_foundation.ui_api.screener_ai_coverage import ScreenerAiCoverage, interrupt_open_runs  # noqa: E402
 from tests.support.coverage_universe import (  # noqa: E402
-    NOW, SCOPE, FailingProvider, News, PagingReader, RankingProvider, answer, instrument_id, row, universe,
+    NOW, SCOPE, FailingProvider, News, PagingReader, RankingProvider, answer, full_tournament, instrument_id, row, universe,
 )
+
+# These tests cover the full tournament itself; the opportunity shortlist is tested in test_screener_ai_shortlist.
+setUpModule, tearDownModule = full_tournament()
 
 SHA = "a" * 40
 _SEQUENCE = [0]

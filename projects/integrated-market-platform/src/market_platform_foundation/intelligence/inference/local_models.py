@@ -21,6 +21,8 @@ class ModelPin:
     model_family: str = 'Qwen3'
     head_dim: int = 128
     context_limit: int = 32768
+    # Mixture-of-experts weights (``*_exps`` tensors, summed from the GGUF tensor table); 0 for a dense model.
+    expert_bytes: int = 0
 
     @property
     def repository(self):
@@ -37,6 +39,20 @@ MODELS = {pin.model_id: pin for pin in (
     ModelPin('Qwen/Qwen3-4B-GGUF:Q4_K_M', 'bc640142c66e1fdd12af0bd68f40445458f3869b',
         'Qwen3-4B-Q4_K_M.gguf', '7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5',
         2497280256, 4000000000, 'Q4_K_M', 36, 8, 'cpu-8192/1', context_limit=40960),
+    # Rebuild step 5 candidates (owner-approved downloads, 2026-10-24). Architecture from each file's GGUF header;
+    # size and SHA-256 from the repository metadata. The 2507 builds are LM Studio community conversions of the
+    # Apache-2.0 Qwen releases: Qwen publishes no official 2507 GGUF.
+    ModelPin('Qwen/Qwen3-8B-GGUF:Q4_K_M', '7c41481f57cb95916b40956ab2f0b139b296d974',
+        'Qwen3-8B-Q4_K_M.gguf', 'd98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785',
+        5027783488, 8200000000, 'Q4_K_M', 36, 8, 'vulkan-8192/1', context_limit=40960),
+    ModelPin('lmstudio-community/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M', '4edb920b6f14e3b9284d4502a6485103d72cde05',
+        'Qwen3-4B-Instruct-2507-Q4_K_M.gguf', '8cdb57cbb880d313736a9bc4e3d3d2485f145b5e19cf33783746e753e82641fc',
+        2497280448, 4000000000, 'Q4_K_M', 36, 8, 'vulkan-8192/1', model_family='Qwen3-2507',
+        context_limit=262144),
+    ModelPin('lmstudio-community/Qwen3-30B-A3B-Instruct-2507-GGUF:Q4_K_M', '02db009a02d5f8817f8a79e952cb0e8d79e9bd34',
+        'Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf', '88168cc35481e44b7d3d03ce79f59a90d15197e4d633006555a0bc44c57886d8',
+        18556685824, 30500000000, 'Q4_K_M', 48, 4, 'vulkan-8192/1-moe', model_family='Qwen3-MoE-2507',
+        context_limit=262144, expert_bytes=17553162240),
 )}
 DEFAULT_MODEL_ID = 'Qwen/Qwen3-4B-GGUF:Q4_K_M'
 

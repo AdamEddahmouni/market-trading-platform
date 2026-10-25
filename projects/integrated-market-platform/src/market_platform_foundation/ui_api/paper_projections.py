@@ -464,6 +464,31 @@ def _resolve_order_margin_facts(
     )
 
 
+def _short_sale_facts(store: ReplayStore, parsed: dict[str, Any], action_record: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Server-derived day-change facts for a SELL on a short-enabled account, else None.
+
+    The day change is read from the Action decision's own admitted TECHNICALS evidence. An order without that
+    evidence carries an explicit unknown, which the short-sale gate refuses for a short open; a sell that only
+    reduces a long never consults it.
+    """
+    if parsed["side"] != "SELL" or not store.paper_ledger.allows_short():
+        return None
+    from ..market_data.freshness_contract import timestamp
+    from ..paper.short_gate import build_short_sale_facts, short_sale_facts_from_change_pct
+
+    evidence = ((action_record or {}).get("evidence_snapshot") or {}).get("evidence") or {}
+    for item in evidence.get("current_market_evidence") or ():
+        value = (item.get("facts") or {}).get("change_pct")
+        if item.get("capability") == "TECHNICALS" and isinstance(value, (int, float)) and not isinstance(value, bool):
+            clock = timestamp(item.get("as_of"))
+            return short_sale_facts_from_change_pct(
+                value,
+                source="ACTION_DECISION_TECHNICALS:" + str(item.get("evidence_id")),
+                as_of_ns=int(clock.timestamp() * 1e9) if clock is not None else None,
+            )
+    return build_short_sale_facts(day_change_bps=None, source="DAY_CHANGE_UNAVAILABLE", as_of_ns=None)
+
+
 def _preview_binding_context(
     store: ReplayStore,
     *,
@@ -657,6 +682,7 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
             decision_source_snapshot=parsed["decision_source_snapshot"],
             instrument=instrument,
             margin_facts=margin_facts,
+            short_sale_facts=_short_sale_facts(store, parsed, action_record),
         )
         envelope = _paper_envelope(store, {"preview": preview})
     action_risk = action_service(store).assess_entry_risk(action_record, parsed)
@@ -889,6 +915,7 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
         decision_source_snapshot=parsed["decision_source_snapshot"],
         instrument=instrument,
         margin_facts=margin_facts,
+        short_sale_facts=_short_sale_facts(store, parsed, action_record),
         **experiment_lineage,
     )
     if store.paper_ledger.is_portfolio_scoped():

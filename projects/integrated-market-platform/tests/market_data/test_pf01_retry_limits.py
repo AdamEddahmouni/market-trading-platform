@@ -12,7 +12,9 @@ class WriterRetryLimitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'imp-state.sqlite3'
             with LocalStateConnection(path) as state:
-                writer=MarketStreamWriter(path,sources=('moomoo',),symbols=('AAPL',))
+                # No contention window: lock waits past it fall back to the count. The window itself is
+                # covered in test_storage_contention.
+                writer=MarketStreamWriter(path,sources=('moomoo',),symbols=('AAPL',),busy_timeout_ms=250,lock_retry_window=0)
                 writer.submit({'provider':'moomoo','instrument_id':'AAPL','provider_symbol':'US.AAPL',
                     'capability':'US_EQUITY_TICKS','clocks':{'received_time_ns':1700000000000000000},
                     'raw_payload':{'price':10,'volume':1,'sequence':1}})
@@ -25,7 +27,7 @@ class WriterRetryLimitTests(unittest.TestCase):
                      patch.object(writer._wake,'wait'),patch.object(writer._stop,'wait') as wait:
                     writer.start(); targets[0]()
                     self.assertEqual(wait.call_count,5)
-                    self.assertEqual([call.args[0] for call in wait.call_args_list],[1,2,4,8,16])
+                    self.assertEqual([call.args[0] for call in wait.call_args_list],[1,2,4,5,5])  # contention backoff cap
                 status=writer.status()
                 self.assertEqual(status['consecutive_failures'],6)
                 self.assertEqual(status['error'],'WRITER_RETRY_LIMIT_EXCEEDED')

@@ -66,13 +66,42 @@ positions, $75k total, $2k daily loss stop, long only, SMA stop 20 × 1m
 **Known problems (verified).**
 
 - **Moomoo equity data barely arrived all week.** `market_stream_records`
-  holds no Moomoo rows for 2026-10-21 or 2026-10-23, and long gaps on 10-19,
-  10-20 and 10-22, while the connection still read CONNECTED. The only stall
-  check runs inside the feed thread and fires on failed polls, not on
-  successful polls that return nothing.
+  holds no Moomoo rows in the regular session on 10-19, 10-21 or 10-23, and
+  long gaps on 10-20 and 10-22, while the connection still read CONNECTED.
+  Cause found 10-24, and fixed on `claude/feed-watchdog-20261024`, which is
+  **not deployed**:
+  - **10-19 to 10-22:** each time OpenD froze, the vendor SDK's failed
+    reconnect left the context CONNECTED-but-not-READY. The feed thread then
+    blocked forever inside a snapshot call, so the in-thread stall check (which
+    runs only after a call returns) never fired.
+  - **10-23:** a slow capability probe was recorded as "not entitled", and the
+    collector kept Moomoo out all session.
+  - **Fix:** bounded SDK calls, an out-of-thread data-flow watchdog, and
+    inconclusive probe results that never replace an answered report. See
+    [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#moomoo-data-flow-watchdog).
 - **`database is locked`** recurred: 17 events on 10-22 and 5 on 10-23
   (22:31–22:37Z), the same minutes that Kraken, news and market-stream
-  collection all stopped.
+  collection all stopped. Cause found 10-24, and fixed on
+  `claude/db-lock-20261024`, which is **not deployed**:
+  - **No process held the lock on purpose.** The store moved to D:, a SATA
+    hard drive, on 10-21. Heavy disk work then saturated that drive: bulk
+    copies, whole-tree searches and builds, model loads, and the evidence
+    capture's full-table scans.
+  - **The market writer flushed the disk inside every commit**
+    (`synchronous=FULL`), holding the only write lock for seconds. It then
+    gave up for good after about 30 s of lock waits, which stopped the child.
+  - **Fix:**
+    - the writer no longer flushes inside the commit (`NORMAL`, like every
+      other connection);
+    - lock contention is retried for 10 minutes instead of six attempts;
+    - supervised child connections skip the whole-store integrity scan;
+    - child output can be logged.
+  - **The disk is still the limit.** Measured on D: under a bulk write, single
+    commits still hold the lock for 5–9 s and drop observations. The
+    collector now waits instead of quitting. Heavy disk work during
+    collection stays off-limits, and moving the store to a faster disk is an
+    open owner decision for the release.
+  - See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#storage-contention).
 - **The AI Journal can never run**: its guard checks the paid request budget
   (zero by owner choice) even when the free local engine is available.
 - **End-of-day flatten gaps**: it is skipped when the provider is unhealthy,
@@ -86,6 +115,48 @@ positions, $75k total, $2k daily loss stop, long only, SMA stop 20 × 1m
 - **Open pull requests**: #456, #479, #501, #502, #503, #505 and #507 pass CI;
   #504 and #506 each fail two UI tests; #500 is a draft that fails Python
   validation. The owner is holding all of them.
+
+**Rebuild step 3 (2026-10-24).** The AI no longer sees the whole market by
+default. A numeric
+[opportunity shortlist](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md#opportunity-shortlist)
+ranks every eligible row and sends the top 20 (local) or 50 (paid) to the model.
+It is on `claude/opportunity-shortlist-20261024`, **not deployed**, and carries
+R13.
+
+**Rebuild step 4 (2026-10-24).** A keeper program brings back Moomoo OpenD, the
+collector and the platform after a reboot or a frozen feed. Its restarts are
+bounded and it logs every one of them; the Paper controller resumes only if it
+was armed and running
+([Automatic restart](../operations/AUTO_RESTART.md)). It is on
+`claude/auto-restart-20261024`, **not deployed**. Its scheduled task and
+operator-file changes are staged for the release, not applied. The OpenD
+program folder, which an earlier session had moved by mistake on 10-23, was
+put back; its shortcut `%APPDATA%\moomoo_OpenD` still has to be recreated
+from an ordinary Command Prompt (staged as `FIX_OPEND_SHORTCUT.cmd`). OpenD
+was not started.
+
+**Rebuild step 5 (2026-10-24).** One Setup card now chooses which AI decides: the
+free local model or one paid model under hard daily and monthly dollar caps. Paid
+AI is off unless the owner chooses it and sets both caps; a saved key alone turns
+nothing on, and the Assistant follows the same choice
+([AI engine switch](../operations/AI_ENGINE_SWITCH.md)). A test on 60 real past
+decisions kept Qwen3-4B as the local model and preselected Claude Haiku 5.5 as the
+paid one ([benchmark](../reports/AI_ENGINE_BENCHMARK_20261024.md)); the paid test
+cost $0.38. It is on `claude/switchable-ai-20261024`, **not deployed**.
+
+**Rebuild step 6 (2026-10-25).** A new Paper account can be created with short
+selling allowed (off by default, fixed for the life of the account). A short
+sets aside its sale proceeds plus 50% of its value, must stay above 30%
+maintenance (below it, automation buys back the largest-loss short), pays a
+simulated borrow fee when held overnight, and is refused below $5, in a stock
+down 10% or more on the day, or when the day change is unknown. Buying a short
+back is never blocked by the risk limits or by cash, and the end-of-day
+close-out now buys shorts back. Three bugs found on the way are fixed: a short
+was read back as a long, a cover could be cut by the entry limits, and the
+close-out skipped shorts
+([Paper short selling](../architecture/PAPER_DECISION_LIFECYCLE.md#paper-short-selling)).
+Live stays off. It is on `claude/short-selling-20261025`, **not deployed**, and
+needs a new short-enabled Paper account at the release.
 
 **Next.** The rebuild order agreed with the owner (data-flow watchdog,
 database locking, opportunity-engine shortlist, automatic restart, switchable

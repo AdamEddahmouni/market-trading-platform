@@ -25,6 +25,7 @@ from market_platform_foundation.market_data.connectivity import opend_reachable
 from market_platform_foundation.market_data.live_config import (
     ingest_queue_max_size,
     moomoo_host,
+    moomoo_opend_check_seconds,
     moomoo_port,
     reconnect_backoff_seconds,
 )
@@ -55,6 +56,12 @@ FEED_STALL_NS = 120_000_000_000
 CONNECTION_JOIN_SECONDS = 5.0
 PROCESSOR_DRAIN_SECONDS = 5.0
 PROCESSOR_JOIN_SECONDS = 6.0  # the drain, plus one batch in flight
+# A forced reconnect waits this long for the session thread to leave a closed context before replacing it.
+FORCE_RECONNECT_JOIN_SECONDS = 15.0
+
+
+class SessionSuperseded(Exception):
+    """A session thread outlived a forced reconnect; it must exit without touching the current session."""
 
 CAP_TO_SUBTYPE_NAME = {
     "US_EQUITY_L1": "QUOTE",
@@ -130,6 +137,16 @@ class MoomooPushFeed:
     _next_snapshot_ns: int = field(default=0, repr=False)
     _next_audit_ns: int | None = field(default=None, repr=False)
     _last_poll_ok_ns: int | None = field(default=None, repr=False)
+    _next_opend_check: float = field(default=0.0, repr=False)
+    _quote_ctx: Any = field(default=None, repr=False)
+    _reconnect_reason: str | None = field(default=None, repr=False)
+    #: Wall time of the last record received on the current session, and of the session loop's last pass.
+    #: Read by the data-flow watchdog, which runs on another thread.
+    last_receipt_ns: int | None = None
+    loop_heartbeat_ns: int | None = None
+    forced_reconnects: int = 0
+    abandoned_sessions: int = 0
+    stale_generation_drops: int = 0
     subscription_audit_repairs: int = 0
     clock: Callable[[], int] = field(default=time.time_ns, repr=False)
     trade_api_counters: dict[str, int] = field(
@@ -160,8 +177,49 @@ class MoomooPushFeed:
             daemon=True,
         )
         self._processor_thread.start()
+        self._start_connection_thread()
+
+    def _start_connection_thread(self) -> None:
         self._connection_thread = threading.Thread(target=self._connection_loop, name="moomoo-push-feed", daemon=True)
         self._connection_thread.start()
+
+    def force_reconnect(self, reason: str, *, join_seconds: float = FORCE_RECONNECT_JOIN_SECONDS) -> str:
+        """End the current session from another thread and say how: CLOSED, ABANDONED, RESTARTED, NO_SESSION
+        or NOT_RUNNING.
+
+        Closing the context makes a synchronous SDK call that is waiting on it return, so the session thread
+        reconnects through its normal path (CLOSED). A thread still blocked after ``join_seconds`` is abandoned:
+        the generation moves on, so whatever it does when it wakes is dropped, and a fresh thread takes over.
+        """
+        if self._stop_event.is_set() or self._processor_thread is None:
+            return "NOT_RUNNING"
+        self.forced_reconnects += 1
+        self._reconnect_reason = reason
+        self.last_error = f"MOOMOO_FORCED_RECONNECT: {reason}"
+        stuck, thread = self._quote_ctx, self._connection_thread
+        if stuck is not None:
+            try:
+                stuck.close()
+            except Exception:  # noqa: BLE001 - a broken context is the reason we are here
+                pass
+        if thread is None or not thread.is_alive():
+            self._start_connection_thread()
+            return "RESTARTED"
+        if stuck is None:
+            return "NO_SESSION"  # between sessions: the next one starts clean
+        deadline = time.monotonic() + join_seconds
+        while time.monotonic() < deadline:
+            if self._quote_ctx is not stuck:
+                return "CLOSED"  # the session loop left the closed context and reconnects normally
+            if not thread.is_alive():
+                self._start_connection_thread()
+                return "RESTARTED"
+            time.sleep(0.05)
+        self.abandoned_sessions += 1
+        self.provider_generation += 1  # the abandoned thread's records and state changes are now stale
+        self._quote_ctx = None
+        self._start_connection_thread()
+        return "ABANDONED"
 
     def stop(self) -> None:
         """Quiesce callbacks before draining accepted ingest; keep the writer alive until this returns."""
@@ -226,12 +284,19 @@ class MoomooPushFeed:
             "book_lag_ms_max": _percentile_ms(book_lag, 1.0),
             "book_lag_samples": len(book_lag),
             "handler_errors": self._handler_errors,
+            "last_receipt_ns": self.last_receipt_ns,
+            "loop_heartbeat_ns": self.loop_heartbeat_ns,
+            "forced_reconnects": self.forced_reconnects,
+            "abandoned_sessions": self.abandoned_sessions,
+            "stale_generation_drops": self.stale_generation_drops,
             "trade_api_counters": dict(self.trade_api_counters),
         }
 
     def _connection_loop(self) -> None:
         attempt = 0
-        while not self._stop_event.is_set():
+        me = threading.current_thread()
+        # A thread replaced by force_reconnect stops here instead of competing with its replacement.
+        while not self._stop_event.is_set() and self._connection_thread is me:
             if not opend_reachable():
                 self.last_error = f"OpenD not reachable at {moomoo_host()}:{moomoo_port()}"
                 if self.on_disconnected:
@@ -245,7 +310,11 @@ class MoomooPushFeed:
             try:
                 self._run_session()
                 attempt = 0
+            except SessionSuperseded:
+                return
             except Exception as exc:
+                if self._connection_thread is not me:
+                    return
                 self.last_error = str(exc)
                 if self.on_disconnected:
                     self.on_disconnected(self.last_error)
@@ -263,12 +332,18 @@ class MoomooPushFeed:
         self._last_poll_ok_ns = None
         self._first_push_seen.clear()
         self._last_sequence.clear()
+        self._reconnect_reason = None
+        generation = self.provider_generation
         from opend_quote_transport import open_quote_context  # same directory; never the leaking sync ctor
 
         quote_ctx = open_quote_context(ft, host=moomoo_host(), port=moomoo_port())
         if quote_ctx is None:
             raise RuntimeError("OPEND_INIT_TIMEOUT: OpenD accepted TCP but did not complete InitConnect")
-        generation = self.provider_generation
+        if generation != self.provider_generation:
+            quote_ctx.close()
+            raise SessionSuperseded()
+        self._quote_ctx = quote_ctx
+        self._next_opend_check = time.monotonic() + moomoo_opend_check_seconds()
         seen_ids: set[str] = set()
         self_outer = self
 
@@ -334,14 +409,30 @@ class MoomooPushFeed:
             self.on_connected()
         try:
             while not self._stop_event.is_set():
-                if not opend_reachable():
-                    raise RuntimeError("OPEND_UNREACHABLE")
-                self._sync_subscriptions(quote_ctx, ft)
+                self._ensure_current(generation)
+                self.loop_heartbeat_ns = time.time_ns()
+                if self._reconnect_reason is not None:
+                    raise RuntimeError(f"MOOMOO_FORCED_RECONNECT: {self._reconnect_reason}")
+                # A TCP connect per pass was ~7,000 connections an hour to OpenD; the bounded SDK calls and the
+                # data-flow watchdog now catch a dead OpenD, so this only needs to notice a closed port.
+                if time.monotonic() >= self._next_opend_check:
+                    self._next_opend_check = time.monotonic() + moomoo_opend_check_seconds()
+                    if not opend_reachable():
+                        raise RuntimeError("OPEND_UNREACHABLE")
+                self._sync_subscriptions(quote_ctx, ft, generation)
                 time.sleep(0.5)
         finally:
+            if self._quote_ctx is quote_ctx:
+                self._quote_ctx = None
             quote_ctx.close()
 
-    def _sync_subscriptions(self, quote_ctx: Any, ft: Any) -> None:
+    def _ensure_current(self, generation: int | None) -> None:
+        if generation is not None and generation != self.provider_generation:
+            raise SessionSuperseded()
+
+    def _sync_subscriptions(self, quote_ctx: Any, ft: Any, generation: int | None = None) -> None:
+        """One subscription/poll pass. With ``generation``, each SDK call that returns into a superseded session
+        raises SessionSuperseded before it can change the current session's state."""
         subtype_map = {
             "QUOTE": ft.SubType.QUOTE,
             "TICKER": ft.SubType.TICKER,
@@ -357,6 +448,7 @@ class MoomooPushFeed:
                 desired.add((code, subtype_name))
         now = self.clock()
         self._audit_subscriptions(quote_ctx, ft, now)
+        self._ensure_current(generation)
         for key in sorted(desired - self._subscribed_subtypes):
             code, subtype_name = key
             if self._retry_after_ns.get(key, 0) > now:
@@ -368,6 +460,7 @@ class MoomooPushFeed:
                 subscribe_push=True,
                 session=ft.Session.ALL,
             )
+            self._ensure_current(generation)
             if ret == ft.RET_OK:
                 self._subscribed_subtypes.add(key)
                 self.subscription_errors.pop(key, None)
@@ -393,6 +486,7 @@ class MoomooPushFeed:
             else:
                 ret_q, quote_data = quote_ctx.get_stock_quote(quote_codes)
                 rows = payload_rows(quote_data) if ret_q == ft.RET_OK else []
+            self._ensure_current(generation)
             if ft.RET_OK in (ret_s, ret_q):
                 self._last_poll_ok_ns = now
             elif self._last_poll_ok_ns is None:
@@ -403,13 +497,14 @@ class MoomooPushFeed:
                 self._enqueue_from_payload(
                     capability="US_EQUITY_L1",
                     payload=payload,
-                    generation=self.provider_generation,
+                    generation=self.provider_generation if generation is None else generation,
                 )
         for key in sorted(self._subscribed_subtypes - desired):
             code, subtype_name = key
             if self._retry_after_ns.get(key, 0) > now:
                 continue
             ret, _msg = quote_ctx.unsubscribe([code], [subtype_map[subtype_name]])
+            self._ensure_current(generation)
             if ret == ft.RET_OK:
                 self._subscribed_subtypes.discard(key)
                 self._retry_after_ns.pop(key, None)
@@ -448,9 +543,13 @@ class MoomooPushFeed:
         generation: int,
         sequence: Any | None = None,
     ) -> None:
+        if generation < self.provider_generation:
+            self.stale_generation_drops += 1  # a callback or poll from a session a forced reconnect replaced
+            return
         code = str(payload.get("code") or "")
         instrument = code.split(".")[-1] if code else ""
         received = time.time_ns()
+        self.last_receipt_ns = received
         event_ns = event_time_ns_from_payload(payload, received_ns=received, quote_trade_time=capability == "US_EQUITY_L1")
         channel = f"{generation}:{instrument}:{capability}"
         is_first = channel not in self._first_push_seen

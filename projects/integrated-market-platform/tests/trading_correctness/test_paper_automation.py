@@ -532,6 +532,15 @@ class RollingSliceControllerTests(AutoBase):
         event = a.events('UNIVERSE_EPOCH_COMPLETED')[0]
         self.assertEqual((event['eligible'], event['evaluated'], event['turns']), (3, 1, 3))
 
+    def test_rows_outside_the_opportunity_shortlist_need_no_turn(self):
+        # The shortlist decides which eligible rows the model sees; the rest must not hold the epoch open.
+        a = self.start_run()
+        screened = ('NOT_SHORTLISTED', ['BELOW_SHORTLIST_CUTOFF'])
+        a.select('AAPL', evaluated=2, rows={'AAPL': 'AI_EVALUATED', 'NVDA': screened, 'MSFT': 'AI_EVALUATED'}, **self.SLICE)
+        epoch = a.cycle()['universe']['last_result']['epoch']
+        self.assertTrue(epoch['epoch_completed'])
+        self.assertEqual((epoch['eligible'], epoch['evaluated_in_epoch'], epoch['turns_in_epoch']), (2, 2, 2))
+
     def test_a_deferred_row_keeps_the_epoch_open(self):
         a = self.start_run()
         deferred = ('UNPROCESSED', ['DEFERRED_TO_NEXT_SLICE'])
@@ -1246,6 +1255,78 @@ class OwnershipAndRecoveryTests(AutoBase):
         self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='PAPER_RISK_POLICY_CHANGED'))
         self.assertNotEqual(b.service.status()['status'], 'RUNNING')
 
+    # --- unattended restart (owner decision 3, 2026-10-23): refusals time can clear are retried, bounded ---------
+    def _refused_starts(self, b, errors, on_sleep=None):
+        """The first starts raise ``errors`` in order, then the real start runs. Returns the waits taken."""
+        real, queue, waited = b.service.start, list(errors), []
+
+        def start(**kwargs):
+            if queue:
+                raise queue.pop(0)
+            return real(**kwargs)
+
+        def sleep(seconds):
+            waited.append(seconds)
+            self.clock.value += seconds
+            if on_sleep:
+                on_sleep(len(waited))
+        b.service.start, b.service.sleep = start, sleep
+        return waited
+
+    def test_a_restart_retries_a_loop_another_process_still_owns_and_then_resumes(self):
+        self.enter()
+        self.clock.value += 600
+        b = self.restart()
+        waited = self._refused_starts(b, [ValueError('REEVALUATION_LOOP_ALREADY_OWNED')] * 2)
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=True, reason=None))
+        self.assertEqual(waited, [controller_module.STARTUP_RESUME_RETRY_SECONDS] * 2)
+        self.assertEqual({e['reason'] for e in b.events('STARTUP_RESUME_RETRYING')}, {'REEVALUATION_LOOP_ALREADY_OWNED'})
+        self.assertEqual(b.events('STARTUP_RESUMED')[0]['attempts'], 2)
+        self.assertEqual(b.events('STARTUP_RESUME_REFUSED'), [])
+        status = b.service.status()
+        self.assertEqual((status['status'], status['liveness']['owner']), ('RUNNING', 'THIS_PROCESS'))
+
+    def test_a_busy_store_at_restart_is_retried(self):
+        import sqlite3
+        self.enter()
+        self.clock.value += 600
+        b = self.restart()
+        self._refused_starts(b, [sqlite3.OperationalError('database is locked')])
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=True, reason=None))
+        self.assertEqual(b.events('STARTUP_RESUME_RETRYING')[0]['reason'], 'OperationalError')
+
+    def test_a_refusal_that_never_clears_is_given_up_within_the_retry_limit(self):
+        self.enter()
+        self.clock.value += 600
+        b = self.restart()
+        waited = self._refused_starts(b, [ValueError('REEVALUATION_LOOP_ALREADY_OWNED')] * 1000)
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='REEVALUATION_LOOP_ALREADY_OWNED'))
+        limit, step = controller_module.STARTUP_RESUME_RETRY_LIMIT_SECONDS, controller_module.STARTUP_RESUME_RETRY_SECONDS
+        self.assertLessEqual(sum(waited), limit)
+        self.assertGreaterEqual(sum(waited), limit - step)
+        self.assertEqual(b.events('STARTUP_RESUME_REFUSED')[0]['reason'], 'REEVALUATION_LOOP_ALREADY_OWNED')
+        self.assertLessEqual(len(b.events('STARTUP_RESUME_RETRYING')), limit // 60 + 1)  # about one record a minute
+        status = b.service.status()
+        self.assertNotEqual(status['status'], 'RUNNING')
+        self.assertEqual(status['liveness']['last_error']['code'], 'REEVALUATION_LOOP_ALREADY_OWNED')
+
+    def test_an_operator_stop_during_the_retries_wins(self):
+        self.enter()
+        self.clock.value += 600
+        b = self.restart()
+        self._refused_starts(b, [ValueError('REEVALUATION_LOOP_ALREADY_OWNED')] * 1000,
+                             on_sleep=lambda count: b.service.stop() if count == 3 else None)
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='NOT_RUNNING_BEFORE_RESTART'))
+        self.assertNotEqual(b.service.status()['status'], 'RUNNING')
+
+    def test_a_refusal_time_cannot_clear_is_not_retried(self):
+        self.enter()
+        self.clock.value += 600
+        b = self.restart()
+        waited = self._refused_starts(b, [ValueError('PAPER_RISK_POLICY_CHANGED')])
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='PAPER_RISK_POLICY_CHANGED'))
+        self.assertEqual((waited, b.events('STARTUP_RESUME_RETRYING')), ([], []))
+
     def test_an_order_is_never_repeated_for_the_same_decision(self):
         self.enter()
         a = self.auto
@@ -1373,6 +1454,91 @@ class WorkerScheduleTests(AutoBase):
         worker.run(max_cycles=1)
         self.assertEqual((worker.exit_reason, worker.alive()), ('AUTOMATION_LEASE_LOST', False))
         self.assertEqual(a.service.status()['status'], 'ERROR')
+
+    # --- a worker that ends on its own (owner decision 3, 2026-10-23) ------------------------------------------
+    def _ended(self, reason):
+        worker = self.auto.service.worker
+        worker.exit_reason, worker.finished = reason, True
+        return worker
+
+    def _instant_sleep(self):
+        waited = []
+
+        def sleep(seconds):
+            waited.append(seconds)
+            self.clock.value += seconds
+        self.auto.service.sleep = sleep
+        return waited
+
+    def test_a_worker_that_ends_on_an_error_is_recorded_and_revived(self):
+        a = self.auto
+        a.go()
+        waited = self._instant_sleep()
+        old_run = a.service.status()['run']['run_id']
+        worker = self._ended('AUTOMATION_SOMETHING_FAILED')
+        self.assertEqual(a.service._worker_ended(worker, threaded=False), dict(revived=True, reason=None))
+        self.assertEqual(waited, [controller_module.WORKER_REVIVE_DELAY_SECONDS])
+        exited = a.events('WORKER_EXITED')[0]
+        self.assertEqual((exited['reason'], exited['run_id']), ('AUTOMATION_SOMETHING_FAILED', old_run))
+        revived = a.events('WORKER_REVIVED')[0]
+        self.assertEqual(revived['exited_for'], 'AUTOMATION_SOMETHING_FAILED')
+        self.assertNotEqual(revived['run_id'], old_run)
+        self.assertIsNot(a.service.worker, worker)
+        status = a.service.status()
+        self.assertEqual((status['status'], status['liveness']['owner']), ('RUNNING', 'THIS_PROCESS'))
+        self.assertEqual(a.cycle()['status'], 'RUNNING')
+
+    def test_revives_are_bounded_per_hour(self):
+        a = self.auto
+        a.go()
+        self._instant_sleep()
+        limit = controller_module.WORKER_REVIVE_LIMIT
+        for _ in range(limit):
+            self.assertTrue(a.service._worker_ended(self._ended('AUTOMATION_SOMETHING_FAILED'), threaded=False)['revived'])
+        self.assertEqual(a.service._worker_ended(self._ended('AUTOMATION_SOMETHING_FAILED'), threaded=False),
+                         dict(revived=False, reason='WORKER_REVIVE_BUDGET_SPENT'))
+        self.assertEqual(len(a.events('WORKER_REVIVE_BUDGET_SPENT')), 1)
+        self.assertEqual(a.service.status()['status'], 'ERROR')  # wanted running, nothing is: never shown as RUNNING
+        self.clock.value += controller_module.WORKER_REVIVE_WINDOW_SECONDS
+        self.assertTrue(a.service._worker_ended(a.service.worker, threaded=False)['revived'])
+
+    def test_a_lost_lease_a_stop_or_an_emergency_latch_is_never_revived(self):
+        a = self.auto
+        a.go()
+        self._instant_sleep()
+        self.assertEqual(a.service._worker_ended(self._ended('AUTOMATION_LEASE_LOST'), threaded=False),
+                         dict(revived=False, reason='AUTOMATION_LEASE_LOST'))
+        controller = a.service._controller()
+        controller['emergency'] = dict(at='2026-10-24T00:00:00Z', reason='TEST', source='CONTROLLER')
+        a.service._save(controller)
+        self.assertIsNone(a.service._worker_ended(a.service.worker, threaded=False))
+        controller['emergency'] = None
+        a.service._save(controller)
+        worker = a.service.worker
+        a.service.stop()
+        self.assertIsNone(a.service._worker_ended(worker, threaded=False))
+        self.assertEqual(a.events('WORKER_REVIVED'), [])
+        self.assertEqual(len(a.events('WORKER_EXITED')), 1)
+
+    def test_a_scheduling_thread_that_dies_reports_its_end_and_revives_within_the_budget(self):
+        a = self.auto
+        a.configure()
+        a.arm()
+        a.service.sleep = lambda seconds: None
+
+        def broken(**kwargs):
+            raise ValueError('AUTOMATION_FIXTURE_BROKEN')
+        a.service.run_cycle = broken
+        a.service.start(threaded=True)
+        deadline = time.time() + 20
+        while time.time() < deadline and not a.events('WORKER_REVIVE_BUDGET_SPENT'):
+            time.sleep(0.05)
+        try:
+            self.assertEqual(len(a.events('WORKER_REVIVE_BUDGET_SPENT')), 1)
+            self.assertEqual(len(a.events('WORKER_REVIVED')), controller_module.WORKER_REVIVE_LIMIT)
+            self.assertEqual({e['reason'] for e in a.events('WORKER_EXITED')}, {'AUTOMATION_FIXTURE_BROKEN'})
+        finally:
+            a.service.stop()
 
     def test_threaded_start_runs_a_cycle_and_stop_ends_the_thread(self):
         a = self.auto

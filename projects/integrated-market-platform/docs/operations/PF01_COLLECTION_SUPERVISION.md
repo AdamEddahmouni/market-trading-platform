@@ -98,6 +98,14 @@ both of these hold:
    default report path (only when newer); a failed renewal is retried after
    `retry_minutes`.
 
+   A probe call that times out or loses its connection is not a refusal. The
+   probe then marks the capability `account_entitled: null` with
+   `PROBE_TRANSPORT_FAILURE`. If any core capability (L1, ticks, depth,
+   snapshot) is unanswered, it writes `capability-report.inconclusive.json`
+   beside the report instead of replacing it, and exits 75. The last answered
+   report stands. On 2026-10-23, slow OpenD answers were recorded as "not
+   entitled" and kept Moomoo out of collection for the whole session.
+
 Kraken public market data has no account, so only the first condition applies.
 The first Kraken request resolves the pair through the existing resolver, which
 fetches Kraken's public `AssetPairs` catalog once over HTTPS (retried at most
@@ -105,6 +113,51 @@ every 30 seconds on failure) before the WebSocket is opened.
 A configured key, a reachable OpenD or a passing synthetic test satisfies
 neither. A closed gate does not end the child: news keeps running and the
 supply reports `BLOCKED` with the reason.
+
+### Moomoo data-flow watchdog
+
+"Connected" is not "receiving". From 2026-10-19 to 10-22, the Moomoo feed
+reported `CONNECTED` for hours while nothing arrived. Each time OpenD froze, the
+vendor SDK's reconnect failed and left its status at CONNECTED-but-not-READY.
+Every synchronous call then waited forever, so the feed thread blocked inside
+`get_market_snapshot` and the in-thread poll-stall check never ran. Two layers
+now cover this, in both the collector child and the serving backend:
+
+- **Bounded SDK calls.** `open_quote_context` sets the vendor's
+  `set_sync_query_connect_timeout` (`IMP_MOOMOO_SYNC_QUERY_TIMEOUT_SEC`,
+  default 10). A stuck call returns an error, and the feed's 120 s poll-stall
+  reconnect fires.
+- **Data-flow watchdog** (`market_data/feed_watchdog.py`). Its own thread
+  checks every `IMP_MOOMOO_WATCHDOG_INTERVAL_SEC` (15 s) while US equity data is
+  expected and a quote is subscribed. The feed polls a snapshot every 2 s, so a
+  healthy session always receives records. The watchdog judges by receipts,
+  not by connection state or committed rows (unchanged quotes are not
+  inserted). A fault is either no receipt, or no session-loop pass, for
+  `IMP_MOOMOO_SILENCE_SEC` (90 s). The watchdog then works through four steps:
+  1. **Alarm.** The provider becomes `DEGRADED` with `MOOMOO_FEED_SILENT`, the
+     writer records a `MOOMOO_FEED_SILENT` gap, and Paper automation's provider
+     health reports `UNHEALTHY` / `LIVE_FEED_SILENT`.
+  2. **Reconnect.** `force_reconnect` closes the stuck context. A thread still
+     blocked after 15 s is abandoned: the generation moves on, so anything it
+     does when it wakes is dropped, and a fresh thread takes over.
+  3. **Budget.** Reconnects are limited to
+     `IMP_MOOMOO_WATCHDOG_RESTARTS_PER_HOUR` (3).
+  4. **Process restart (collector child only).** When silence survives two
+     reconnects, or the budget is spent, the watchdog sets
+     `MOOMOO_FEED_UNRECOVERABLE` and the child exits for a supervised restart.
+     A serving backend started by the keeper (`IMP_PLATFORM_RESTARTER=keeper`)
+     reports the same state in its health and keeps serving; the keeper
+     restarts the platform ([AUTO_RESTART.md](AUTO_RESTART.md)). Any other
+     serving backend only alarms and reconnects.
+
+  A receipt after the last action clears the alarm, with a
+  `MOOMOO_FEED_RECOVERED` event. Events and receipt ages appear under
+  `data_flow` in `GET /provider/health`, and as JSON lines on the process log.
+  Past the 2025–2026 holiday table, the watchdog falls back to the weekday
+  session and does not end the process. `IMP_MOOMOO_WATCHDOG=0` turns it off.
+- The session loop checks OpenD's TCP port every `IMP_MOOMOO_OPEND_CHECK_SEC`
+  (15 s) instead of every 0.5 s. That was about 7,000 connections an hour,
+  a suspected (unproven) contributor to the OpenD freezes.
 
 ### Lifecycle
 
@@ -233,6 +286,7 @@ and the last 32 events.
 | `HEALTHY_RESET_SECONDS` | 1,800 | Continuous child uptime that restores the full allowance |
 | `COOLDOWN_LIMIT` | 3 | Exhausted windows in a row before the block latches |
 | `UNHEALTHY_FAILURE_LIMIT` | 9 | Child failures with no healthy period between them before the block latches (`RESTART_LIMIT` x `COOLDOWN_LIMIT`) |
+| `LATCH_EXPIRY_SECONDS` | 7,200 | How long a `PERSISTENT_CHILD_FAILURE` latch lasts before it clears itself (rebuild step 4) |
 | `STORAGE_GRACE_SECONDS` | 900 | How long the supervisor waits for unavailable storage |
 
 These are constants in `news/supervision.py`; there is no environment override.
@@ -261,12 +315,19 @@ These are constants in `news/supervision.py`; there is no environment override.
   is reported as `SCHEMA_CHECK_STORAGE_INVALID`, not as a missing migration. A
   store that could not be read at child start is an ordinary failure, not a
   rejection.
-- A latched block survives supervisor restarts. Nothing restarts until the
-  operator clears it.
+- A latched block survives supervisor restarts. `CHILD_CONFIGURATION_REJECTED`
+  stays until the operator clears it: restarting cannot fix a configuration.
+  `PERSISTENT_CHILD_FAILURE` clears itself `LATCH_EXPIRY_SECONDS` (2 h) after
+  it latched, with a `RESTART_LATCH_EXPIRED` event and a fresh allowance (owner
+  decision 3, 2026-10-23: the collector restarts unattended). The latch time is
+  `latched_at`; a latch recorded before expiry existed starts its two hours
+  when a supervisor first sees it. The keeper does not start a collector while
+  the latch holds.
 
 A child that fails immediately every time is started at most six times in
 about 70 minutes (the first start, three restarts, then one after each of two
-cooldowns) before the block latches. It is never restarted in a tight loop.
+cooldowns) before the block latches, and at most six more after each two-hour
+latch. It is never restarted in a tight loop.
 
 ### Storage and lease loss
 
@@ -292,16 +353,70 @@ cooldowns) before the block latches. It is never restarted in a tight loop.
 The child stops when its parent's lease is lost, when a worker reports
 `BLOCKED`, `FAILED` or `STALE`, or when a worker thread (including the supply
 reconciler) is no longer alive. Blocked, standby or stale market supply is
-reported and does not end the child.
+reported and does not end the child, with one exception: a Moomoo session the
+data-flow watchdog could not revive (`MOOMOO_FEED_UNRECOVERABLE`, below) ends
+it, because only a new process has fresh SDK state; the supervisor restarts it
+within its restart budget.
 `RETRYING`, `IDLE` and `WAITING_FOR_OWNERSHIP` do not end it: those are the
-workers' own bounded recovery and standby states. A locked database or a
-briefly unreadable store is retried by the worker (six attempts over about 30
-seconds for the market writer, the same for news storage) and reaches the
-supervisor only if the worker gives up. A replaced store, the 512 MiB ceiling,
-a full disk, corruption and constraint failures are not retried. A writer that
-owns nothing and has nothing to store ignores a storage outage instead of
-spending its retries on it. Child output is discarded; the exit
-code and the durable job rows are the available cause evidence.
+workers' own bounded recovery and standby states.
+
+- **Locked database:** retried for a window (see
+  [Storage contention](#storage-contention)).
+- **Briefly unreadable store:** retried six times over about 30 seconds, by
+  both the market writer and news storage.
+- **Not retried:** a replaced store, the 512 MiB ceiling, a full disk,
+  corruption and constraint failures.
+
+A worker failure reaches the supervisor only if the worker gives up. A writer
+that owns nothing and has nothing to store ignores a storage outage instead of
+spending its retries on it.
+
+Child output is discarded unless `IMP_PF01_CHILD_LOG_DIR` (an absolute path) is
+set. When it is set, the child's stdout and stderr, which carry its reason
+codes and the Moomoo watchdog events, are appended to `child-YYYYMMDD.log` in
+that directory. Otherwise the exit code and the durable job rows are the
+available cause evidence.
+
+### Storage contention
+
+From 2026-10-21 to 10-23 the platform logged `database is locked` and the
+collector stalled. No process held the lock on purpose. The store sits on a
+hard drive (D:), and heavy disk work saturated it (bulk copies, whole-tree
+searches and builds, model loads, full-table scans). The market writer then
+held the only write lock for seconds per commit and gave up after about 30 s.
+
+- **No disk flush inside the commit.** The writer uses `synchronous=NORMAL`,
+  like every other connection, instead of `FULL`.
+  - A process crash loses nothing.
+  - A power cut or OS crash can lose the last commits; the next owner records
+    them as the unclean-restart gap.
+  - The file is never corrupted in WAL mode.
+- **The writer connection's settings:**
+  - busy timeout of 2 s, below the 5 s worker join, so a requested stop still
+    joins it;
+  - commits of up to 256 records;
+  - `journal_size_limit` of 64 MiB, so the WAL shrinks back after a backlog.
+- **Contention is waited out.**
+  - Lock contention (`SQLITE_BUSY` / `LOCKED`) is retried with a backoff capped
+    at 5 s. It gives up only after `IMP_MARKET_WRITER_RETRY_WINDOW_SEC`
+    (default 600) for the writer, or `IMP_NEWS_STORAGE_RETRY_WINDOW_SEC`
+    (default 600) for news storage. Other transient errors keep the six-attempt
+    rule.
+  - Observations dropped while the queue is full are still recorded as
+    `QUEUE_OVERFLOW` gaps.
+  - The writer status reports `lock_contention`, `retrying_seconds`,
+    `lock_retry_window_seconds` and `last_flush_seconds`.
+- **One integrity scan per supervisor, not per connection.** A full
+  `PRAGMA integrity_check` reads the whole store, about 75 s on the hard drive.
+  - Connections opened inside a supervised child (`IMP_PF01_SUPERVISOR_OWNER`
+    set) skip it, because the supervisor's own connection checked the same file.
+  - The API, the supervisor and an unsupervised `--collect-only` run still
+    check, and still fail closed on corruption.
+  - Trade-off: a child restarted hours after the supervisor started is not
+    re-checked.
+- **Operating rule.** While the collector runs during US hours, do not load
+  the store's drive. See
+  [Portable workstation](../engineering/PORTABLE_WORKSTATION.md#disk-load-while-collecting).
 
 ## Status
 
@@ -323,8 +438,9 @@ prerequisites read-only before a run; both are described in
 parent's pipe also stops the child, so an orphan cannot continue unattended.
 A blocked or disabled state keeps its original reason when the lease is released.
 
-To recover from a latched block, first find and correct the cause, using
-`--status` and the job rows. Then, with no supervisor running:
+To recover from a latched block now (or from `CHILD_CONFIGURATION_REJECTED`,
+which never expires), first find and correct the cause, using `--status` and
+the job rows. Then, with no supervisor running:
 
 ```text
 python tools/platform/pf01_supervisor.py --reset-restart-budget
@@ -372,7 +488,8 @@ connection and would upgrade it.
   supervisor to block after the grace period and need a restart.
 - A supervisor that dies while its child is running does not charge a restart
   for the next supervisor's first start. Whatever restarts the supervisor
-  itself is outside this budget.
+  itself is outside this budget: since rebuild step 4 that is the keeper, with
+  its own bounded allowance ([AUTO_RESTART.md](AUTO_RESTART.md)).
 - A clock set backwards delays a pending backoff, cooldown or lease expiry by
   the size of the jump.
 - An invalid market-persistence configuration still stops serving-backend

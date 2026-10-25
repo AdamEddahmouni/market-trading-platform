@@ -246,6 +246,40 @@ stop, exit and P&L, joined to the decision that authorized the order through the
 - Order-history query invalidates on submit so the new durable order is
   readable immediately after navigation to Portfolio
 
+## Paper short selling
+
+Rebuild step 6 (owner decision 2, 2026-10-23; 50% margin chosen 2026-10-25). Paper only, internal simulation
+only; Live stays off and the live canary refuses shorts on its own policy.
+
+- **Account term.** `allow_short` is chosen once when an experiment account is created
+  (`POST /paper/experiments` body `allow_short`, Portfolio checkbox "Allow short selling") and frozen in its risk
+  policy with the short terms (`risk/policy.py` `SHORT_POLICY_DEFAULTS`). An account without shorts carries none of
+  these keys, so its policy hash and every id derived from it are unchanged. `PaperExecutionLedger.allows_short()` is
+  true only for that term on a portfolio-scoped `INTERNAL_SIMULATION` ledger, never broker paper.
+- **Short-sale gate** (`paper/short_gate.py`, at preview and at submit). A sell that only reduces a long passes
+  unchanged. A short open must be an admitted security (equity or ETF; never crypto, options or futures), priced at
+  or above $5.00, not in a name down 10% or more on the day (`SHORT_SALE_RESTRICTION`), with a known day change
+  (`SHORT_SALE_RESTRICTION_UNKNOWN` otherwise; the day change comes from the Action decision's own admitted
+  TECHNICALS evidence and is recorded on the intent as `short_sale_facts`), and with 50% initial margin available
+  (`INSUFFICIENT_SHORT_MARGIN`). Long-to-short and short-to-long in one order are refused
+  (`POSITION_REVERSAL_NOT_ALLOWED`).
+- **Buying power.** Short proceeds are credited to cash and held back again with the margin: buying power is cash
+  less working-order reservations less 150% of open short value (and of working short sales). Longs stay cash-only.
+- **Covers.** A buy against a short, up to its size, is never refused for cash and never cut by the BUILD 22
+  exposure, concentration, cash or daily-loss caps. A cover that costs more than the cash leaves negative cash: the
+  honest record of that loss.
+- **Maintenance.** With complete marks, equity below 30% of open short value is a breach
+  (`SHORT_MAINTENANCE_MARGIN_BREACH`): the controller buys back the largest-loss short, one per cycle, and new
+  entries are blocked until it clears.
+- **Borrow.** Shares are assumed borrowable (`SIMULATED_EASY_TO_BORROW`); there is no locate feed. A short held over
+  a session close pays 0.50% a year on its value (actual/360, rounded up), as an append-only
+  `ShortBorrowFeeAccrued` ledger event that lowers cash and realized P&L.
+- **Close-out.** The end-of-day flatten buys shorts back as well as selling longs.
+- **AI.** Prompt `screener.action_decision.v4` states that a SHORT entry needs `context.allow_short` and that EXIT
+  on a short covers it. The server gate decides either way.
+- **Not changed here.** Legacy single-instrument sessions keep their existing sell rule (it can still sell from
+  flat without a short check); the close-out's provider-health and manual-position rules are step 7.
+
 ## Key identifiers
 
 | Field | Role |

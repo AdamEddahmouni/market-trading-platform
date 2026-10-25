@@ -1,5 +1,305 @@
 # IMP Work Log
 
+## 2026-10-25 — Rebuild step 6: Paper short selling
+
+This is the sixth owner-approved rebuild step (owner decision 2), built on step 5 (`claude/switchable-ai-20261024`).
+The owner chose 50% initial margin on 2026-10-25. Everything stays off and nothing was deployed.
+
+**Problem.**
+- Paper had 0 orders ever; 30 of 96 automation intents were shorts. The ledger policy had no `allow_short` key, so
+  every reader of it saw False, and a portfolio account refused any sell from flat (`INSUFFICIENT_POSITION`).
+- Three bugs waited behind that refusal:
+  - `intelligence/execution/snapshot.py` negated an already-negative short quantity, so the BUILD 22 engine read a
+    short as a long and overstated equity by twice its value.
+  - The engine's sizing, gross/net and cash caps treated a buy-to-cover like a new buy, so a cover could be cut or
+    refused. `close_paper` only closed longs.
+  - The end-of-day flatten skipped `held <= 0` and always sold, so a short would never be closed.
+- Short proceeds would have raised buying power: no margin or borrow existed on the Paper path.
+
+**Built:**
+- `risk/policy.py`: `allow_short` plus `SHORT_POLICY_DEFAULTS`, hashed only when shorts are allowed. Existing policy
+  hashes are byte-identical. Experiments take `allow_short` at creation (`paper/experiment.py`,
+  `ui_api/paper_experiment.py`) and the policy stays write-once.
+- `paper/short_gate.py`, at preview and submit:
+  - admitted security only;
+  - $5.00 floor;
+  - short-sale restriction at a 10% day drop, failing closed on an unknown day change;
+  - 50% initial margin against buying power;
+  - no reversal either way;
+  - covers never refused for cash.
+- `paper/ledger.py`:
+  - `allows_short()` (internal simulation only);
+  - `short_margin_status()` (150% of short value and working short sales held back; maintenance 30%, judged only
+    from complete marks);
+  - buying power and valuation fields;
+  - append-only `ShortBorrowFeeAccrued` (0.50% a year, actual/360) charged once per short per session date.
+- `ui_api/paper_projections.py`: `short_sale_facts` from the Action decision's admitted TECHNICALS evidence,
+  recorded on the intent.
+- Engine: sign fix, risk-reducing orders never capped (`sizing.is_risk_reducing`), and `close_paper` covers shorts.
+- Controller (`ui_api/paper_automation.py`):
+  - EOD flatten buys shorts back;
+  - a maintenance cover of the largest-loss short;
+  - borrow-fee accrual at the session-date rollover;
+  - `entry_risk_blockers` blocks entries while maintenance is breached.
+- Prompt `screener.action_decision.v4` (v3 plus two short rules).
+- Portfolio UI: "Allow short selling" checkbox at creation; short value, held-for-shorts, borrow fees and a
+  maintenance alert.
+
+**Tests.**
+- New: `tests/trading_correctness/test_paper_short_selling.py` (ledger, gate, engine, live canary) and
+  `test_paper_automation_shorts.py` (controller entry, cover, EOD, borrow fee, maintenance cover), plus UI cases in
+  `PaperExperimentPanel.test.tsx`.
+- Updated: the prompt id in `test_action_decision.py`.
+- Unchanged and still passing: every `allow_short=False` refusal test.
+
+**Not changed.** Legacy single-instrument sessions can still sell from flat without a short check
+(`test_bounded_sell_close_reuses_entry_lineage` relies on it); left for an owner decision.
+
+**Not covered.** Live behaviour waits for the step-10 release and a new short-enabled Paper account. There is no real
+borrow/locate feed.
+
+## 2026-10-24 — Rebuild step 5: switchable AI (free local or capped paid)
+
+This is the fifth owner-approved rebuild step (owner decision 4), built on step 4 (`claude/auto-restart-20261024`).
+Everything stays off and nothing was deployed.
+
+**Problem.**
+- The free/paid picker lived in the News and AI Screener panels, not in Setup.
+- Paid AI was not off by default: with no choice saved, a Claude key selected paid Claude.
+- The paid limit counted requests and tokens per day, not dollars, and had no monthly limit.
+- The Assistant called paid Claude whenever a key was in its environment, with no limit at all.
+- The memory gate counted the whole model against RAM even on the graphics card, so nothing above Qwen3-4B could run.
+- The 10-23 local start failure was a slow load from the busy disk running past the fixed 180 s start limit.
+
+**Built:**
+- `intelligence/inference/paid_prices.py`: pinned list prices for every paid catalog model, with source and date
+  (Claude 2026-10-06; OpenAI and Gemini read from their pricing pages on 2026-10-24), long-prompt tiers and Gemini's
+  dated 2027 price.
+- `intelligence/inference/paid_spend.py`: `DollarLedger`, daily (UTC) and monthly dollar caps in micro-dollars.
+  - Before a call its worst case is set aside; past either cap it is refused before sending (`PAID_AI_DAILY_DOLLAR_CAP`,
+    `PAID_AI_MONTHLY_DOLLAR_CAP`). After it, the reported usage replaces the reservation.
+  - File `quota/paid-ai-dollars.json` under a lock; fails closed. Caps `IMP_PAID_AI_DAILY_USD` /
+    `IMP_PAID_AI_MONTHLY_USD`, default 0, written from Setup through the operator-config provider `paid_ai`.
+  - `BudgetedProvider` checks dollars first, then the existing token budget; `build_paid_provider` attaches the ledger.
+- Paid off by default: automatic is always local (`select_synthesis_provider`, `resolved_engine`,
+  `evidence_review.model()`). A paid engine needs both caps and a pinned price (`PAID_AI_CAP_NOT_SET`,
+  `PAID_MODEL_PRICE_UNKNOWN`), also when set by `IMP_SYNTHESIS_PROVIDER`, and cannot be saved without them.
+- The Assistant follows the Setup engine (`MachineEngineInference`): paid Claude only with Claude chosen and both caps
+  set, charged to the same ledger.
+- Hosted adapters charge thinking reported outside `completion_tokens` as output.
+- Setup: `GET /screener/setup/ai` (read-only) and the "Which AI decides" card (`AiEngineCard.tsx`) with the engine,
+  the measured cost per decision, spend against the caps, the caps form and the confirm dialog.
+- Local models: pins for Qwen3-4B-Instruct-2507, Qwen3-8B and Qwen3-30B-A3B-Instruct-2507; a memory check that holds the
+  card to a 7 GiB budget and counts only CPU-side weights in RAM; profile `vulkan-8192/1-moe` (`--n-cpu-moe 38`); a
+  sequential pre-read of the model file; a start limit of 180 s + 30 s/GB (at most 900 s).
+- `tools/ai_decision_benchmark.py`: export real Action Decisions read-only, replay them through the production path,
+  grade them with the production validator, and report against a winner rule fixed beforehand.
+
+**Result** ([report](../reports/AI_ENGINE_BENCHMARK_20261024.md)):
+- Qwen3-4B stays the local default: 95% accepted. The 2507 model reached 90%, the 8B 95% at half the speed, and the
+  30B did not fit the free RAM.
+- Claude Haiku 5.5 is preselected as the paid model: 100% accepted, $0.0016 per decision. Paid stays off.
+- The paid test cost $0.3762 of the $3 limit. OpenAI and Gemini were skipped (no keys).
+
+**Tests.**
+- New: `tests/intelligence/test_paid_spend.py`, `tests/platform/test_local_larger_models.py`,
+  `test_ai_decision_benchmark.py`, `test_setup_ai.py`, `ui/.../AiEngineCard.test.tsx`.
+- Updated to the new rule: tests that expected a key to select Claude automatically, the registry count, and the GPU
+  memory-admission test.
+
+**Not covered.** Live decisions on the chosen engine while Paper runs, and the Setup card against the live API, wait for
+the step-10 release. The journal budget-guard fix is step 9.
+
+## 2026-10-24 — Rebuild step 4: automatic restart after a reboot or a frozen feed
+
+This is the fourth owner-approved rebuild step (owner decision 3), built on step 3
+(`claude/opportunity-shortlist-20261024`). Everything stays off and nothing was deployed.
+
+**Problem.**
+- Nothing restarted the platform. The start was one-shot with a 60 s wait; on 10-22 a reboot left it down
+  overnight, and the R12 deploy needed three tries.
+- The collector came back only through a 30-minute task repeat, and its supervisor's persistent-failure latch
+  needed a manual reset.
+- A serving process with a dead Moomoo session only reconnected, for ever.
+- The Paper controller gave up after any startup refusal other than its predecessor's lease, and a worker that
+  died stayed dead.
+- Restarts were recorded in five places.
+- The OpenD program was missing: on 10-23 a session moved `D:\IMP-tools\Moomoo-OpenD` without noticing that
+  `%APPDATA%\moomoo_OpenD` is a junction to it.
+
+**Built:**
+- `tools/platform/imp_keeper.py`, the keeper.
+  - Every 30 s it checks OpenD, then the collector, then the platform, and starts what is down. OpenD health is
+    checked in a child process with a timeout. The platform is restarted when it stops answering, or when its feed
+    watchdog reports `UNRECOVERABLE` while OpenD is healthy.
+  - Restarts are bounded: backoff 1/2/4/8 min; 4 per 6 h (OpenD), 6 per hour (collector), 4 per hour (platform);
+    then a cool-off and a fresh allowance.
+  - Controls: pause, stop and dry run.
+  - It never arms or starts Paper; it only records what the controller did.
+- `tools/platform/restart_log.py`: one bounded JSONL log of every restart (5 MiB × 5), and a plain-table `report`.
+- `market_data/feed_watchdog.py`: a serving process started by the keeper (`IMP_PLATFORM_RESTARTER=keeper`)
+  escalates to `UNRECOVERABLE`; it reports this and keeps serving.
+- `ui_api/paper_automation.py`:
+  - Startup refusals time can clear are retried every 30 s for at most 15 min.
+  - A worker that ends on its own is recorded (`WORKER_EXITED`, which also fixes the silent `ValueError` exit) and
+    revived in-process, 3 times an hour at most. A lost lease, a stop or an emergency latch is never revived.
+- `tools/ui1/run_ui_api.py` with `AiScreenerRuns.recover_at_boot`: universe runs a dead process left open are closed
+  at boot, before the controller resumes.
+- `news/supervision.py`: `PERSISTENT_CHILD_FAILURE` clears itself after 2 h (`RESTART_LATCH_EXPIRED`), while
+  `CHILD_CONFIGURATION_REJECTED` still needs the operator. Two existing tests that held the latch for 2–3 h now
+  hold it for 1 h 45 min.
+- Outside git:
+  - The OpenD folder moved back to `D:\IMP\IMP-tools\Moomoo-OpenD`. The junction could not be recreated from
+    this session: the Claude desktop app redirects writes under `%APPDATA%` into its own private copy (MSIX
+    virtualization), and opening a file through that copy fails with WinError 649. The real junction is missing;
+    `FIX_OPEND_SHORTCUT.cmd` is staged for the owner to run from an ordinary Command Prompt. OpenD was not started.
+  - Staged in `destination-tests/20261024-auto-restart/` (not applied): the `IMP-Keeper` task, a `RUN_IMP.py` change
+    (keeps the keeper marker; 300 s readiness), `START/STOP_PORTABLE.cmd` with keeper resume/pause, deploy hooks,
+    release notes and the owner's auto sign-in guide.
+
+**Tests.**
+- New: `tests/platform/test_imp_keeper.py`, `test_restart_log.py` and `test_platform_boot_recovery.py`.
+- New cases in `test_paper_automation.py`, `test_pf01_restart_budget.py` and `test_moomoo_dataflow_watchdog.py`.
+- A dry run on the stopped PC reported all three as down and started nothing.
+
+**Not covered.** No live proof while everything is off: reboot, closing OpenD, killing the backend and freezing the
+feed are release checks. After a reboot nothing runs until someone signs in to Windows; automatic sign-in is the
+owner's decision at the release.
+
+## 2026-10-24 — Rebuild step 3: opportunity shortlist before the AI
+
+This is the third owner-approved rebuild step (owner decision 5), built on step 2 (`claude/db-lock-20261024`). R13
+(`7f0a07e4`) was already in its history. Everything stays off and nothing was deployed.
+
+**Problem.** The universe run sent every eligible row to the model in hash order. On 10-23 that was 2,524 equities,
+one local request each, and the 171 finalists overflowed the 8,192-token window
+(`GLOBAL_REDUCTION_INCOMPLETE:LOCAL_CONTEXT_EXCEEDED`).
+
+**Built:**
+- `intelligence/inference/opportunity_shortlist.py` (`opportunity-shortlist/1.0.0`), a pure module.
+  - It scores each eligible row on movement, unusual volume, tradability, catalyst news and quote freshness (0–100),
+    from admitted evidence only.
+  - It adds a tradability floor ($1 equity price, $1M dollar volume).
+  - Size is 20 for the local engine and 50 for a paid one; `IMP_AI_SCREENER_SHORTLIST_SIZE` overrides it (1–200).
+- `ScreenerAiCoverage` changes:
+  - It sends only the shortlist, best first. The other rows become `NOT_SHORTLISTED`, in the `ineligible` bucket.
+  - It reads cached news only for rows a full catalyst could lift into the shortlist (at most 10× the size), with no
+    provider call.
+  - Results record method `ai-screener-coverage/2.0.0` (`OPPORTUNITY_SHORTLIST_THEN_AI`) and the shortlist.
+  - It is on by default. `IMP_AI_SCREENER_SHORTLIST=0` restores the full tournament: 334 existing tests pass
+    unchanged with it.
+- The Paper controller needed no change. `NOT_SHORTLISTED` rows do not count toward its coverage epoch.
+
+**Tests.**
+- New: `tests/intelligence/test_opportunity_shortlist.py` and `tests/platform/test_screener_ai_shortlist.py`, plus one
+  epoch test in `test_paper_automation.py`.
+  - One case replays the 10-23 size: 2,524 rows give 20 local requests, one comparison and a global selection.
+- Five tournament test modules now pin `IMP_AI_SCREENER_SHORTLIST=0` through `tests/support/coverage_universe.py`.
+
+**Not covered.** No live proof while everything is off. The score weights are a first version and should be reviewed
+against the evaluation report (rebuild step 8).
+
+## 2026-10-24 — Rebuild step 2: why the database said "locked"
+
+This is the second owner-approved rebuild step. It is built on step 1 (`claude/feed-watchdog-20261024`). Everything
+stays off and nothing was deployed. The investigation was read-only. Evidence and a disk benchmark are in
+`destination-tests/20261024-db-lock/DB-LOCK-INVESTIGATION.md` on the workstation.
+
+**Cause.**
+- No process held the lock on purpose: no VACUUM, backup, prune, migration or stuck transaction.
+- The `database is locked` lines are the platform's paper automation timing out after 5 s at `BEGIN IMMEDIATE`.
+- Since 10-21 the store has lived on D:, a SATA hard drive. Heavy disk work saturated it:
+  - 10-21: a 32-thread robocopy;
+  - 10-22 17:07Z: a session's `grep -r` and `du` over the tree;
+  - 10-22 19:58Z: worktree creation, vitest and a build;
+  - 10-23 22:31Z: local model loads and `validate`;
+  - every window: the evidence capture's full scans of `market_stream_records`.
+- The market writer alone used `synchronous=FULL`, so each commit flushed the disk while it held the only write lock.
+  It waited just 250 ms for the lock and gave up for good after six tries (about 30 s), which ended the child.
+- Every connection open also ran a full `integrity_check` of the 6.7 GB store, three times per child start.
+
+**Fix:**
+- The writer uses `synchronous=NORMAL` like every other connection.
+- Writer connection settings: a 2 s busy timeout (below the 5 s worker join), 256-record batches, and a 64 MiB
+  `journal_size_limit`.
+- Lock contention is retried for 10 minutes with a 5 s backoff cap (`IMP_MARKET_WRITER_RETRY_WINDOW_SEC`,
+  `IMP_NEWS_STORAGE_RETRY_WINDOW_SEC`). Other transient errors keep the six-try rule.
+- Writer status gains `lock_contention`, `retrying_seconds`, `lock_retry_window_seconds` and `last_flush_seconds`.
+- `LocalStateConnection(verify=None)` skips the integrity scan inside a supervised child (`IMP_PF01_SUPERVISOR_OWNER`
+  set). The first opener still checks.
+- `pf01_supervisor` appends child output to `child-YYYYMMDD.log` when `IMP_PF01_CHILD_LOG_DIR` is set.
+- Staged for the release, not applied (operator files outside git): `RUN_COLLECTOR.py` and `capture_evidence.py` use
+  `max(rowid)` and the checkpoints table instead of full scans, and set the child log directory.
+- A disk-load rule in `PORTABLE_WORKSTATION.md`.
+
+**Tests.**
+- 12 new tests in `tests/market_data/test_storage_contention.py`: writer and news contention windows, connection
+  settings, integrity-scan skip, child log.
+- `test_pf01_retry_limits` now pins a zero window and the 5 s cap. `test_pf01_integration_hardening` reads the batch
+  size instead of assuming 64.
+
+**Measured on D:** under a bulk write, the median lock hold fell from 2.3 s to 0.8 s, but single commits still reached
+5–9 s. The collector now waits instead of quitting. The disk itself remains the limit; moving the store to a faster
+disk is an open owner decision for the release.
+
+**Not covered.**
+- No live proof while everything is off.
+- Still unexplained: the 10-21 14:03Z child stall, the silent supervisor after 10-23 22:38Z, and the missing 10-22
+  15:55/16:05 ET captures.
+
+## 2026-10-24 — Rebuild step 1: Moomoo data-flow watchdog; why 10-21 and 10-23 had no rows
+
+This is the owner-approved first rebuild step. Everything stays off and nothing
+was deployed. The investigation was read-only (state DB `mode=ro`, logs read
+in place); evidence is in
+`destination-tests/20261024-feed-watchdog/ZERO-ROWS-INVESTIGATION.md` on the
+workstation.
+
+**Cause, 10-19 to 10-22.** OpenD froze silently about ten times. Each time,
+the vendor SDK (`moomoo-api` 10.10.7008) failed its reconnect, closed the
+socket without resetting the status, and stayed CONNECTED. It then refused to
+reconnect, and every synchronous call spun forever in `sync_query_processor`,
+because no sync-query timeout was set. The collector's feed thread blocked
+inside `get_market_snapshot`, so R10's stall check, which runs only after a
+call returns, never fired. The OpenD watchdog relaunched OpenD within about
+5 minutes each time, but nothing reconnected the collector. Data resumed only
+at process restarts.
+
+**Cause, 10-23.** The 10-22 22:21Z capability probe got 11–27 s answers.
+`probe.py` recorded the timeouts as "not entitled". That report counted as
+fresh for 20 h, and the collector waits 6 h after a refusal, so Moomoo stayed
+out all session.
+
+**Fix:**
+- `open_quote_context` bounds synchronous calls.
+- The push feed records receipt and loop-heartbeat times, keeps its context
+  where another thread can close it, gains `force_reconnect` (close, or
+  abandon a thread that stays stuck, with generation-guarded state), and checks
+  OpenD's port every 15 s instead of every 0.5 s.
+- New `market_data/feed_watchdog.py` runs beside the feed in both processes.
+  It alarms (`DEGRADED`, a `MOOMOO_FEED_SILENT` gap, provider health
+  `UNHEALTHY`/`LIVE_FEED_SILENT`) and reconnects within a budget of 3 per hour.
+  In the collector child it then exits `MOOMOO_FEED_UNRECOVERABLE` for a
+  supervised restart.
+- `/provider/health` gains `data_flow`.
+- The probe reports timeouts as inconclusive, writes them beside the answered
+  report rather than over it, and exits 75.
+- A matching `RUN_COLLECTOR.py` patch (operator file, outside git) is staged
+  for the release, not applied: it handles exit 75 explicitly, adopts the
+  platform's newer report, and retries after 15 min (unavailable) or 1 h
+  (refused) instead of 1 h and 6 h.
+
+**Tests.** 17 new tests in `tests/market_data/test_moomoo_dataflow_watchdog.py`,
+including replays of a snapshot call that never returns and of a thread that
+ignores close. The existing feed, supply, stop-deadline and screener tests
+pass unchanged; the OpenD-loss supply test sets the reachability interval to 0.
+
+**Not covered.** No live proof is possible while everything is off; the
+release restart must include "kill OpenD mid-session, rows resume within about
+3 minutes". The OpenD freezes themselves are unexplained. The collector stalls
+at 10-21 14:30Z and 10-23 22:37Z coincide with `database is locked`, which is
+rebuild step 2.
+
 ## 2026-10-23 — Status reconciliation and owner decisions after shutdown
 
 The owner shut the workstation down after the session (controller clean stop

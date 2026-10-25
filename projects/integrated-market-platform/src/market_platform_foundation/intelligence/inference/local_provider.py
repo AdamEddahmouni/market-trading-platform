@@ -46,6 +46,11 @@ BASE_URL_ENV, MODEL_ENV, PROVIDER_ENV = "IMP_LOCAL_LLM_BASE_URL", "IMP_LOCAL_LLM
 SERVER_ALIAS = "imp-local-synthesis"
 DEFAULT_PORT = 18089
 STARTUP_TIMEOUT_S = 180.0
+# A cold start reads the whole model file from the hard disk: the start limit grows with the file, 30 s per GB,
+# up to 15 minutes (the 10-23 failure was a 2.5 GB load from the busy disk running past 180 s).
+STARTUP_S_PER_GB = 30.0
+STARTUP_TIMEOUT_MAX_S = 900.0
+PREREAD_CHUNK_BYTES = 8 * 1024 * 1024
 IDLE_SHUTDOWN_S = 15 * 60
 LOCAL_UNAVAILABLE = "LOCAL_MODEL_UNAVAILABLE"
 _LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
@@ -53,6 +58,32 @@ _THINK = re.compile(r"<think>.*?</think>", re.DOTALL)
 _CREATE_NO_WINDOW = 0x08000000
 _GPU_START_FAILURES = frozenset({"LOCAL_RUNTIME_EXITED", "LOCAL_RUNTIME_START_FAILED", "LOCAL_RUNTIME_START_TIMEOUT"})
 GPU_FALLBACK_COOLDOWN_S = 30 * 60
+
+
+def startup_timeout_for(manifest: Any) -> float:
+    """180 s plus 30 s per GB of model file, at most 900 s."""
+
+    try:
+        size = Path(manifest.model_path).stat().st_size
+    except (OSError, TypeError, AttributeError):
+        size = 0
+    return min(STARTUP_TIMEOUT_MAX_S, STARTUP_TIMEOUT_S + STARTUP_S_PER_GB * size / 1e9)
+
+
+def read_sequentially(path: Path, keep_going: Callable[[], bool]) -> int:
+    """Read a file front to back once so its pages are in the OS cache before llama.cpp maps it.
+
+    On a hard disk one sequential pass is far faster than the scattered page faults of a cold memory map; it reads
+    nothing a load would not read anyway. Stops early (returning the bytes read) when ``keep_going`` turns False."""
+
+    done = 0
+    with open(path, "rb", buffering=0) as stream:
+        while keep_going():
+            block = stream.read(PREREAD_CHUNK_BYTES)
+            if not block:
+                break
+            done += len(block)
+    return done
 
 
 def is_loopback_url(url: str) -> bool:
@@ -122,7 +153,8 @@ class LocalLlamaServer:
     def __init__(self, manifest: LocalModelManifest, *, port: int = DEFAULT_PORT, log_path: Path | None = None,
                  getter: Getter = _http_get, spawn: Callable[..., Any] = subprocess.Popen,
                  clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep,
-                 idle_shutdown_s: float = IDLE_SHUTDOWN_S, startup_timeout_s: float = STARTUP_TIMEOUT_S) -> None:
+                 idle_shutdown_s: float = IDLE_SHUTDOWN_S, startup_timeout_s: float | None = None,
+                 preread: Callable[[Path, Callable[[], bool]], int] | None = read_sequentially) -> None:
         self.manifest = manifest
         self.base_url = f"http://127.0.0.1:{port}"
         self._port = port
@@ -132,7 +164,10 @@ class LocalLlamaServer:
         self._clock = clock
         self._sleep = sleep
         self._idle_shutdown_s = idle_shutdown_s
-        self._startup_timeout_s = startup_timeout_s
+        # None: scaled to the model file (``startup_timeout_for``).
+        self._startup_timeout_s = startup_timeout_s if startup_timeout_s is not None else startup_timeout_for(manifest)
+        self._preread = preread
+        self.last_preread: dict[str, Any] | None = None
         self._lock = threading.Lock()
         self._process: Any = None
         self._last_used = 0.0
@@ -161,6 +196,10 @@ class LocalLlamaServer:
         except (ValueError, AttributeError):
             return False
         return SERVER_ALIAS in ids
+
+    @property
+    def startup_timeout_s(self) -> float:
+        return self._startup_timeout_s
 
     def running(self) -> bool:
         return self._process is not None and self._process.poll() is None
@@ -222,6 +261,9 @@ class LocalLlamaServer:
             device = profile_device(self.manifest.execution_profile)
             # A CPU profile keeps every allocation in host RAM; a GPU profile names its one device explicitly.
             args += ['--device',device] + (['--no-kv-offload','--no-op-offload'] if device == 'none' else [])
+            from .local_runtime import PROFILE_CPU_MOE
+            if self.manifest.execution_profile in PROFILE_CPU_MOE:
+                args += ['--n-cpu-moe', str(PROFILE_CPU_MOE[self.manifest.execution_profile])]
             args += ['--fit','off',
                      '--batch-size',str(self.manifest.batch),'--ubatch-size',str(self.manifest.ubatch),
                      '--cache-type-k','f16','--cache-type-v','f16','--load-mode','mmap','--threads-batch',str(self.manifest.threads),
@@ -237,6 +279,22 @@ class LocalLlamaServer:
             except OSError:
                 return 'LOCAL_RUNTIME_OWNERSHIP_UNAVAILABLE'
             self._runtime_lease=(lease,body)
+        deadline = started + self._startup_timeout_s
+        if self.enforce_admission and self._preread is not None:
+            # Inside the start limit: a pre-read that cannot finish in time is a start timeout, never a hang.
+            begun = self._clock()
+            try:
+                read = self._preread(self.manifest.model_path,
+                                     lambda: not self.should_stop() and self._clock() < deadline)
+            except OSError:
+                read = None  # the load reads the file itself
+            self.last_preread = {'bytes': read, 'ms': round((self._clock() - begun) * 1000)}
+            if self.should_stop():
+                self._stop_locked()
+                return 'STOPPED_BY_OPERATOR'
+            if self._clock() >= deadline:
+                self._stop_locked()
+                return 'LOCAL_RUNTIME_START_TIMEOUT'
         log = open(self._log_path, "wb") if self._log_path else subprocess.DEVNULL  # noqa: SIM115
         try:
             self._process = self._spawn(args, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
@@ -249,7 +307,6 @@ class LocalLlamaServer:
             if log is not subprocess.DEVNULL:
                 log.close()
         self.starts += 1
-        deadline = started + self._startup_timeout_s
         while self._clock() < deadline:
             if self.should_stop():
                 self._stop_locked()
@@ -408,7 +465,8 @@ class LocalChatInferenceProvider:
         diagnostics['slot_wait_ms'] = round((time.perf_counter()-started)*1000, 3)
         qualification = packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION
         managed = isinstance(self._server,LocalLlamaServer) and self._server.enforce_admission
-        monitor = ResourceMonitor(self._server, stop, time.monotonic()+STARTUP_TIMEOUT_S+config.timeout_seconds) if (qualification or managed) and self._server is not None else None
+        start_limit = getattr(self._server, 'startup_timeout_s', STARTUP_TIMEOUT_S)
+        monitor = ResourceMonitor(self._server, stop, time.monotonic()+start_limit+config.timeout_seconds) if (qualification or managed) and self._server is not None else None
         self.last_resource_sample = {}
         self.last_context_sample = None
         response = None
@@ -632,27 +690,33 @@ def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: 
                               anthropic_factory: Callable[[], Any] | None = None, engine: str | None = None,
                               model: str | None = None) -> SynthesisSelection:
     """Provider priority: the operator's ``engine`` (UI choice), else ``IMP_SYNTHESIS_PROVIDER``
-    (local | anthropic | openai | gemini), else Anthropic when its key is configured, else a configured local model.
-    A missing paid key never disables local synthesis in automatic mode. ``model`` must be in the engine's catalog
-    (``synthesis_engines``). A Claude model outside the catalog selects no provider: it is never replaced by the
-    default. For OpenAI and Gemini anything else still falls back to the engine's default."""
+    (local | anthropic | openai | gemini), else a configured local model. Automatic selection is always local: a
+    saved paid key alone never turns paid AI on. A paid engine is used only with both dollar caps set above 0 and a
+    pinned price for its model (``paid_spend.paid_gate``); otherwise no provider is selected and nothing is called.
+    ``model`` must be in the engine's catalog (``synthesis_engines``). A Claude model outside the catalog selects no
+    provider: it is never replaced by the default. For OpenAI and Gemini anything else still falls back to the
+    engine's default."""
 
     from ...local_state.external_cache import read_manifest
+    from .paid_spend import paid_gate
     from .synthesis_engines import engine_models
 
     choice = (engine or value(PROVIDER_ENV) or "auto").strip().lower()
     has_key = bool((value("ANTHROPIC_API_KEY") or "").strip())
-    if choice in ("auto", "anthropic") and has_key:
+    if choice == "anthropic" and has_key:
         if anthropic_factory is None:
             from .anthropic_synthesis import build_paid_provider
 
             offered = [item[0] for item in engine_models("anthropic", value)]
             if model and model not in offered:
                 return SynthesisSelection(None, "SYNTHESIS_MODEL_NOT_IN_CATALOG", None)
-            # Key from the same source that selected it (env or private provider file), behind the daily budget.
             # With no model chosen, the catalog's first entry: IMP_SYNTHESIS_ANTHROPIC_MODEL when set, else the default.
-            return SynthesisSelection(build_paid_provider(value, cache_dir=cache_dir, model=model or offered[0]),
-                                      None, "PAID_API")
+            chosen = model or offered[0]
+            refused = paid_gate(value, chosen)
+            if refused is not None:
+                return SynthesisSelection(None, refused, None)
+            # Key from the same source that selected it (env or private provider file), behind the budget and caps.
+            return SynthesisSelection(build_paid_provider(value, cache_dir=cache_dir, model=chosen), None, "PAID_API")
         return SynthesisSelection(anthropic_factory(), None, "PAID_API")
     if choice == "anthropic":
         return SynthesisSelection(None, "ANTHROPIC_API_KEY_NOT_SET", None)
@@ -667,6 +731,9 @@ def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: 
             return SynthesisSelection(None, f"{credential_env}_NOT_SET", None)
         offered = dict(engine_models(choice, value))
         chosen = model if model in offered else next(iter(offered))
+        refused = paid_gate(value, chosen)
+        if refused is not None:
+            return SynthesisSelection(None, refused, None)
         provider = HostedChatSynthesisProvider(vendor=VENDORS[choice], api_key=credential, model=chosen,
                                                reasoning_effort=offered[chosen])
         # One daily budget for every paid engine.

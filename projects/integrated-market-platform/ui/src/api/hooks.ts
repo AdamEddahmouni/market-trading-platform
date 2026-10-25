@@ -398,7 +398,10 @@ export function usePaperEquityHistoryQuery(experimentId?: string) {
 
 export function useCreatePaperExperimentMutation() {
   const invalidate = useInvalidatePaper();
-  return useMutation({ mutationFn: () => api.createPaperExperiment(), onSuccess: () => invalidate() });
+  return useMutation({
+    mutationFn: (allowShort: boolean = false) => api.createPaperExperiment(allowShort),
+    onSuccess: () => invalidate(),
+  });
 }
 
 export function useClosePaperExperimentMutation() {

@@ -510,7 +510,7 @@ class CandidateReducer:
             if not getattr(self.provider, 'reports_stages', False):
                 report_stage('MODEL_CALL')
             response = self.provider.infer(packet, rendered_prompt=rendered, config=self.config)
-            base['inference_dispatched'] = response.inference_dispatched if response.inference_dispatched is not None else not (response.error_message or '').startswith('SYNTHESIS_')
+            base['inference_dispatched'] = response.inference_dispatched if response.inference_dispatched is not None else not (response.error_message or '').startswith(('SYNTHESIS_', 'PAID_AI_', 'PAID_MODEL_'))
             base.update(provider_id=response.provider_id, model_id=response.model_id, tokens_input=response.tokens_input,
                         tokens_output=response.tokens_output, latency_ms=response.latency_ms, provider_request_id=response.provider_request_id,
                         provider_response_id=response.provider_response_id, simulated=response.simulated,

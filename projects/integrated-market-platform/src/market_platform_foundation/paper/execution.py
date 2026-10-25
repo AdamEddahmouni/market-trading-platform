@@ -177,7 +177,22 @@ def _enforce_pretrade_admission(
         price_scale=int(ledger.policy.get("price_scale", 100)),
         source_time_ns=int(intent.get("created_time", 0)),
     )
-    if (
+    short_enabled = ledger.allows_short() and kind not in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}
+    if side == "SELL" and short_enabled:
+        from ..risk.financial import reserved_sell_quantity_for
+        from .short_gate import enforce_equity_sell
+
+        enforce_equity_sell(
+            ledger=ledger,
+            intent=intent,
+            kind=kind,
+            position_qty=position_qty,
+            reserved_sell=reserved_sell_quantity_for(ledger, str(intent.get("instrument_id", ""))),
+            price_minor=price_minor,
+            costs_minor=costs_minor,
+            buying_power_minor=int(account["buying_power_minor"]),
+        )
+    elif (
         side == "SELL"
         and kind not in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}
         and ledger.is_portfolio_scoped()
@@ -199,6 +214,15 @@ def _enforce_pretrade_admission(
                 f"{{'owned_quantity': {owned}, 'reserved_sell_quantity': {reserved_sell}, "
                 f"'available_to_sell': {available_to_sell}}}"
             )
+    if side == "BUY" and short_enabled and position_qty < 0:
+        from .short_gate import enforce_equity_buy
+
+        if price_minor is None:
+            raise ValueError("REQUIRED_PRICE_MISSING: no price reference for pre-trade check")
+        # A cover is never refused for cash: closing must always be possible, and a short that rose past the
+        # account's cash leaves negative cash, which is the honest record of that loss. Reversal is still refused.
+        enforce_equity_buy(intent=intent, position_qty=position_qty, required_minor=0, buying_power_minor=0)
+        return
     if side == "BUY" or kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}:
         if side == "BUY" and kind in {"OPTION_CONTRACT", "TRADABLE_SECURITY", "ETF_FUND", "CRYPTO_PAIR"}:
             if price_minor is None:
@@ -210,7 +234,18 @@ def _enforce_pretrade_admission(
                 f"{{'required_cash_minor': {decision.required_cash_minor}, "
                 f"'available_cash_minor': {decision.available_cash_minor}}}"
             )
-        if side == "BUY" and decision.required_cash_minor + costs_minor > max(0, int(account["cash_minor"]) - obligations.get(str(instrument.get("currency", "USD")).upper(), 0)):
+        cash_less_obligations = max(0, int(account["cash_minor"]) - obligations.get(str(instrument.get("currency", "USD")).upper(), 0))
+        if side == "BUY" and short_enabled:
+            from .short_gate import enforce_equity_buy
+
+            # Short proceeds sit in cash but are held back from buying power: a long open never spends them.
+            enforce_equity_buy(
+                intent=intent,
+                position_qty=position_qty,
+                required_minor=decision.required_cash_minor + costs_minor,
+                buying_power_minor=int(account["buying_power_minor"]),
+            )
+        elif side == "BUY" and decision.required_cash_minor + costs_minor > cash_less_obligations:
             raise ValueError("INSUFFICIENT_CASH")
 
 TERMINAL_ORDER_STATES = ORDER_LIFECYCLE_TERMINAL_STATES
@@ -449,6 +484,7 @@ def preview_interactive_order(
     squeeze_context: dict[str, Any] | None = None,
     instrument: Mapping[str, Any] | None = None,
     margin_facts: Any = None,
+    short_sale_facts: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     intent = build_user_order_intent(
         instrument=instrument if instrument is not None else build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
@@ -472,7 +508,12 @@ def preview_interactive_order(
             intent["margin_facts"] = margin_facts.to_dict()
         else:
             intent["margin_facts"] = margin_facts
+    if short_sale_facts is not None:
+        intent["short_sale_facts"] = dict(short_sale_facts)
     if intent["instrument"].get("instrument_kind") == "CRYPTO_PAIR":
+        _enforce_pretrade_admission(intent=intent, ledger=ledger, bars=bars)
+    elif str(side).upper() == "SELL" and ledger.allows_short():
+        # The short-sale gate runs at preview too, so a short is never shown as allowed and refused at submit.
         _enforce_pretrade_admission(intent=intent, ledger=ledger, bars=bars)
     # Dry-run: a preview fill is never recorded, so it must not consume the
     # session's per-bar participation capacity (E9) — use a throwaway simulator.
@@ -543,6 +584,7 @@ def _submit_interactive_order(
     instrument: Mapping[str, Any] | None = None,
     reference_price_minor: int | None = None,
     margin_facts: Any = None,
+    short_sale_facts: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     intent = build_user_order_intent(
         instrument=instrument if instrument is not None else build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
@@ -566,6 +608,8 @@ def _submit_interactive_order(
             intent["margin_facts"] = margin_facts.to_dict()
         else:
             intent["margin_facts"] = margin_facts
+    if short_sale_facts is not None:
+        intent["short_sale_facts"] = dict(short_sale_facts)
     with ledger.submit_critical_section():
         existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
         if existing_order_id:
