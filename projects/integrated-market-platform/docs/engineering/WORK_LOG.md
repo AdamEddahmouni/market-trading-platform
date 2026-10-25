@@ -1,5 +1,63 @@
 # IMP Work Log
 
+## 2026-10-25 — Rebuild step 6: Paper short selling
+
+This is the sixth owner-approved rebuild step (owner decision 2), built on step 5 (`claude/switchable-ai-20261024`).
+The owner chose 50% initial margin on 2026-10-25. Everything stays off and nothing was deployed.
+
+**Problem.**
+- Paper had 0 orders ever; 30 of 96 automation intents were shorts. The ledger policy had no `allow_short` key, so
+  every reader of it saw False, and a portfolio account refused any sell from flat (`INSUFFICIENT_POSITION`).
+- Three bugs waited behind that refusal:
+  - `intelligence/execution/snapshot.py` negated an already-negative short quantity, so the BUILD 22 engine read a
+    short as a long and overstated equity by twice its value.
+  - The engine's sizing, gross/net and cash caps treated a buy-to-cover like a new buy, so a cover could be cut or
+    refused. `close_paper` only closed longs.
+  - The end-of-day flatten skipped `held <= 0` and always sold, so a short would never be closed.
+- Short proceeds would have raised buying power: no margin or borrow existed on the Paper path.
+
+**Built:**
+- `risk/policy.py`: `allow_short` plus `SHORT_POLICY_DEFAULTS`, hashed only when shorts are allowed. Existing policy
+  hashes are byte-identical. Experiments take `allow_short` at creation (`paper/experiment.py`,
+  `ui_api/paper_experiment.py`) and the policy stays write-once.
+- `paper/short_gate.py`, at preview and submit:
+  - admitted security only;
+  - $5.00 floor;
+  - short-sale restriction at a 10% day drop, failing closed on an unknown day change;
+  - 50% initial margin against buying power;
+  - no reversal either way;
+  - covers never refused for cash.
+- `paper/ledger.py`:
+  - `allows_short()` (internal simulation only);
+  - `short_margin_status()` (150% of short value and working short sales held back; maintenance 30%, judged only
+    from complete marks);
+  - buying power and valuation fields;
+  - append-only `ShortBorrowFeeAccrued` (0.50% a year, actual/360) charged once per short per session date.
+- `ui_api/paper_projections.py`: `short_sale_facts` from the Action decision's admitted TECHNICALS evidence,
+  recorded on the intent.
+- Engine: sign fix, risk-reducing orders never capped (`sizing.is_risk_reducing`), and `close_paper` covers shorts.
+- Controller (`ui_api/paper_automation.py`):
+  - EOD flatten buys shorts back;
+  - a maintenance cover of the largest-loss short;
+  - borrow-fee accrual at the session-date rollover;
+  - `entry_risk_blockers` blocks entries while maintenance is breached.
+- Prompt `screener.action_decision.v4` (v3 plus two short rules).
+- Portfolio UI: "Allow short selling" checkbox at creation; short value, held-for-shorts, borrow fees and a
+  maintenance alert.
+
+**Tests.**
+- New: `tests/trading_correctness/test_paper_short_selling.py` (ledger, gate, engine, live canary) and
+  `test_paper_automation_shorts.py` (controller entry, cover, EOD, borrow fee, maintenance cover), plus UI cases in
+  `PaperExperimentPanel.test.tsx`.
+- Updated: the prompt id in `test_action_decision.py`.
+- Unchanged and still passing: every `allow_short=False` refusal test.
+
+**Not changed.** Legacy single-instrument sessions can still sell from flat without a short check
+(`test_bounded_sell_close_reuses_entry_lineage` relies on it); left for an owner decision.
+
+**Not covered.** Live behaviour waits for the step-10 release and a new short-enabled Paper account. There is no real
+borrow/locate feed.
+
 ## 2026-10-24 — Rebuild step 5: switchable AI (free local or capped paid)
 
 This is the fifth owner-approved rebuild step (owner decision 4), built on step 4 (`claude/auto-restart-20261024`).

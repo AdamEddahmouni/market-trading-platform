@@ -144,6 +144,20 @@ decisions kept Qwen3-4B as the local model and preselected Claude Haiku 5.5 as t
 paid one ([benchmark](../reports/AI_ENGINE_BENCHMARK_20261024.md)); the paid test
 cost $0.38. It is on `claude/switchable-ai-20261024`, **not deployed**.
 
+**Rebuild step 6 (2026-10-25).** A new Paper account can be created with short
+selling allowed (off by default, fixed for the life of the account). A short
+sets aside its sale proceeds plus 50% of its value, must stay above 30%
+maintenance (below it, automation buys back the largest-loss short), pays a
+simulated borrow fee when held overnight, and is refused below $5, in a stock
+down 10% or more on the day, or when the day change is unknown. Buying a short
+back is never blocked by the risk limits or by cash, and the end-of-day
+close-out now buys shorts back. Three bugs found on the way are fixed: a short
+was read back as a long, a cover could be cut by the entry limits, and the
+close-out skipped shorts
+([Paper short selling](../architecture/PAPER_DECISION_LIFECYCLE.md#paper-short-selling)).
+Live stays off. It is on `claude/short-selling-20261025`, **not deployed**, and
+needs a new short-enabled Paper account at the release.
+
 **Next.** The rebuild order agreed with the owner (data-flow watchdog,
 database locking, opportunity-engine shortlist, automatic restart, switchable
 AI, short selling, selective overnight holds, evaluation report, journal fix,

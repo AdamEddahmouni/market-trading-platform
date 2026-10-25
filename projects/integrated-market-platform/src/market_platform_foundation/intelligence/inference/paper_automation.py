@@ -282,6 +282,8 @@ def entry_risk_blockers(policy, *, positions, valuation, day_start_equity_minor,
         blockers.append('DAY_START_EQUITY_UNAVAILABLE')
     elif equity is not None and day_start_equity_minor - equity >= risk['max_daily_loss_minor']:
         blockers.append('MAX_DAILY_LOSS_REACHED')
+    if valuation.get('maintenance_breached'):
+        blockers.append('SHORT_MAINTENANCE_MARGIN_BREACH')  # nothing is added while shorts are under-margined
     if pending_orders:
         blockers.append('WORKING_ORDERS_PRESENT')
     if session_label not in ('CONTINUOUS', 'TRADING') and (minutes_to_close is None or minutes_to_close <= policy['schedule']['no_new_entries_minutes_before_close']):

@@ -51,3 +51,9 @@ by recording it here.
    free local model is the engine, so it never runs).
 10. Fold in the held pull requests, then one release with the owner's deploy
     approval and a restart.
+
+## Follow-up answers
+
+| Date | Question | Owner's answer | What it changes |
+|---|---|---|---|
+| 2026-10-25 | How much cash does a Paper short set aside while it is open? | 50%, like a real broker. | A short holds back its sale proceeds plus 50% of its value from buying power (a $5,000 short lowers buying power by $2,500). Buys stay cash-only. See [Paper short selling](../architecture/PAPER_DECISION_LIFECYCLE.md#paper-short-selling). |

@@ -151,8 +151,12 @@ export const api = {
   getPaperPortfolio: (viewMode: "DEMO" | "PAPER" = "PAPER") =>
     fetchJson(`/paper/portfolio?view_mode=${viewMode}`, PaperPortfolioResponseSchema),
   getPaperExperimentCurrent: () => fetchJson("/paper/experiments/current", PaperExperimentCurrentSchema),
-  createPaperExperiment: () =>
-    postJson("/paper/experiments", { execution_mode: "INTERNAL_SIMULATION" }, PaperExperimentCommandSchema),
+  createPaperExperiment: (allowShort = false) =>
+    postJson(
+      "/paper/experiments",
+      { execution_mode: "INTERNAL_SIMULATION", allow_short: allowShort },
+      PaperExperimentCommandSchema,
+    ),
   closePaperExperiment: (experimentId: string) =>
     postJson(`/paper/experiments/${encodeURIComponent(experimentId)}/close`, {}, PaperExperimentCommandSchema),
   getPaperTrades: (params?: { cursor?: string; limit?: number }) => {

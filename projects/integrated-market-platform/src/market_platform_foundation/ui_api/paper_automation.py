@@ -810,6 +810,13 @@ class PaperAutomationService:
         valuation = ledger.project_valuation()
         if not work.get('day') or work['day'].get('session_date') != session['session_date']:
             # First cycle of the session date; a restart inside the day keeps the persisted value.
+            previous_date = (work.get('day') or {}).get('session_date')
+            if previous_date:
+                # Shorts still open from the previous session were held over its close: one day's simulated borrow
+                # fee each, idempotent per instrument and date. A no-op when the account does not allow shorts.
+                for fee in ledger.accrue_short_borrow_fees(accrual_date=previous_date, as_of_ns=int(now * 1e9)):
+                    self._event('SHORT_BORROW_FEE_ACCRUED', **fee['payload'])
+                valuation = ledger.project_valuation()
             work['day'] = dict(session_date=session['session_date'], start_equity_minor=valuation['equity_minor'], captured_at=_iso(now))
             self._event('SESSION_ACTIVATED', session_date=session['session_date'], session=session['label'],
                         start_equity_minor=valuation['equity_minor'], valuation_quality=valuation['quality'])
@@ -842,6 +849,7 @@ class PaperAutomationService:
             summary['execution'] = 'WITHHELD_PROVIDER_UNHEALTHY'
             return
         self._eod_flatten(work, policy, summary, session, now)
+        self._maintenance_cover(work, policy, summary, session, now)
         self._execute_pending(work, policy, summary, session)
 
     # --- full-universe AI evaluation -----------------------------------------------------------
@@ -1419,7 +1427,7 @@ class PaperAutomationService:
         working = {str(o.get('instrument_id')) for o in ledger.project_orders() if str(o.get('state')) in _WORKING}
         for position in ledger.project_positions():
             iid, held = str(position.get('instrument_id')), quantity_number(position.get('quantity') or 0)
-            if held <= 0 or iid in working:
+            if held == 0 or iid in working:
                 continue
             instrument = paper_projections._admit_focus_instrument(self.store, iid)
             if instrument.get('instrument_kind') == 'CRYPTO_PAIR':
@@ -1427,31 +1435,72 @@ class PaperAutomationService:
             key = 'PAI-EOD-' + input_hash_from_dict(dict(account=ledger.paper_account_id, instrument=iid, day=session['session_date']))[:32]
             if ledger.lookup_idempotent_order(key):
                 continue
-            body = dict(instrument_id=iid, side='SELL', quantity=quantity_wire(held), order_type='MARKET', client_order_id=key,
-                        idempotency_key=key, correlation_id='lane:order-flow',
-                        decision_source_snapshot=dict(source_type='workspace_lane', source_id='order-flow', source_module='order-flow',
-                                                      headline='End-of-day flatten (owner policy)', source_time=int(now * 1e9),
-                                                      reasons=[dict(code='PAPER_AUTOMATION_EOD_FLATTEN', label=session['session_date']),
-                                                               dict(code='PAPER_AUTOMATION_POLICY', label=policy['policy_id']),
-                                                               dict(code='PAPER_AUTOMATION_ARMING', label=work['arming']['arming_id'])]))
-            outcome = dict(instrument_id=iid, action='EOD_FLATTEN', quantity=quantity_wire(held), client_order_id=key)
-            try:
-                preview = paper_projections.preview_paper_order(self.store, body)['preview']
-                if preview.get('risk_status') != 'PASS':
-                    outcome.update(outcome='BLOCKED', reason_codes=['PAPER_PREVIEW_RISK_' + str(preview.get('decision')), *preview.get('reason_codes', [])][:8])
-                else:
-                    with self.submit_lock():
-                        if not self._still_permitted(work):
-                            outcome.update(outcome='NOT_ATTEMPTED', reason_codes=['AUTOMATION_HALTED_BY_OPERATOR'])
-                        else:
-                            submission = self._submit(dict(body, preview_id=preview['preview_id']))
-                            order = submission.get('order') or {}
-                            outcome.update(outcome='SUBMITTED', order_id=submission.get('order_id'), order_state=order.get('state'),
-                                           reason_codes=['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION'])
-            except ValueError as exc:
-                outcome.update(outcome='BLOCKED', reason_codes=[_code(exc)])
-            self._event('PAPER_EOD_FLATTEN', **outcome)
-            summary['actions'].append(outcome)
+            self._close_position(work, policy, summary, now, iid=iid, held=held, key=key, action='EOD_FLATTEN',
+                                 event='PAPER_EOD_FLATTEN', headline='End-of-day flatten (owner policy)',
+                                 reason=dict(code='PAPER_AUTOMATION_EOD_FLATTEN', label=session['session_date']))
+
+    def _maintenance_cover(self, work, policy, summary, session, now):
+        """Rebuild step 6: a short book under its maintenance margin buys back its largest-loss short.
+
+        One cover per cycle, through the canonical preview and submit, idempotent per short position. The
+        breach is only declared from complete marks (``PaperExecutionLedger.short_margin_status``).
+        """
+        ledger = self.store.paper_ledger
+        if not ledger.allows_short() or not self.actions._authority():
+            return
+        status = ledger.short_margin_status()
+        if not status['maintenance_breached']:
+            return
+        self._block(summary, 'RISK', 'SHORT_MAINTENANCE_MARGIN_BREACH')
+        working = {str(o.get('instrument_id')) for o in ledger.project_orders() if str(o.get('state')) in _WORKING}
+        entries = {p['instrument_id']: p.get('first_entry_time_ns') for p in ledger.project_positions()}
+        shorts = sorted((s for s in status['short_positions'] if s['instrument_id'] not in working),
+                        key=lambda s: (s['unrealized_pnl_minor'] if s['unrealized_pnl_minor'] is not None else 0, s['instrument_id']))
+        for short in shorts:
+            iid = str(short['instrument_id'])
+            key = 'PAI-MARGIN-' + input_hash_from_dict(dict(account=ledger.paper_account_id, instrument=iid,
+                                                            entry=entries.get(iid)))[:32]
+            if ledger.lookup_idempotent_order(key):
+                continue
+            self._event('SHORT_MAINTENANCE_MARGIN_BREACH', instrument_id=iid, equity_minor=status['equity_minor'],
+                        maintenance_requirement_minor=status['maintenance_requirement_minor'],
+                        short_market_value_minor=status['short_market_value_minor'])
+            self._close_position(work, policy, summary, now, iid=iid, held=quantity_number(short['quantity']), key=key,
+                                 action='MARGIN_COVER', event='PAPER_MARGIN_COVER',
+                                 headline='Short maintenance margin breached: buy to cover',
+                                 reason=dict(code='PAPER_AUTOMATION_MARGIN_COVER', label=session['session_date']))
+            return
+
+    def _close_position(self, work, policy, summary, now, *, iid, held, key, action, event, headline, reason):
+        """One MARKET close of the whole held quantity: SELL a long, BUY to cover a short."""
+        from . import paper_projections
+        side = 'SELL' if held > 0 else 'BUY'
+        quantity = abs(held)
+        body = dict(instrument_id=iid, side=side, quantity=quantity_wire(quantity), order_type='MARKET', client_order_id=key,
+                    idempotency_key=key, correlation_id='lane:order-flow',
+                    decision_source_snapshot=dict(source_type='workspace_lane', source_id='order-flow', source_module='order-flow',
+                                                  headline=headline, source_time=int(now * 1e9),
+                                                  reasons=[reason,
+                                                           dict(code='PAPER_AUTOMATION_POLICY', label=policy['policy_id']),
+                                                           dict(code='PAPER_AUTOMATION_ARMING', label=work['arming']['arming_id'])]))
+        outcome = dict(instrument_id=iid, action=action, side=side, quantity=quantity_wire(quantity), client_order_id=key)
+        try:
+            preview = paper_projections.preview_paper_order(self.store, body)['preview']
+            if preview.get('risk_status') != 'PASS':
+                outcome.update(outcome='BLOCKED', reason_codes=['PAPER_PREVIEW_RISK_' + str(preview.get('decision')), *preview.get('reason_codes', [])][:8])
+            else:
+                with self.submit_lock():
+                    if not self._still_permitted(work):
+                        outcome.update(outcome='NOT_ATTEMPTED', reason_codes=['AUTOMATION_HALTED_BY_OPERATOR'])
+                    else:
+                        submission = self._submit(dict(body, preview_id=preview['preview_id']))
+                        order = submission.get('order') or {}
+                        outcome.update(outcome='SUBMITTED', order_id=submission.get('order_id'), order_state=order.get('state'),
+                                       reason_codes=['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION'])
+        except ValueError as exc:
+            outcome.update(outcome='BLOCKED', reason_codes=[_code(exc)])
+        self._event(event, **outcome)
+        summary['actions'].append(outcome)
 
     def _cancel_order(self, order_id, reason):
         from . import paper_projections

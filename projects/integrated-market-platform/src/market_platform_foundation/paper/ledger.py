@@ -40,7 +40,13 @@ EVENT_TYPES: tuple[str, ...] = (
     "PositionChanged",
     "ReconciliationRecorded",
     "ReconciliationCorrectionRecorded",
+    "ShortBorrowFeeAccrued",
 )
+
+# Shares are assumed borrowable: there is no live borrow or locate feed on the Paper path. Every short
+# record carries this basis so the assumption is never mistaken for a real locate.
+SHORT_BORROW_BASIS = "SIMULATED_EASY_TO_BORROW"
+SHORT_BORROW_FEE_DAY_COUNT = 360
 
 
 ACCOUNT_IDENTITY_VERSION_PORTFOLIO = 2
@@ -425,6 +431,122 @@ class PaperExecutionLedger:
         currency = str(self.policy.get("currency", "USD")).upper()
         return int(self.working_order_obligations_by_currency().get(currency, 0))
 
+    def allows_short(self) -> bool:
+        """Equity/ETF shorting is a frozen account term, and only on the internal simulator."""
+        return (
+            bool(self.policy.get("allow_short"))
+            and self.is_portfolio_scoped()
+            and str(self.execution_mode).upper() == "INTERNAL_SIMULATION"
+        )
+
+    def _short_requirement_minor(self, value_minor: int | Decimal) -> int:
+        """Initial requirement held back from buying power: the proceeds plus the initial margin."""
+        bps = 10_000 + int(self.policy.get("short_initial_margin_bps", 0))
+        return int((Decimal(value_minor) * bps / 10_000).to_integral_value(rounding=ROUND_CEILING))
+
+    def short_margin_status(self) -> dict[str, Any]:
+        """Open shorts, the buying power they hold back, and the maintenance test.
+
+        A short is valued at its own mark, or at its entry value when no mark exists. Working sells that
+        would open or add to a short reserve the same requirement as a filled short.
+        """
+        if not self.allows_short():
+            return {
+                "allow_short": False,
+                "maintenance_breached": False,
+                "maintenance_requirement_minor": 0,
+                "short_margin_reserved_minor": 0,
+                "short_market_value_minor": 0,
+                "short_positions": [],
+            }
+        positions = {row["instrument_id"]: row for row in self.project_positions()}
+        shorts: list[dict[str, Any]] = []
+        short_value = 0
+        unmarked: list[str] = []
+        for row in positions.values():
+            quantity = int(row["quantity"])
+            if quantity >= 0:
+                continue
+            if row["mark_minor"] is not None:
+                value = abs(quantity) * int(row["mark_minor"])
+            else:
+                value = abs(int(row["cost_basis_minor"]))
+                unmarked.append(row["instrument_id"])
+            short_value += value
+            shorts.append({
+                "instrument_id": row["instrument_id"],
+                "market_value_minor": value,
+                "quantity": quantity,
+                "symbol": row["symbol"],
+                "unrealized_pnl_minor": row["unrealized_pnl_minor"],
+            })
+        working_value = 0
+        for order in self.project_orders():
+            if order.get("state") not in OPEN_ORDER_STATES or order.get("direction") != "short":
+                continue
+            instrument_id = str(order.get("instrument_id"))
+            held_long = max(0, int((positions.get(instrument_id) or {}).get("quantity", 0)))
+            opening = exact_quantity(order.get("working_remaining", 0)) - held_long
+            if opening <= 0:
+                continue
+            price = order.get("limit_price_minor") if order.get("order_type") == "LIMIT" else None
+            if price is None:
+                price = (self.mark_for(instrument_id) or {}).get("mark_minor") or order.get("average_fill_minor")
+            if price is None:
+                raise ValueError("REQUIRED_PRICE_MISSING: working short sale has no price")
+            working_value += int((opening * Decimal(int(price))).to_integral_value(rounding=ROUND_CEILING))
+        reserved = self._short_requirement_minor(short_value + working_value)
+        maintenance = int((Decimal(short_value) * int(self.policy.get("short_maintenance_margin_bps", 0)) / 10_000)
+                          .to_integral_value(rounding=ROUND_CEILING))
+        equity = None
+        if all(row["mark_minor"] is not None for row in positions.values()):
+            equity = int(self._project_ledger()["cash_minor"]) + sum(int(row["market_value_minor"]) for row in positions.values())
+        return {
+            "allow_short": True,
+            "borrow_basis": SHORT_BORROW_BASIS,
+            "equity_minor": equity,
+            # A breach is only declared from complete marks; an unvalued book is reported, never guessed.
+            "maintenance_breached": bool(shorts) and equity is not None and equity < maintenance,
+            "maintenance_requirement_minor": maintenance,
+            "short_margin_reserved_minor": reserved,
+            "short_market_value_minor": short_value,
+            "short_positions": shorts,
+            "unmarked_short_instruments": unmarked,
+            "working_short_sale_value_minor": working_value,
+        }
+
+    def accrue_short_borrow_fees(self, *, accrual_date: str, as_of_ns: int) -> list[dict[str, Any]]:
+        """Charge one day's simulated borrow fee on every short held over the close.
+
+        Idempotent per (instrument, accrual_date): a repeated close-out never charges twice.
+        """
+        if not self.allows_short():
+            return []
+        charged = {
+            (str(event["payload"].get("instrument_id")), str(event["payload"].get("accrual_date")))
+            for event in self.events
+            if event["event_type"] == "ShortBorrowFeeAccrued"
+        }
+        bps = int(self.policy.get("short_borrow_fee_bps_per_year", 0))
+        events = []
+        for short in self.short_margin_status()["short_positions"]:
+            key = (str(short["instrument_id"]), str(accrual_date))
+            if key in charged:
+                continue
+            fee = int((Decimal(short["market_value_minor"]) * bps / 10_000 / SHORT_BORROW_FEE_DAY_COUNT)
+                      .to_integral_value(rounding=ROUND_CEILING))
+            events.append(self._append("ShortBorrowFeeAccrued", {
+                "accrual_date": str(accrual_date),
+                "as_of_ns": int(as_of_ns),
+                "borrow_basis": SHORT_BORROW_BASIS,
+                "fee_bps_per_year": bps,
+                "fee_minor": fee,
+                "instrument_id": short["instrument_id"],
+                "quantity": int(short["quantity"]),
+                "short_market_value_minor": int(short["market_value_minor"]),
+            }))
+        return events
+
     def project_account(self) -> dict[str, Any]:
         projection = self._project_ledger()
         cash_minor = int(projection["cash_minor"])
@@ -440,6 +562,14 @@ class PaperExecutionLedger:
                 "experiment_id": self.experiment_id,
                 "reserved_cash_minor": reserved,
             }
+            if self.allows_short():
+                margin = self.short_margin_status()
+                buying_power_minor = max(0, buying_power_minor - margin["short_margin_reserved_minor"])
+                account.update(
+                    short_margin_reserved_minor=margin["short_margin_reserved_minor"],
+                    short_market_value_minor=margin["short_market_value_minor"],
+                    total_borrow_fees_minor=int(projection.get("total_borrow_fees_minor", 0)),
+                )
         return {
             **account,
             "authority_boundary": "PAPER_EXECUTION_OBSERVABILITY",
@@ -600,9 +730,26 @@ class PaperExecutionLedger:
             magnitude = (abs(total_pnl) * 10_000) // initial
             return_bps = magnitude if total_pnl >= 0 else -magnitude
         mark_times = [int(row["mark_as_of_ns"]) for row in marked if row["mark_as_of_ns"]]
+        buying_power_basis = "CASH_LESS_WORKING_ORDER_RESERVATIONS_NO_LEVERAGE"
+        buying_power = max(0, cash - reserved)
+        short_terms: dict[str, Any] = {}
+        if self.allows_short():
+            # Longs stay cash-only; a short holds back its proceeds plus the initial margin.
+            margin = self.short_margin_status()
+            buying_power_basis = "CASH_LESS_WORKING_ORDER_RESERVATIONS_SHORT_MARGIN_RESERVED"
+            buying_power = max(0, buying_power - margin["short_margin_reserved_minor"])
+            short_terms = {
+                "borrow_basis": margin["borrow_basis"],
+                "maintenance_breached": margin["maintenance_breached"],
+                "maintenance_requirement_minor": margin["maintenance_requirement_minor"],
+                "short_margin_reserved_minor": margin["short_margin_reserved_minor"],
+                "short_market_value_minor": margin["short_market_value_minor"],
+                "total_borrow_fees_minor": int(projection.get("total_borrow_fees_minor", 0)),
+            }
         return {
-            "buying_power_basis": "CASH_LESS_WORKING_ORDER_RESERVATIONS_NO_LEVERAGE",
-            "buying_power_minor": max(0, cash - reserved),
+            **short_terms,
+            "buying_power_basis": buying_power_basis,
+            "buying_power_minor": buying_power,
             "cash_minor": cash,
             "currency": self.policy["currency"],
             "degraded_instruments": degraded,
@@ -1719,7 +1866,11 @@ class PaperExecutionLedger:
 
     def _project_portfolio_ledger(self, *, instrument_id: str | None) -> dict[str, Any]:
         state = build_portfolio_state(initial_cash_minor=int(self.policy["initial_cash_minor"]))
+        borrow_fees = 0
         for event in self.events:
+            if event["event_type"] == "ShortBorrowFeeAccrued":
+                borrow_fees += int((event.get("payload") or {}).get("fee_minor", 0))
+                continue
             if event["event_type"] != "FillRecorded":
                 continue
             payload = event.get("payload")
@@ -1736,6 +1887,11 @@ class PaperExecutionLedger:
             state = self._merge_derivative_cash_into_ledger(state)
         position = state["positions"].get(str(instrument_id)) if instrument_id is not None else None
         state = dict(state)
+        if borrow_fees:
+            # A financing cost: it reduces cash and realized P&L, never a position's cost basis.
+            state["cash_minor"] = int(state["cash_minor"]) - borrow_fees
+            state["realized_pnl_minor"] = int(state["realized_pnl_minor"]) - borrow_fees
+        state["total_borrow_fees_minor"] = borrow_fees
         state["position_shares"] = int(position["position_shares"]) if position else 0
         state["position_cost_basis_minor"] = int(position["position_cost_basis_minor"]) if position else 0
         return state
