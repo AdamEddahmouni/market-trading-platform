@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchScreenerSetup, SETUP_QUERY_KEY, type SetupRow } from "../../../api/screenerSetup";
 import { stateText } from "../news/newsFormat";
+import { AiEngineCard } from "../setup/AiEngineCard";
 import { ProviderSetupList } from "../setup/ProviderConfig";
 import { RemedyHint } from "../setup/Remedy";
 import { ErrorDetail, PanelFrame, PanelMessage, usePanelVisible } from "./shared";
@@ -45,6 +46,7 @@ export default function SetupPanel({ api }: IDockviewPanelProps) {
               : <span title={row.reason ?? undefined}>{row.reason ? row.reason.replace(/_/g, " ").toLowerCase() : "—"}</span>}</span>
           </li>;
         })}</ul>
+        <AiEngineCard enabled={visible} />
         <ProviderSetupList enabled={visible} />
       </div>}
   </PanelFrame>;

@@ -1,5 +1,57 @@
 # IMP Work Log
 
+## 2026-10-24 — Rebuild step 5: switchable AI (free local or capped paid)
+
+This is the fifth owner-approved rebuild step (owner decision 4), built on step 4 (`claude/auto-restart-20261024`).
+Everything stays off and nothing was deployed.
+
+**Problem.**
+- The free/paid picker lived in the News and AI Screener panels, not in Setup.
+- Paid AI was not off by default: with no choice saved, a Claude key selected paid Claude.
+- The paid limit counted requests and tokens per day, not dollars, and had no monthly limit.
+- The Assistant called paid Claude whenever a key was in its environment, with no limit at all.
+- The memory gate counted the whole model against RAM even on the graphics card, so nothing above Qwen3-4B could run.
+- The 10-23 local start failure was a slow load from the busy disk running past the fixed 180 s start limit.
+
+**Built:**
+- `intelligence/inference/paid_prices.py`: pinned list prices for every paid catalog model, with source and date
+  (Claude 2026-10-06; OpenAI and Gemini read from their pricing pages on 2026-10-24), long-prompt tiers and Gemini's
+  dated 2027 price.
+- `intelligence/inference/paid_spend.py`: `DollarLedger`, daily (UTC) and monthly dollar caps in micro-dollars.
+  - Before a call its worst case is set aside; past either cap it is refused before sending (`PAID_AI_DAILY_DOLLAR_CAP`,
+    `PAID_AI_MONTHLY_DOLLAR_CAP`). After it, the reported usage replaces the reservation.
+  - File `quota/paid-ai-dollars.json` under a lock; fails closed. Caps `IMP_PAID_AI_DAILY_USD` /
+    `IMP_PAID_AI_MONTHLY_USD`, default 0, written from Setup through the operator-config provider `paid_ai`.
+  - `BudgetedProvider` checks dollars first, then the existing token budget; `build_paid_provider` attaches the ledger.
+- Paid off by default: automatic is always local (`select_synthesis_provider`, `resolved_engine`,
+  `evidence_review.model()`). A paid engine needs both caps and a pinned price (`PAID_AI_CAP_NOT_SET`,
+  `PAID_MODEL_PRICE_UNKNOWN`), also when set by `IMP_SYNTHESIS_PROVIDER`, and cannot be saved without them.
+- The Assistant follows the Setup engine (`MachineEngineInference`): paid Claude only with Claude chosen and both caps
+  set, charged to the same ledger.
+- Hosted adapters charge thinking reported outside `completion_tokens` as output.
+- Setup: `GET /screener/setup/ai` (read-only) and the "Which AI decides" card (`AiEngineCard.tsx`) with the engine,
+  the measured cost per decision, spend against the caps, the caps form and the confirm dialog.
+- Local models: pins for Qwen3-4B-Instruct-2507, Qwen3-8B and Qwen3-30B-A3B-Instruct-2507; a memory check that holds the
+  card to a 7 GiB budget and counts only CPU-side weights in RAM; profile `vulkan-8192/1-moe` (`--n-cpu-moe 38`); a
+  sequential pre-read of the model file; a start limit of 180 s + 30 s/GB (at most 900 s).
+- `tools/ai_decision_benchmark.py`: export real Action Decisions read-only, replay them through the production path,
+  grade them with the production validator, and report against a winner rule fixed beforehand.
+
+**Result** ([report](../reports/AI_ENGINE_BENCHMARK_20261024.md)):
+- Qwen3-4B stays the local default: 95% accepted. The 2507 model reached 90%, the 8B 95% at half the speed, and the
+  30B did not fit the free RAM.
+- Claude Haiku 5.5 is preselected as the paid model: 100% accepted, $0.0016 per decision. Paid stays off.
+- The paid test cost $0.3762 of the $3 limit. OpenAI and Gemini were skipped (no keys).
+
+**Tests.**
+- New: `tests/intelligence/test_paid_spend.py`, `tests/platform/test_local_larger_models.py`,
+  `test_ai_decision_benchmark.py`, `test_setup_ai.py`, `ui/.../AiEngineCard.test.tsx`.
+- Updated to the new rule: tests that expected a key to select Claude automatically, the registry count, and the GPU
+  memory-admission test.
+
+**Not covered.** Live decisions on the chosen engine while Paper runs, and the Setup card against the live API, wait for
+the step-10 release. The journal budget-guard fix is step 9.
+
 ## 2026-10-24 — Rebuild step 4: automatic restart after a reboot or a frozen feed
 
 This is the fourth owner-approved rebuild step (owner decision 3), built on step 3

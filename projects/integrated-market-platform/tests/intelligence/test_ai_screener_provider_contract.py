@@ -316,7 +316,7 @@ class RequestConstructionTests(unittest.TestCase):
     def test_a_saved_model_outside_the_catalog_selects_no_provider(self):
         import tempfile
         from pathlib import Path
-        values = {'ANTHROPIC_API_KEY': 'controlled'}
+        values = {'ANTHROPIC_API_KEY': 'controlled', 'IMP_PAID_AI_DAILY_USD': '1', 'IMP_PAID_AI_MONTHLY_USD': '5'}
         with tempfile.TemporaryDirectory() as directory:
             chosen = select_synthesis_provider(values.get, cache_dir=Path(directory), engine='anthropic', model='claude-retired-1')
             self.assertEqual((chosen.provider, chosen.reason), (None, 'SYNTHESIS_MODEL_NOT_IN_CATALOG'))

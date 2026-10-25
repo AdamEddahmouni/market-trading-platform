@@ -62,7 +62,7 @@ REJECTION_SYSTEMIC_MIN_REJECTED = 20
 # its picks are still finalists, because the final round re-acquires evidence for every finalist.
 _ANSWERED = frozenset({"CURRENT", "NO_GROUNDED_CANDIDATES", "EXPIRED"})
 _BUDGET_REASONS = frozenset({"SYNTHESIS_RUN_HOLD_EXHAUSTED", "SYNTHESIS_RUN_HOLD_MISSING", "SYNTHESIS_DAILY_REQUEST_LIMIT",
-                             "SYNTHESIS_DAILY_TOKEN_LIMIT"})
+                             "SYNTHESIS_DAILY_TOKEN_LIMIT", "PAID_AI_DAILY_DOLLAR_CAP", "PAID_AI_MONTHLY_DOLLAR_CAP"})
 # A free token count that failed for a reason unrelated to the request itself; the plan keeps its estimate.
 _PREFLIGHT_SKIPPED = frozenset({"API_KEY_MISSING", "COUNT_TOKENS_UNSUPPORTED", "ANTHROPIC_TIMEOUT", "ANTHROPIC_UNREACHABLE",
                                 "ANTHROPIC_AUTH_FAILED"})

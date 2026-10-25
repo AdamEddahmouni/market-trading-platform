@@ -338,15 +338,20 @@ state too, so the operator can always switch to an engine that works.
   choice to `<IMP cache>/settings/synthesis-engine.json` and rebuilds the provider
   on the next request (no restart). Only catalog engines and models are accepted
   (`SYNTHESIS_ENGINE_INVALID` otherwise). It never calls a model.
-- Precedence: saved choice → `IMP_SYNTHESIS_PROVIDER` → automatic (Anthropic when
-  its key is set, else local). A chosen paid engine without its key is
-  `NOT_CONFIGURED · <KEY>_NOT_SET`; it is never silently replaced by another vendor.
+- Precedence: saved choice → `IMP_SYNTHESIS_PROVIDER` → automatic, and automatic is
+  always the free local model (rebuild step 5, 2026-10-24: a saved paid key alone never
+  turns paid AI on). A paid engine is used only when both paid AI dollar caps are above
+  $0 and its model has a pinned price; otherwise it is `PAID_AI_CAP_NOT_SET` /
+  `PAID_MODEL_PRICE_UNKNOWN` and nothing is called. A chosen paid engine without its key
+  is `NOT_CONFIGURED · <KEY>_NOT_SET`; it is never silently replaced by another vendor.
+  See [AI_ENGINE_SWITCH.md](../operations/AI_ENGINE_SWITCH.md).
 - Every AI status (`ai` in instrument news and the synthesis preview) carries
   `engine` (`auto` until one is picked), `engine_model`, `engine_source`
   (`OPERATOR` / `ENVIRONMENT` / `AUTOMATIC`), and `engines[]` (`id`, `label`,
   `runtime`, `models`, `default_model`, `state`, `reason`).
-- All paid engines share one hard daily budget (`quota/anthropic-synthesis.json`),
-  so switching vendors never resets or multiplies the cap.
+- All paid engines share one hard daily budget (`quota/anthropic-synthesis.json`) and
+  one dollar ledger (`quota/paid-ai-dollars.json`), so switching vendors never resets or
+  multiplies a cap.
 
 ## Real acceptance (2026-09-28, 17:55–18:20 UTC)
 

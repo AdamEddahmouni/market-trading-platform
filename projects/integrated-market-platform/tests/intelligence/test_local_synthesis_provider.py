@@ -77,7 +77,11 @@ class SelectionTests(unittest.TestCase):
             chosen = select_synthesis_provider(values.get, cache_dir=cache)
             self.assertEqual((chosen.runtime, chosen.provider.model_id), ("LOCAL_MODEL", "qwen3:4b"))
             values["ANTHROPIC_API_KEY"] = "k"
-            paid = select_synthesis_provider(values.get, cache_dir=cache, anthropic_factory=lambda: "anthropic")
+            # A paid key never displaces the free local model in automatic mode.
+            automatic = select_synthesis_provider(values.get, cache_dir=cache, anthropic_factory=lambda: "anthropic")
+            self.assertEqual(automatic.runtime, "LOCAL_MODEL")
+            paid = select_synthesis_provider(values.get, cache_dir=cache, anthropic_factory=lambda: "anthropic",
+                                             engine="anthropic")
             self.assertEqual((paid.provider, paid.runtime), ("anthropic", "PAID_API"))
             values["IMP_SYNTHESIS_PROVIDER"] = "local"            # the owner can force the zero-cost path
             self.assertEqual(select_synthesis_provider(values.get, cache_dir=cache).runtime, "LOCAL_MODEL")

@@ -91,11 +91,16 @@ class RuntimeAdmissionTests(unittest.TestCase):
         with patch.object(runtime, 'verify_artifacts', return_value=None):
             gpu_status, cpu_status = runtime.readiness(gpu, sample=sample), runtime.readiness(base, sample=sample)
         self.assertEqual(gpu_status['context_configuration']['device'], 'Vulkan0')
-        # GPU residency is never credited as host capacity: the conservative full-RAM estimate is unchanged.
-        self.assertEqual(gpu_status['estimated_peak_memory'], cpu_status['estimated_peak_memory'])
+        # Rebuild step 5: weights and KV on the card are checked against the card's own budget; only what stays on
+        # the CPU (here nothing but the 2 GiB host allowance) is counted in RAM. The CPU estimate is unchanged.
+        pin = runtime.model_pin(gpu)
+        kv = pin.layers * pin.kv_heads * pin.head_dim * 4 * 8192
+        self.assertEqual(gpu_status['estimated_peak_memory'], 2*resources.GIB)
+        self.assertEqual(gpu_status['estimated_gpu_memory'], pin.weight_bytes + kv + resources.GIB)
+        self.assertEqual(cpu_status['estimated_peak_memory'], pin.weight_bytes + kv + 2*resources.GIB)
         self.assertEqual(gpu_status['minimum_available_bytes'], 4*resources.GIB)
         with patch.object(runtime, 'verify_artifacts', return_value=None):
-            self.assertEqual(runtime.readiness(gpu, sample={**sample, 'available_bytes': 9*resources.GIB})['rejection_reason'],
+            self.assertEqual(runtime.readiness(gpu, sample={**sample, 'available_bytes': 5*resources.GIB})['rejection_reason'],
                              'LOCAL_RESOURCE_PREDICTED_UNSAFE')
 
     def test_cold_prediction_accounts_for_observed_cpu_repacking_overhead(self):
@@ -736,7 +741,7 @@ class LaptopModelTests(unittest.TestCase):
     def test_registry_preserves_4b_and_registers_official_small_artifacts(self):
         from market_platform_foundation.intelligence.inference.local_models import MODELS
         from market_platform_foundation.intelligence.inference import local_runtime as runtime
-        self.assertEqual(len(MODELS), 3)
+        self.assertEqual(len(MODELS), 6)
         self.assertEqual(MODELS[runtime.MODEL_ID].sha256, runtime.MODEL_HASH)
         for size in ('0.6B', '1.7B'):
             pin = MODELS[f'Qwen/Qwen3-{size}-GGUF:Q8_0']
@@ -791,4 +796,4 @@ class LaptopModelTests(unittest.TestCase):
         hashes = {LocalQualifier(LocalChatInferenceProvider(base_url='http://127.0.0.1:18089',
             model_id=pin.model_id)).input(case['scope'], case['candidate'], load()['cutoff'])[0]
             for pin in MODELS.values()}
-        self.assertEqual(len(hashes), 3)
+        self.assertEqual(len(hashes), len(MODELS))

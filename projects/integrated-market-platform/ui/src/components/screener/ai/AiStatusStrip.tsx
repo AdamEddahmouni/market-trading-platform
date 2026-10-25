@@ -24,6 +24,10 @@ const REASONS: Record<string, string> = {
   STOPPED: "stopped by the operator before it finished",
   EVIDENCE_PROVIDER_UNAVAILABLE: "the quote source returned nothing, so no row could be assessed",
   SYNTHESIS_RUN_HOLD_EXHAUSTED: "a request outgrew the budget held for this run",
+  PAID_AI_CAP_NOT_SET: "paid AI is off until both dollar caps are set in Setup",
+  PAID_MODEL_PRICE_UNKNOWN: "this paid model has no known price, so it cannot run under a dollar cap",
+  PAID_AI_DAILY_DOLLAR_CAP: "the call would cross today's dollar cap",
+  PAID_AI_MONTHLY_DOLLAR_CAP: "the call would cross this month's dollar cap",
 };
 export const plainReason = (code: string | null | undefined) => !code ? "no reason reported" : REASONS[code] ? `${REASONS[code]} (${code})` : code;
 

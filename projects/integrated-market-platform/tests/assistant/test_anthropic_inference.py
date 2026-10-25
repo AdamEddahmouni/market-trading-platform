@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -74,9 +75,11 @@ class AnthropicInferenceTests(unittest.TestCase):
         self.assertEqual(outcome.provider_id, "grounded.evidence")
 
     @patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test-key", "IMP_ASSISTANT_PROVIDER": "anthropic"}, clear=False)
-    def test_factory_selects_anthropic_when_configured(self) -> None:
-        inference = resolve_assistant_inference()
-        self.assertEqual(getattr(inference, "provider_id", ""), "anthropic.messages")
+    def test_factory_follows_the_machine_engine_not_the_key(self) -> None:
+        # Paid Claude needs Claude chosen in Setup with both dollar caps (tests/intelligence/test_paid_spend.py).
+        with tempfile.TemporaryDirectory() as directory, patch.dict("os.environ", {"IMP_CACHE_DIR": directory}):
+            inference = resolve_assistant_inference()
+            self.assertEqual(getattr(inference, "provider_id", ""), "grounded.evidence")
 
 
 if __name__ == "__main__":

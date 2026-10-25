@@ -108,12 +108,23 @@ def sec_contact_identity(value: str, setting: str = "SEC_USER_AGENT") -> str:
     return " ".join(text.split())
 
 
+def spending_cap(value: str, setting: str) -> str:
+    """A dollar cap: 0 to 10000 with at most two decimals. 0 keeps paid AI off."""
+
+    from ..intelligence.inference.paid_spend import parse_cap
+
+    text = _base(value, setting, limit=12)
+    if parse_cap(text) is None:
+        raise ConfigError("SPENDING_CAP_INVALID", setting)
+    return text
+
+
 # ------------------------------------------------------------------ registry
 @dataclass(frozen=True)
 class Setting:
     name: str
     label: str
-    kind: str          # API_KEY | TOKEN | CLIENT_ID | CLIENT_SECRET | ACCOUNT_ID | CONTACT_IDENTITY
+    kind: str          # API_KEY | TOKEN | CLIENT_ID | CLIENT_SECRET | ACCOUNT_ID | CONTACT_IDENTITY | SPENDING_CAP
     secret: bool
     validate: Callable[[str, str], str] = opaque_value
     required: bool = True
@@ -219,25 +230,36 @@ PROVIDERS: tuple[ProviderSetup, ...] = (
     ProviderSetup(
         "anthropic", "Anthropic Claude", "AI", "PAID_API",
         "Paid API billed by Anthropic. Saving a key calls no model and switches nothing to it: it only makes "
-        "Claude selectable in the AI engine menu. Synthesis runs only when you ask, within the daily budget.",
+        "Claude selectable in Setup once both paid AI caps are set. Calls stay within those dollar caps.",
         ("Claude as an AI synthesis engine",),
         (Setting("ANTHROPIC_API_KEY", "API key", "API_KEY", True, help=_KEY_HELP),),
         refresh=("news",),
     ),
     ProviderSetup(
         "openai", "OpenAI", "AI", "PAID_API",
-        "Paid API billed by OpenAI. Saving a key calls no model: synthesis runs only when you ask, "
-        "within the daily synthesis budget.",
+        "Paid API billed by OpenAI. Saving a key calls no model and switches nothing to it. OpenAI becomes "
+        "selectable once both paid AI caps are set, and calls stay within those dollar caps.",
         ("OpenAI as an AI synthesis engine",),
         (Setting("OPENAI_API_KEY", "API key", "API_KEY", True, help=_KEY_HELP),),
         refresh=("news",),
     ),
     ProviderSetup(
         "gemini", "Google Gemini", "AI", "PAID_API",
-        "Paid API billed by Google (a free tier may apply). Saving a key calls no model: synthesis runs "
-        "only when you ask, within the daily synthesis budget.",
+        "Paid API billed by Google. Saving a key calls no model and switches nothing to it. Gemini becomes "
+        "selectable once both paid AI caps are set, and calls stay within those dollar caps.",
         ("Gemini as an AI synthesis engine",),
         (Setting("GEMINI_API_KEY", "API key", "API_KEY", True, help=_KEY_HELP),),
+        refresh=("news",),
+    ),
+    ProviderSetup(
+        "paid_ai", "Paid AI spending caps", "AI", "PAID_API",
+        "Hard dollar limits for every paid AI call (Claude, OpenAI, Gemini, and the assistant), at each model's "
+        "list price. Both start at $0, and $0 keeps paid AI off: it can be chosen only once both caps are set.",
+        ("Choosing a paid AI engine in Setup",),
+        (Setting("IMP_PAID_AI_DAILY_USD", "Daily cap (US dollars)", "SPENDING_CAP", False, spending_cap,
+                 help="Most paid AI may cost per UTC day. Example: 1.50", example="1.50"),
+         Setting("IMP_PAID_AI_MONTHLY_USD", "Monthly cap (US dollars)", "SPENDING_CAP", False, spending_cap,
+                 help="Most paid AI may cost per calendar month (UTC). Example: 20", example="20")),
         refresh=("news",),
     ),
     ProviderSetup(

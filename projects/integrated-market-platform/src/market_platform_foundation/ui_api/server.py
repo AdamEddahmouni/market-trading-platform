@@ -462,6 +462,12 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 self._send_json(setup_checklist())
                 return
+            if path == "/screener/setup/ai":
+                # Which AI decides: engine, dollar caps, spend, prices, benchmark. Calls no model; no key leaves.
+                from .setup_ai import setup_ai_status
+
+                self._send_json(setup_ai_status(engine_lock=self._engine_lock()))
+                return
             if path.startswith("/evaluation/prospective/"):
                 try:
                     from .prospective_evaluation import evaluation_service

@@ -309,8 +309,8 @@ def _default_chart(instrument_id: str, universe: str) -> dict[str, Any] | None:
 
 
 def _default_synthesizer(settings: Any = None):
-    """Production synthesis provider: the operator's saved engine and model, else automatic (Anthropic when its key
-    is configured, else a configured local model)."""
+    """Production synthesis provider: the operator's saved engine and model, else automatic (always the configured
+    local model; paid AI only when chosen with both dollar caps set)."""
 
     from ..intelligence.inference.screener_synthesis import ScreenerSynthesizer
 
@@ -1273,11 +1273,20 @@ class ScreenerNewsService:
         reason = "STARTS_ON_REQUEST" if server is not None and not server.running() else None
         # A paid provider states today's usage against its hard daily limits.
         budget = provider.budget_status() if callable(getattr(provider, "budget_status", None)) else None
+        # ... and what it has cost today and this month against the operator's dollar caps.
+        spend = provider.spend_status() if callable(getattr(provider, "spend_status", None)) else None
         state = "AVAILABLE"
         if budget is not None and (budget["requests"] >= budget["max_requests"] or budget["tokens"] >= budget["max_tokens"]):
             state, reason = "UNAVAILABLE", "SYNTHESIS_DAILY_BUDGET_EXHAUSTED"
+        elif spend is not None and spend.get("state") != "AVAILABLE":
+            state, reason = "UNAVAILABLE", spend.get("reason")
+        elif spend is not None and spend["spent_month_usd"] >= spend["monthly_cap_usd"]:
+            state, reason = "UNAVAILABLE", "PAID_AI_MONTHLY_DOLLAR_CAP"
+        elif spend is not None and spend["spent_today_usd"] >= spend["daily_cap_usd"]:
+            # Resets at the UTC day like the token budget, so it reads as the same "waiting for budget" state.
+            state, reason = "UNAVAILABLE", "SYNTHESIS_DAILY_BUDGET_EXHAUSTED"
         return {"state": state, "reason": reason, "provider_id": getattr(provider, "provider_id", None),
-                "model_id": getattr(provider, "model_id", None), "runtime": runtime, "budget": budget}
+                "model_id": getattr(provider, "model_id", None), "runtime": runtime, "budget": budget, "spend": spend}
 
     def _synthesis_inputs(self, universe: str, scope: str, instrument_id: str | None, window: str
                           ) -> tuple[dict[str, Any], list[Any], tuple[str, ...]] | None:

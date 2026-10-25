@@ -129,6 +129,7 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             "/operator/investigations",
             "/operator/readiness",
             "/operator/config",
+            "/screener/setup/ai",
             "/operator/diagnostics",
             "/operator/lifecycle/status",
             "/accounts",

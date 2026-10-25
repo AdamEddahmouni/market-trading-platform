@@ -141,6 +141,9 @@ class HostedRequestTests(unittest.TestCase):
         self.assertEqual((result["state"], result["reason"]), ("INVALID_OUTPUT", "UNSUPPORTED_CERTAINTY"))
 
 
+CAPS = {"IMP_PAID_AI_DAILY_USD": "1", "IMP_PAID_AI_MONTHLY_USD": "5"}
+
+
 class EngineSelectionTests(unittest.TestCase):
     def setUp(self):
         self._directory = tempfile.TemporaryDirectory()
@@ -150,7 +153,10 @@ class EngineSelectionTests(unittest.TestCase):
         self._directory.cleanup()
 
     def test_options_list_every_engine_and_why_it_cannot_run(self):
-        options = {item["id"]: item for item in engine_options({"OPENAI_API_KEY": "k"}.get, self.cache)}
+        uncapped = {item["id"]: item for item in engine_options({"OPENAI_API_KEY": "k"}.get, self.cache)}
+        # A key without both dollar caps leaves the engine unselectable.
+        self.assertEqual((uncapped["openai"]["state"], uncapped["openai"]["reason"]), ("NOT_CONFIGURED", "PAID_AI_CAP_NOT_SET"))
+        options = {item["id"]: item for item in engine_options({"OPENAI_API_KEY": "k", **CAPS}.get, self.cache)}
         self.assertEqual(list(options), ["local", "anthropic", "openai", "gemini"])
         self.assertEqual((options["openai"]["state"], options["openai"]["default_model"]), ("AVAILABLE", "gpt-6-luna"))
         self.assertEqual((options["gemini"]["state"], options["gemini"]["reason"]), ("NOT_CONFIGURED", "GEMINI_API_KEY_NOT_SET"))
@@ -159,14 +165,18 @@ class EngineSelectionTests(unittest.TestCase):
         self.assertNotIn("k", json.dumps(options).split('"'))                  # a key value never appears
 
     def test_env_model_joins_the_list_as_default(self):
-        values = {"GEMINI_API_KEY": "k", "IMP_SYNTHESIS_GEMINI_MODEL": "gemini-next"}
+        values = {"GEMINI_API_KEY": "k", "IMP_SYNTHESIS_GEMINI_MODEL": "gemini-next", **CAPS}
         gemini = engine_options(values.get, self.cache)[3]
         self.assertEqual(gemini["models"][:2], ["gemini-next", "gemini-3.8-flash"])
-        chosen = select_synthesis_provider(values.get, cache_dir=self.cache, engine="gemini")
-        self.assertEqual((chosen.provider.model_id, chosen.provider._provider.reasoning_effort), ("gemini-next", "low"))
+        # A model with no pinned price cannot be capped in dollars, so it is never called.
+        self.assertEqual((gemini["state"], gemini["reason"]), ("NOT_CONFIGURED", "PAID_MODEL_PRICE_UNKNOWN"))
+        unpriced = select_synthesis_provider(values.get, cache_dir=self.cache, engine="gemini")
+        self.assertEqual((unpriced.provider, unpriced.reason), (None, "PAID_MODEL_PRICE_UNKNOWN"))
+        chosen = select_synthesis_provider(values.get, cache_dir=self.cache, engine="gemini", model="gemini-3.8-flash")
+        self.assertEqual((chosen.provider.model_id, chosen.provider._provider.reasoning_effort), ("gemini-3.8-flash", "low"))
 
     def test_operator_choice_beats_environment_beats_automatic(self):
-        values = {"ANTHROPIC_API_KEY": "a", "OPENAI_API_KEY": "o", "IMP_SYNTHESIS_PROVIDER": "local"}
+        values = {"ANTHROPIC_API_KEY": "a", "OPENAI_API_KEY": "o", "IMP_SYNTHESIS_PROVIDER": "local", **CAPS}
         settings = SynthesisSettings(values.get, self.cache)
         self.assertEqual(settings.current(), {"engine": "local", "model": None, "source": "ENVIRONMENT"})
         settings.select("openai", "gpt-6.1-sol")
@@ -176,11 +186,16 @@ class EngineSelectionTests(unittest.TestCase):
                          ("PAID_API", "gpt-6.1-sol", "low"))
         self.assertTrue((self.cache / ENGINE_SETTINGS_RELATIVE).is_file())      # survives a restart
         self.assertEqual(SynthesisSettings(values.get, self.cache).current()["engine"], "openai")
-        automatic = SynthesisSettings({"ANTHROPIC_API_KEY": "a"}.get, self.cache / "fresh")
-        self.assertEqual((automatic.current()["engine"], automatic.build().provider.model_id), ("auto", "claude-sonnet-5-5"))
+        # Automatic never picks paid AI, even with a key and caps: it is the local model (none is set up here).
+        automatic = SynthesisSettings({"ANTHROPIC_API_KEY": "a", **CAPS}.get, self.cache / "fresh")
+        self.assertEqual((automatic.current()["engine"], automatic.build().provider, automatic.build().reason),
+                         ("auto", None, "NO_SYNTHESIS_PROVIDER_CONFIGURED"))
 
     def test_anthropic_model_choice_is_honoured(self):
-        settings = SynthesisSettings({"ANTHROPIC_API_KEY": "a"}.get, self.cache)
+        with self.assertRaisesRegex(ValueError, "PAID_AI_CAP_NOT_SET"):    # never saved without both caps
+            SynthesisSettings({"ANTHROPIC_API_KEY": "a"}.get, self.cache).select("anthropic", "claude-haiku-4-5-20251001")
+        self.assertFalse((self.cache / ENGINE_SETTINGS_RELATIVE).exists())
+        settings = SynthesisSettings({"ANTHROPIC_API_KEY": "a", **CAPS}.get, self.cache)
         settings.select("anthropic", "claude-haiku-4-5-20251001")
         self.assertEqual(settings.build().provider.model_id, "claude-haiku-4-5-20251001")
 
@@ -198,19 +213,23 @@ class EngineSelectionTests(unittest.TestCase):
     def test_a_saved_model_dropped_from_the_catalog_falls_back_to_the_default(self):
         (self.cache / ENGINE_SETTINGS_RELATIVE).parent.mkdir(parents=True)
         (self.cache / ENGINE_SETTINGS_RELATIVE).write_text(json.dumps({"engine": "openai", "model": "gpt-retired"}))
-        self.assertEqual(SynthesisSettings({"OPENAI_API_KEY": "o"}.get, self.cache).build().provider.model_id, "gpt-6-luna")
+        self.assertEqual(SynthesisSettings({"OPENAI_API_KEY": "o", **CAPS}.get, self.cache).build().provider.model_id,
+                         "gpt-6-luna")
+        # A saved paid engine whose caps were later set back to 0 calls nothing.
+        self.assertEqual(SynthesisSettings({"OPENAI_API_KEY": "o"}.get, self.cache).build().reason, "PAID_AI_CAP_NOT_SET")
 
     def test_chosen_paid_engine_without_its_key_is_not_configured_never_another_vendor(self):
-        settings = SynthesisSettings({"ANTHROPIC_API_KEY": "a"}.get, self.cache)
+        settings = SynthesisSettings({"ANTHROPIC_API_KEY": "a", **CAPS}.get, self.cache)
         settings.select("gemini", None)
         selection = settings.build()
         self.assertEqual((selection.provider, selection.reason), (None, "GEMINI_API_KEY_NOT_SET"))
 
     def test_every_paid_engine_shares_one_budget_file(self):
-        values = {"ANTHROPIC_API_KEY": "a", "OPENAI_API_KEY": "o", "GEMINI_API_KEY": "g"}
-        paths = {engine: select_synthesis_provider(values.get, cache_dir=self.cache, engine=engine).provider.budget._path
-                 for engine in ("anthropic", "openai", "gemini")}
-        self.assertEqual(set(paths.values()), {self.cache / BUDGET_RELATIVE})
+        values = {"ANTHROPIC_API_KEY": "a", "OPENAI_API_KEY": "o", "GEMINI_API_KEY": "g", **CAPS}
+        providers = [select_synthesis_provider(values.get, cache_dir=self.cache, engine=engine).provider
+                     for engine in ("anthropic", "openai", "gemini")]
+        self.assertEqual({provider.budget._path for provider in providers}, {self.cache / BUDGET_RELATIVE})
+        self.assertEqual({provider.ledger._path for provider in providers}, {self.cache / "quota" / "paid-ai-dollars.json"})
 
     def test_auth_configure_stores_ai_keys_without_live_flags(self):
         self.assertEqual(configured_values("", "", "", openai_key="o", gemini_key="g"),

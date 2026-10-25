@@ -537,6 +537,7 @@
         "src/market_platform_foundation/ui_api/screener_ai_staged.py",
         "tools/ai_screener_local_first_benchmark.py",
         "tools/local_runtime_benchmark.py",
+        "tools/ai_decision_benchmark.py",
         "tests/support/local_first.py"
       ],
       "test_globs": [

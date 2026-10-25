@@ -142,6 +142,11 @@ no live worker here is `ERROR`, never `RUNNING`.
   allowance. A refusal sends no request and shows as `BLOCKED_BY_BUDGET`.
 - An unattended paid run carries a spend cap that refuses a too-large plan **before any hold or
   model call** (`AI_COVERAGE_BUDGET_INSUFFICIENT`, reason `AUTONOMOUS_SPENDING_LIMIT`).
+- Every paid call also stays inside the machine's dollar caps (`PAID_AI_DAILY_DOLLAR_CAP` /
+  `PAID_AI_MONTHLY_DOLLAR_CAP`, [AI_ENGINE_SWITCH.md](AI_ENGINE_SWITCH.md)). The AI engine is chosen in
+  Setup and cannot change while automatic passes hold it. To let Paper use paid AI: pause Paper, choose
+  the paid engine in Setup, then re-arm Paper with a policy whose `allow_paid_inference` is on. A policy
+  armed without it never sends a paid request, whatever the engine.
 - The AI pipeline never places an order. A model ENTER or EXIT is only a candidate: the Action
   Decision gate, preview, pre-trade risk and the submit lock all stand between it and the
   ledger.

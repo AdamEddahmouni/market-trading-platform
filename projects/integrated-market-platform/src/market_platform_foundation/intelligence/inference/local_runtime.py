@@ -25,15 +25,56 @@ PROFILES = {
     # context, f16 KV, single slot and memory floors; batch/ubatch measured with the pinned llama-bench
     # (destination-tests/20261016-paper-ai-throughput/baseline). Never promoted on shared-memory claims.
     'vulkan-8192/1': (8192, 512, 512, 4, 99),
+    # A mixture-of-experts model larger than the card: every layer on the GPU except the expert weights of the
+    # first PROFILE_CPU_MOE layers, which stay in system RAM (llama.cpp --n-cpu-moe). More threads, because those
+    # experts run on the CPU.
+    'vulkan-8192/1-moe': (8192, 512, 512, 8, 99),
 }
 # llama.cpp device per profile; profiles not listed run on the CPU only.
-PROFILE_DEVICES = {'vulkan-8192/1': 'Vulkan0'}
-# A GPU profile that cannot start falls back, visibly, to the CPU profile with the same context.
+PROFILE_DEVICES = {'vulkan-8192/1': 'Vulkan0', 'vulkan-8192/1-moe': 'Vulkan0'}
+# Layers whose expert weights stay on the CPU. Qwen3-30B-A3B: 48 layers of 0.34 GiB experts each; 38 on the CPU
+# leaves 10 layers' experts (3.4 GiB) plus the 0.93 GiB of shared weights and the KV cache on the card.
+PROFILE_CPU_MOE = {'vulkan-8192/1-moe': 38}
+# A GPU profile that cannot start falls back, visibly, to the CPU profile with the same context. The MoE profile
+# has none: the whole model in system RAM is far over the CPU process limit, so it stays refused instead.
 CPU_FALLBACK = {'vulkan-8192/1': 'cpu-8192/1'}
+# What the 8 GiB RTX 2070 Super may hold for one model: about 1 GiB stays with the Windows desktop and driver.
+GPU_VRAM_BUDGET_BYTES = 7 * GIB
+# Vulkan compute buffers at batch/ubatch 512 and the device context, on top of weights and KV.
+GPU_OVERHEAD_BYTES = 1 * GIB
+# Host allocations of a GPU profile besides the weights kept on the CPU: runtime, graph and staging buffers.
+HOST_ALLOWANCE_BYTES = 2 * GIB
 
 
 def profile_device(name):
     return PROFILE_DEVICES.get(name, 'none')
+
+
+def memory_plan(pin, manifest):
+    """Where the weights and KV cache go for this profile, in bytes. Pure arithmetic; starts nothing.
+
+    CPU profile: everything in host RAM (full weights + f16 KV + 2 GiB), under the 6 GiB process limit.
+    GPU profile: the offloaded weights, the KV cache and 1 GiB of buffers on the card, within its budget; the
+    host keeps the CPU-side weights + 2 GiB. A memory-mapped file's pages may stay in the process working set after
+    upload, so the GPU process limit also allows the offloaded weights; they are file-backed and reclaimable."""
+    kv = pin.layers * pin.kv_heads * pin.head_dim * 4 * manifest.context
+    if profile_device(manifest.execution_profile) == 'none':
+        host = pin.weight_bytes + kv + HOST_ALLOWANCE_BYTES
+        return {'device': 'none', 'gpu_bytes': 0, 'host_bytes': host, 'kv_bytes': kv,
+                'process_limit_bytes': MAX_PROCESS_BYTES, 'cpu_weight_bytes': pin.weight_bytes}
+    cpu_layers = min(pin.layers, PROFILE_CPU_MOE.get(manifest.execution_profile, 0)) if pin.expert_bytes else 0
+    cpu_weights = pin.expert_bytes * cpu_layers // pin.layers
+    gpu = pin.weight_bytes - cpu_weights + kv + GPU_OVERHEAD_BYTES
+    host = cpu_weights + HOST_ALLOWANCE_BYTES
+    return {'device': profile_device(manifest.execution_profile), 'gpu_bytes': gpu, 'host_bytes': host,
+            'kv_bytes': kv, 'cpu_moe_layers': cpu_layers, 'cpu_weight_bytes': cpu_weights,
+            'process_limit_bytes': max(MAX_PROCESS_BYTES, host + pin.weight_bytes - cpu_weights)}
+
+
+def process_limit(manifest):
+    """The working-set and commit ceiling the resource monitor enforces for this manifest's profile."""
+    pin = model_pin(manifest)
+    return memory_plan(pin, manifest)['process_limit_bytes'] if pin else MAX_PROCESS_BYTES
 _VERIFIED = {}
 _VERIFY_LOCK = threading.Lock()
 
@@ -125,12 +166,15 @@ def readiness(manifest, *, sample=None, process=None):
         reason = profile_reason(manifest)
     pin = model_pin(manifest)
     # Model-specific f16 K+V dimensions from the official architecture.
-    # Count the FULL weight artifact even with mmap, plus conservative uncalibrated
+    # CPU profile: count the FULL weight artifact even with mmap, plus conservative uncalibrated
     # 2 GiB runtime/repacking/graph/buffer allowance; b11269 repacks the pinned
     # 4B weights into 1683.28 MiB, already exceeding the old 1.5 GiB allowance.
-    # Extra host prompt snapshots are disabled; shared GPU budgets add no capacity.
-    kv = pin.layers * pin.kv_heads * pin.head_dim * 4 * manifest.context if pin else None
-    peak = pin.weight_bytes + kv + 2*GIB if kv is not None else None
+    # GPU profile: weights and KV the card holds are checked against its own budget, and only what stays on the
+    # CPU is counted in RAM (``memory_plan``). Extra host prompt snapshots are disabled; shared GPU memory adds
+    # no capacity.
+    plan = memory_plan(pin, manifest) if pin and not profile_reason(manifest) else None
+    kv = plan['kv_bytes'] if plan else None
+    peak = plan['host_bytes'] if plan else None
     resident = min(sample.get('process_bytes') or 0, sample.get('process_commit_bytes') or 0)
     additional = max(0, peak-resident) if peak is not None else None
     required = MIN_AVAILABLE_BYTES + additional if additional is not None else None
@@ -141,8 +185,10 @@ def readiness(manifest, *, sample=None, process=None):
             reason = 'LOCAL_RESOURCE_TELEMETRY_UNAVAILABLE'
         elif available < MIN_AVAILABLE_BYTES:
             reason = 'LOCAL_RESOURCE_INSUFFICIENT_MEMORY'
-        elif peak > MAX_PROCESS_BYTES:
+        elif plan['device'] == 'none' and peak > MAX_PROCESS_BYTES:
             reason = 'LOCAL_RESOURCE_PREDICTED_PROCESS_LIMIT'
+        elif plan['gpu_bytes'] > GPU_VRAM_BUDGET_BYTES:
+            reason = 'LOCAL_RESOURCE_PREDICTED_VRAM_LIMIT'
         elif commit < required:
             reason = 'LOCAL_RESOURCE_COMMIT_HEADROOM'
         elif available < required:
@@ -168,7 +214,11 @@ def readiness(manifest, *, sample=None, process=None):
         'available_memory':available, 'available_memory_bytes':available,
         'required_memory':required, 'minimum_available_bytes':MIN_AVAILABLE_BYTES,
         'estimated_peak_memory':peak, 'estimated_kv_bytes':kv,
-        'estimate_basis':'FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_2_GIB_RUNTIME_ALLOWANCE',
+        'estimated_gpu_memory':plan['gpu_bytes'] if plan else None, 'gpu_memory_budget':GPU_VRAM_BUDGET_BYTES,
+        'cpu_moe_layers':plan.get('cpu_moe_layers') if plan else None,
+        'process_limit_bytes':plan['process_limit_bytes'] if plan else MAX_PROCESS_BYTES,
+        'estimate_basis':('FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_2_GIB_RUNTIME_ALLOWANCE' if not plan or plan['device'] == 'none'
+                          else 'CPU_SIDE_WEIGHTS_PLUS_2_GIB_HOST__GPU_WEIGHTS_PLUS_F16_KV_PLUS_1_GIB_DEVICE'),
         'observed_peak_memory':sample.get('process_peak_bytes'), 'resource_sample':sample,
         'readiness_status':status, 'state':{'LOCAL_RUNTIME_READY':'READY',
             'LOCAL_RUNTIME_RESOURCE_BLOCKED':'RESOURCE_BLOCKED'}.get(status,'UNAVAILABLE'),

@@ -194,7 +194,8 @@ class EngineChoiceTests(unittest.TestCase):
         from market_platform_foundation.ui_api.screener_news import _default_synthesizer
 
         self._directory = tempfile.TemporaryDirectory()
-        values = {"ANTHROPIC_API_KEY": "a", "OPENAI_API_KEY": "o"}
+        values = {"ANTHROPIC_API_KEY": "a", "OPENAI_API_KEY": "o", "IMP_PAID_AI_DAILY_USD": "1",
+                  "IMP_PAID_AI_MONTHLY_USD": "5"}
         self.settings = SynthesisSettings(values.get, Path(self._directory.name))
         self.svc = service()
         self.svc._synthesis_settings = self.settings
@@ -205,7 +206,8 @@ class EngineChoiceTests(unittest.TestCase):
 
     def test_status_lists_engines_and_the_automatic_choice(self):
         ai = self.svc.instrument(universe="US_EQUITIES", instrument_id="EQ:AAPL")["ai"]
-        self.assertEqual((ai["engine"], ai["engine_source"], ai["model_id"]), ("auto", "AUTOMATIC", "claude-sonnet-5-5"))
+        # Automatic is the local model even with paid keys and caps saved (no local model is set up here).
+        self.assertEqual((ai["engine"], ai["engine_source"], ai["model_id"], ai["runtime"]), ("auto", "AUTOMATIC", None, None))
         self.assertEqual([item["id"] for item in ai["engines"]], ["local", "anthropic", "openai", "gemini"])
         preview = self.svc.synthesis_preview(universe="US_EQUITIES", scope="INSTRUMENT", instrument_id="EQ:AAPL")
         self.assertEqual(preview["ai"]["engines"], ai["engines"])

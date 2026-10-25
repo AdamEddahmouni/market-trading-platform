@@ -169,14 +169,13 @@ class EvidenceReviewService:
 
     def model(self) -> dict:
         """The operator's saved engine and model. Configuration only; availability is never probed here."""
-        from ..intelligence.inference.synthesis_engines import AUTO
+        from ..intelligence.inference.synthesis_engines import resolved_engine
 
         settings = self.settings()
         choice = settings.current()
         options = {option['id']: option for option in settings.options()}
-        engine = choice['engine']
-        if engine == AUTO:
-            engine = 'anthropic' if options['anthropic']['state'] == 'AVAILABLE' else 'local'
+        # Automatic is always the free local model; a saved paid key alone never selects paid AI.
+        engine = resolved_engine(choice['engine'])
         option = options[engine]
         return dict(engine=engine, model=choice['model'] or option['default_model'], selection_source=choice['source'],
                     runtime=option['runtime'], configured=option['state'] == 'AVAILABLE',

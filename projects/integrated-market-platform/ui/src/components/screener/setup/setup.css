@@ -52,3 +52,18 @@
 .setup-config-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .setup-config-status.error{color:#f0a0a8}
 .setup-config-status.saved{color:#78d6ad}
+.setup-ai{display:flex;flex-direction:column;gap:6px;padding-bottom:8px;border-bottom:1px solid #27313d}
+.setup-ai p{margin:0 10px;line-height:1.45}
+.setup-ai-now{color:#e1eaf4}
+.setup-ai-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;padding:0 10px}
+.setup-ai-option{display:flex;flex-direction:column;gap:5px;padding:8px;border:1px solid #2e3d4e;border-radius:3px;background:#121a23}
+.setup-ai-option.chosen{border-color:#2f6a52}
+.setup-ai-option h4{margin:0;color:#e8f0f8;font-size:12px}
+.setup-ai-option p{margin:0}
+.setup-ai-option button,.setup-ai-option label{align-self:flex-start}
+.setup-ai-blocked{color:#f0c36b}
+.setup-ai-caps{display:flex;flex-direction:column;gap:5px;padding:0}
+.setup-ai-cap-fields{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:0 10px}
+.setup-ai-cap-fields label{display:flex;flex-direction:column;gap:3px;font-weight:600;color:#e1eaf4}
+.setup-ai-cap-fields input{width:110px}
+.setup-ai-caps .setup-config-status{margin:0 10px}

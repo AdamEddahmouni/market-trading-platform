@@ -135,6 +135,15 @@ put back; its shortcut `%APPDATA%\moomoo_OpenD` still has to be recreated
 from an ordinary Command Prompt (staged as `FIX_OPEND_SHORTCUT.cmd`). OpenD
 was not started.
 
+**Rebuild step 5 (2026-10-24).** One Setup card now chooses which AI decides: the
+free local model or one paid model under hard daily and monthly dollar caps. Paid
+AI is off unless the owner chooses it and sets both caps; a saved key alone turns
+nothing on, and the Assistant follows the same choice
+([AI engine switch](../operations/AI_ENGINE_SWITCH.md)). A test on 60 real past
+decisions kept Qwen3-4B as the local model and preselected Claude Haiku 5.5 as the
+paid one ([benchmark](../reports/AI_ENGINE_BENCHMARK_20261024.md)); the paid test
+cost $0.38. It is on `claude/switchable-ai-20261024`, **not deployed**.
+
 **Next.** The rebuild order agreed with the owner (data-flow watchdog,
 database locking, opportunity-engine shortlist, automatic restart, switchable
 AI, short selling, selective overnight holds, evaluation report, journal fix,
