@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Mutable current program state and material limitations |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.86` |
-| Last Verified | `2026-10-23` (operating-state reconciliation against the stopped workstation, its state store, logs and GitHub; see [Current operating state](#current-operating-state-2026-10-23)). Rows below that cite 2026-10-11 were not re-verified. |
+| Version | `1.87` |
+| Last Verified | `2026-10-26` (Step 10 Phase A local integration and offline validation; the operating state was otherwise last verified 2026-10-23 against the stopped workstation, its state store, logs and GitHub; see [Current operating state](#current-operating-state-2026-10-23)). Rows below that cite 2026-10-11 were not re-verified. |
 | **CURRENT_MAIN** (`origin/main` mutable tip; alias **CURRENT_GIT_MAIN**) | Verified 2026-10-23: `origin/main` = `b4743f68` ([#498](https://github.com/AdamEddahmouni/market-trading-platform/pull/498), 2026-10-12). The workstation's running release is **not** on main; see [Current operating state](#current-operating-state-2026-10-23). Earlier record: `a1f9a3a1bfcfcd21e5407f48b2c1c2feb8c99bcd` — verified 2026-10-11 source base, portable live-startup merge [#493](https://github.com/AdamEddahmouni/market-trading-platform/pull/493) (after [#490](https://github.com/AdamEddahmouni/market-trading-platform/pull/490)–[#492](https://github.com/AdamEddahmouni/market-trading-platform/pull/492)). The earlier OCT1-10 source base `42088bcbb3fbebc98af7d317df03dc5ea565d7cf` ([#465](https://github.com/AdamEddahmouni/market-trading-platform/pull/465)) is a historical checkpoint. Later integration tips/checks are recorded in their PR/task ledgers; verify with `git rev-parse origin/main`. Frozen campaign runtimes below are unchanged. |
 | **CURRENT_SOFTWARE_IMPLEMENTATION** | Accepted source base `a1f9a3a1bfcfcd21e5407f48b2c1c2feb8c99bcd` ([#493](https://github.com/AdamEddahmouni/market-trading-platform/pull/493)); it contains the OCT1-10 lifecycle view (base `42088bcb…`, [#465](https://github.com/AdamEddahmouni/market-trading-platform/pull/465)) and later accepted increments whose integration receipts are linked below. Software does not establish empirical evidence. Live execution remains **OFF**; calibration **not** executed. |
 | **RTH_OBS_NEWS_20260923_FROZEN_RUNTIME** / frozen observational SHA | `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` — campaign `RTH-OBS-NEWS-20260923` armed `2026-09-23 13:03:32.789458 -04:00`; status **`PARTIAL_LATE_ARM`** (pre-arm window **`NOT_OBSERVED`**, no backfill). Closed `RTH_CLOSE_SHUTDOWN` `2026-09-23 17:40:52 -04:00` (`LATE_GOVERNED_CLOSE`). **Not** **CURRENT_MAIN**; do **not** retarget; do **not** re-arm this freeze. |
@@ -118,9 +118,16 @@ positions, $75k total, $2k daily loss stop, long only, SMA stop 20 × 1m
   rejected on 10-23 (equity 4.6%); slices take 15–30 minutes.
 - **Launcher readiness** waits 60–300 s depending on how the API fails, and
   the Moomoo probe expires after 24 h.
-- **Open pull requests**: #456, #479, #501, #502, #503, #505 and #507 pass CI;
-  #504 and #506 each fail two UI tests; #500 is a draft that fails Python
-  validation. The owner is holding all of them.
+- **Held pull requests**: #456, #479, #501, #502, #503, #504, #505, #506 and
+  #507 are folded into the local Step 10 release candidate. Their individual
+  branches stay open and unchanged; #504 and #506 still show two failing UI
+  tests on their own PRs, while the integrated head passed the complete UI
+  suite. They stay open until the release is accepted and the owner decides
+  their disposition. These are **not** fold inputs and must not be merged:
+  #508 is a draft backup/base PR; #500 is an older draft that fails Python
+  validation; #509 is a draft backup of rebuild steps 1-6 at `a550c22c`
+  (steps 7-9 were never pushed to it). #509 becomes superseded after Step 10;
+  closing it is a later owner-approved remote action.
 
 **Rebuild step 3 (2026-10-24).** The AI no longer sees the whole market by
 default. A numeric
@@ -152,7 +159,20 @@ cost $0.38. It is on `claude/switchable-ai-20261024`, **not deployed**.
 
 **Rebuild step 8 (2026-10-26).** The owner approved implementation of the continuous Paper evaluation report: fixed and covered-session day 10/day 20 scorecards, completed position episodes, SPY total return, gap reporting, cost accounting and immutable exports. See [Paper performance evaluation](../architecture/PAPER_PERFORMANCE_EVALUATION.md). Offline verification is recorded in the current work-log entry. Not deployed or activated; services, tasks and paid AI remain off by instruction.
 
-**Rebuild step 9 (2026-10-26).** The AI Journal budget guard is engine-aware: an available free local model is no longer blocked by the zero paid-request budget, while a paid engine keeps the existing six-request reserve and fails closed on a missing, malformed or unknown budget/runtime. Receipts record the guard basis. The operator files are outside Git; the disabled `IMP-AI-Journal` task was not re-registered or started, and its schedule, action, 45-minute limit and timeout behavior are unchanged. Offline validation (42/42 cases, including full `main()` simulations) is recorded in the current work-log entry and the external `destination-tests/20261026-ai-journal-guard` evidence. No live run, service, paid call or real state-database access; not deployed.
+**Rebuild step 9 (2026-10-26).** The AI Journal budget guard is engine-aware: an available free local model is no longer blocked by the zero paid-request budget, while a paid engine keeps the existing six-request reserve and fails closed on a missing, malformed or unknown budget/runtime. Receipts record the guard basis. The documentation is committed at `05378947`. The operator files remain outside Git and are preserved by hash; the disabled `IMP-AI-Journal` task was not re-registered or started, and its schedule, action, 45-minute limit and timeout behavior are unchanged. Offline validation (42/42 cases, including full `main()` simulations) is recorded in the current work-log entry and the external `destination-tests/20261026-ai-journal-guard` evidence. No live run, service, paid call or real state-database access; not deployed.
+
+**Rebuild step 10 (2026-10-26, Phase A only).** The nine held pull requests
+were folded into the local integration branch `claude/step10-release-20261026`
+at merge commits `63d3ae75` (#507) and `8bd88485` (#503), from verified step-9
+base `05378947`. The merge preserves shorts, selective overnight holds,
+automation ownership, risk controls, close-out, and the multi-scope Paper
+controller; #503's renewal now follows the loop bound to each scope rather than
+the account's latest loop. Offline validation found no new regressions; the
+changed and full suites remain red only for the three recorded baseline issues.
+The release candidate is built from serving delta `e8892eb3..final HEAD` and
+rehearsed only in throwaway trees. Proposed label: `rebuild-step10-20261026`,
+pending owner confirmation. Nothing is pushed, deployed, started, registered,
+armed or traded; Phase B and Phase C remain unauthorized.
 
 **Rebuild step 7 (2026-10-25).** Selective overnight holds and close-out fixes
 are implemented on `claude/overnight-holds-20261025`, based on `a550c22c`.
@@ -178,12 +198,16 @@ close-out skipped shorts
 Live stays off. It is on `claude/short-selling-20261025`, **not deployed**, and
 needs a new short-enabled Paper account at the release.
 
-**Next.** Rebuild step 9 is complete locally and remains uncommitted. Step 10
-is the existing documented next item: fold in the held pull requests, then one
-release with the owner's deploy approval and a restart. The rebuild order agreed
-with the owner (data-flow watchdog, database locking, opportunity-engine
-shortlist, automatic restart, switchable AI, short selling, selective overnight
-holds, evaluation report, journal fix, then one approved release) is in
+**Next.** Step 9 is committed (`05378947`); its operator files are preserved
+outside Git by hash and the disabled task was not re-registered. Step 10 Phase A
+is complete locally: both fold heads are merged, offline validation is recorded,
+and the release candidate is packaged for rehearsal. Phase B (remote backup,
+draft PR, CI and disposition of the nine held PRs) and Phase C (deployment,
+task registration, restart and any trading activation) require separate owner
+approval. The rebuild order agreed with the owner (data-flow watchdog, database
+locking, opportunity-engine shortlist, automatic restart, switchable AI, short
+selling, selective overnight holds, evaluation report, journal fix, then one
+approved release) is in
 [Owner decisions 2026-10-23](OWNER_DECISIONS_20261023.md#build-order-agreed-for-the-rebuild).
 Live execution remains **OFF**.
 

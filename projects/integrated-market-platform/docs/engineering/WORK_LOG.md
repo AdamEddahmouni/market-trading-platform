@@ -1,5 +1,74 @@
 # IMP Work Log
 
+## 2026-10-26 — Rebuild step 10: held pull requests folded, release candidate prepared
+
+Owner approved Phase A only: local integration, offline validation,
+release-candidate packaging and a throwaway rehearsal. Phase B (remote backup,
+draft PR, CI and PR disposition) and Phase C (deployment, tasks, services and
+trading activation) remain unauthorized.
+
+**Base and folds.** Started at `053789473df374f0200f363af9d974a1ac3bf151`
+(step 9). Merged #507 `a6b483196d6bb04878c69d73966b2a38251d89fd`
+(`ui/setup-source-switches`) as `63d3ae751192483f8055d6d2ad12d6d23b5bc675`,
+parents `05378947` and `a6b48319`. Merged #503
+`f39b6ff8512f4f70f39e861d36399f24ff0545a0`
+(`fix/automation-lease-renewal`) as
+`8bd884854ff0c4bc3673c6b796c732d7ac7e9015`, parents `63d3ae75` and
+`f39b6ff8`. All nine held heads (#456, #479, #501, #502, #503, #504, #505,
+#506, #507) are ancestors of `8bd88485`. Draft backups #508, #500 and #509 were
+not merged.
+
+**Conflict resolution.** #507 conflicted only in `WORK_LOG.md`; its five
+2026-10-22 Sprint entries were inserted in reverse-chronological order between
+the 2026-10-23 and 2026-10-21 entries. #503 conflicted in `WORK_LOG.md`,
+`paper_automation.py`, `screener_reevaluation.py` and
+`test_paper_automation.py`; both test sets and every work-log entry were kept.
+No file was deleted. The lease work was then fitted to the rebuild's
+multi-scope controller:
+
+- `PaperAutomationService` keeps the in-cycle `LeaseKeeper`, the `lease_wait`
+  test hook and the existing `sleep` hook. Its heartbeat renews every loop it
+  drives once, including each scoped loop.
+- `ReevaluationService` keeps the bound scope and renews `_current_loop()`,
+  never another scope's account-latest loop.
+- The one-loop guard treats scoped services of one controller (owner prefix
+  before the scope suffix) as the same process, so legitimate universe scopes
+  are not refused.
+- Regression coverage was added for scoped renewal, one renewal per driven
+  loop, and the owner-prefix guard.
+
+**Validation.** `env` healthy; `format` and `lint --all` passed. FAST: 23
+passed, 0 skipped, 0 failures/errors. Focused backend (reevaluation, Paper
+automation, universe, keeper, restart, shorts and overnight): 445 passed.
+Focused UI (`QuickPreview.test.tsx`, `ScreenerPanels.test.tsx`): 41 passed
+across two files. Changed: 8,216 run, 36 skipped, 1 failure, 1 error. Full:
+9,836 run, 59 skipped, 1 failure, 2 errors. Those are exactly the recorded
+baseline issues: the `apps` import in
+`tests/formulas/test_heuristic_pin_drift.py` (full only), the tempfile leak at
+`tests/news/test_local_intelligence.py:60`, and the unclassified
+`tools/paper_forecast_build.py`; no new regression. Full UI: 1,567 passed
+across 194 files. Typecheck, build and bundle budget passed (initial bundle
+100.84 KiB gzip). Documentation links passed for 311 governance Markdown files
+before this documentation commit. This is not a full-green claim.
+
+**Release candidate.** The candidate is built from the actual serving delta
+`e8892eb3a6f64d15b35ff933252742a8a3cc1d20..final HEAD`: 256 files,
++17,402/−1,615 before this documentation commit, with no deletions. The
+external package under `destination-tests/20261026-step10-release/` records the
+complete file list, hashes, serving preimages, a collector-manifest proposal,
+operator-file preservation and the task plan. Apply, verify and rollback are
+rehearsed only in throwaway code and operator trees. The proposed label is
+`rebuild-step10-20261026`, pending owner confirmation; the exact final HEAD and
+rehearsal receipts stay external because this entry's commit is part of the
+candidate.
+
+**State.** The integration branch is local and not pushed. Nothing was
+deployed, installed, registered, enabled, started or armed. No service,
+collector, OpenD, inference process, Paper controller or scheduled task ran; no
+paid AI was called and no order was submitted. The state database was not
+accessed. R12's deployment receipt recorded `start_exit: 1`, so Phase C still
+has to prove a clean start. Live execution remains **OFF**.
+
 ## 2026-10-26 — Rebuild step 9: AI Journal budget-guard fix
 
 Owner approved the bounded step 9 plan on 2026-10-26 under the recorded rebuild
@@ -38,8 +107,9 @@ operator script compiled in memory and the registration script parsed without
 execution. No service, model, provider or real state database was used.
 
 No live local-engine journal run, no claim that a symbol completes within 600
-seconds or the 45-minute task limit, and no operational acceptance. Changes are
-uncommitted.
+seconds or the 45-minute task limit, and no operational acceptance. The
+documentation is committed at `05378947`; the operator files remain outside Git
+and are preserved by hash. The task remains disabled and was not re-registered.
 
 ## 2026-10-26 — Rebuild step 8: continuous Paper evaluation report
 
