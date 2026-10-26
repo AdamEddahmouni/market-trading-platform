@@ -17,9 +17,10 @@ from typing import Any, Mapping
 from ..local_state.migrations import current_schema_version
 
 DEFAULT_MAX_DATABASE_BYTES = 512 * 1024**2
-# Owner-approved 2026-10-14: an operator may opt one store in to at most 8 GiB through
-# IMP_PF01_MAX_DATABASE_MIB. Unset keeps the shipped 512 MiB ceiling everywhere.
-APPROVED_MAX_DATABASE_BYTES = 8 * 1024**3
+# Owner-approved 2026-10-26: an operator may opt one store in to at most 16 GiB through
+# IMP_PF01_MAX_DATABASE_MIB (previous approval: 8 GiB on 2026-10-14).
+# Unset keeps the shipped 512 MiB ceiling everywhere; every writer still stops at its configured bound.
+APPROVED_MAX_DATABASE_BYTES = 16 * 1024**3
 MAX_DATABASE_MIB_ENV = 'IMP_PF01_MAX_DATABASE_MIB'
 STORAGE_RESERVE_BYTES = 8 * 1024**2  # existing writer's four 2 MiB batches
 

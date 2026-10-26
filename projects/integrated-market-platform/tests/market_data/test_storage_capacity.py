@@ -16,6 +16,18 @@ class StorageCapacityTests(unittest.TestCase):
     def test_capacity_module_exists(self):
         self.assertIsNotNone(importlib.util.find_spec('market_platform_foundation.market_data.capacity'))
 
+    def test_owner_approved_16_gib_opt_in_preserves_default_and_stop_bound(self):
+        from market_platform_foundation.market_data.capacity import capacity_status, configured_max_database_bytes
+        env = {'IMP_PF01_MAX_DATABASE_MIB': '16384'}
+        self.assertEqual(configured_max_database_bytes({}), 512 * 1024**2)
+        self.assertEqual(configured_max_database_bytes(env), 16 * 1024**3)
+        self.assertEqual(capacity_status(7 * 1024**3, env=env)['state'], 'READY')
+        stopped = capacity_status(16 * 1024**3, env=env)
+        self.assertEqual(stopped['state'], 'STOP_REQUIRED')
+        self.assertEqual(stopped['retention_action'], 'PRESERVE_ALL_STOP_BEFORE_BOUND')
+        with self.assertRaisesRegex(ValueError, 'CAPACITY_UNAPPROVED_HIGHER_CEILING'):
+            configured_max_database_bytes({'IMP_PF01_MAX_DATABASE_MIB': '16385'})
+
     def test_wal_and_shared_database_use_the_same_ceiling(self):
         from market_platform_foundation.market_data.capacity import capacity_status
         status = capacity_status(400 * 1024**2, wal_bytes=30 * 1024**2)

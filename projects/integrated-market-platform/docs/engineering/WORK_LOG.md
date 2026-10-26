@@ -1,5 +1,10 @@
 # IMP Work Log
 
+## 2026-10-26 — Owner approved bounded collection storage of 16 GiB
+
+After the AI-input update, collector restart refused its 80% capacity-warning preflight: the shared store used 7,039,345,184 bytes under the 8 GiB ceiling. The owner explicitly answered “Approve 16 GiB.” The configured opt-in maximum is extended to 16 GiB; the shipped default remains 512 MiB. The collector setting will use 16,384 MiB with a 15,872 MiB market budget, preserving a 512 MiB news reserve and the existing emergency reserve and stop-before-bound behavior. No data is deleted, sampled, compacted or moved. The capacity regression failed at the former ceiling, then all 18 capacity/accounting/health tests passed with the approved extension. Runtime receipts separately establish the applied settings and successful collection.
+
+
 ## 2026-10-26 — Owner-requested AI input freshness and broad coverage repair
 
 The owner requested all available opportunities, news and sentiment reach the AI as frequently as feasible. Autonomous reviews now refresh shared news and bounded watched-instrument news through existing provider gates/TTLs, score available headlines and acquire fresh market snapshots before the evidence cutoff. Manual cache-only reviews retain their existing contract. Rolling coverage retains compact immutable-outcome-derived turn indexes across recent-run pruning and restarts, supporting the existing full-universe mode without repeating early rows indefinitely.

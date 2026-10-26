@@ -38,7 +38,7 @@ retention expiry would require a separately approved policy and transition desig
 It counts database plus WAL, subtracts the existing 8 MiB emergency reserve,
 and optionally limits remaining growth by actual disk-free bytes. States are
 `READY`, `WARNING` at 80% of the shared ceiling, and `STOP_REQUIRED` when the
-reserve cannot fit. It accepts only ceilings from 2 MiB through 512 MiB.
+reserve cannot fit. The default remains 512 MiB. An explicit `IMP_PF01_MAX_DATABASE_MIB` opt-in accepts 2 MiB through the owner-approved 16 GiB maximum (approved October 26, 2026; the prior approval was 8 GiB). Every writer still enforces its configured ceiling, including database plus WAL and the emergency reserve. A larger ceiling never enables deletion or indefinite retention.
 The preservation action is `PRESERVE_ALL_STOP_BEFORE_BOUND`.
 
 `inspect_storage` opens an existing database with SQLite `mode=ro` and
