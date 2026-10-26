@@ -382,7 +382,7 @@ def serve(*, host: str, port: int) -> None:
     handler = type("BoundUiApiHandler", (UiApiHandler,), {"store": store})
     server = SingleBindHTTPServer((host, port), handler)
     print(json.dumps({"host": host, "instrument_id": store.instrument_id, "port": port, "status": "serving"}))
-    writer = collector = None
+    writer = collector = performance_observer = None
     try:
         writer = start_persistence(store.data_mode)
         start_screener_warmup(store=store)
@@ -395,8 +395,13 @@ def serve(*, host: str, port: int) -> None:
 
         print(json.dumps({"event": "ui_api.paper_live_forecast", **start_paper_live_forecast()}), flush=True)
         collector = start_collection(store.data_mode)
+        from market_platform_foundation.ui_api.paper_performance import start_performance_observer
+
+        performance_observer = start_performance_observer(store)
         server.serve_forever()
     finally:
+        if performance_observer is not None:
+            performance_observer.stop()
         if collector is not None:
             stop_collection()
         if writer is not None:

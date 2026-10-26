@@ -144,6 +144,8 @@ decisions kept Qwen3-4B as the local model and preselected Claude Haiku 5.5 as t
 paid one ([benchmark](../reports/AI_ENGINE_BENCHMARK_20261024.md)); the paid test
 cost $0.38. It is on `claude/switchable-ai-20261024`, **not deployed**.
 
+**Rebuild step 8 (2026-10-26).** The owner approved implementation of the continuous Paper evaluation report: fixed and covered-session day 10/day 20 scorecards, completed position episodes, SPY total return, gap reporting, cost accounting and immutable exports. See [Paper performance evaluation](../architecture/PAPER_PERFORMANCE_EVALUATION.md). Offline verification is recorded in the current work-log entry. Not deployed or activated; services, tasks and paid AI remain off by instruction.
+
 **Rebuild step 7 (2026-10-25).** Selective overnight holds and close-out fixes
 are implemented on `claude/overnight-holds-20261025`, based on `a550c22c`.
 The owner's caps are 5 positions / $25,000 / 5 trading sessions, including

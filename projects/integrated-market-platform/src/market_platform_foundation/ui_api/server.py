@@ -468,6 +468,36 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 self._send_json(setup_ai_status(engine_lock=self._engine_lock()))
                 return
+            if path.startswith("/evaluation/paper-performance/"):
+                try:
+                    from .paper_performance import performance_service
+                    service = performance_service(self.store)
+                    base = "/evaluation/paper-performance/runs"
+                    if path == base:
+                        self._send_json({"runs": service.repository.runs(service.account)})
+                        return
+                    parts = path.removeprefix(base + "/").split("/")
+                    report_id = (query.get("report_id") or [None])[0]
+                    if len(parts) == 1 and path.startswith(base + "/"):
+                        self._send_json(service.read(parts[0], report_id))
+                        return
+                    if len(parts) == 2 and parts[1] == "export" and path.startswith(base + "/"):
+                        mime, text = service.export(parts[0], (query.get("format") or ["html"])[0], report_id)
+                        body = text.encode("utf-8")
+                        self.send_response(HTTPStatus.OK)
+                        self.send_header("Content-Type", mime)
+                        self.send_header("Content-Length", str(len(body)))
+                        extension = "html" if mime.startswith("text/html") else "csv"
+                        self.send_header("Content-Disposition", 'attachment; filename="paper-performance.' + extension + '"')
+                        self.send_header("X-Content-Type-Options", "nosniff")
+                        self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'")
+                        self.end_headers()
+                        self.wfile.write(body)
+                        return
+                    raise ValueError("PERFORMANCE_ROUTE_NOT_FOUND")
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("PAPER_PERFORMANCE_UNAVAILABLE", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
             if path.startswith("/evaluation/prospective/"):
                 try:
                     from .prospective_evaluation import evaluation_service
@@ -1744,6 +1774,23 @@ class UiApiHandler(BaseHTTPRequestHandler):
             self._send_json(handle_auth_logout(token))
             return
         if not self._authorize_request("POST", path, parse_qs(parsed.query), body):
+            return
+        if path.startswith("/evaluation/paper-performance/runs/") and path.endswith("/refresh-benchmark"):
+            try:
+                from .paper_performance import performance_service
+                run_id = path.removeprefix("/evaluation/paper-performance/runs/").removesuffix("/refresh-benchmark")
+                if body or "/" in run_id:
+                    raise ValueError("INVALID_BENCHMARK_REFRESH")
+                self._send_json(performance_service(self.store).request_benchmark_refresh(run_id))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PAPER_PERFORMANCE_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/evaluation/paper-performance/runs":
+            try:
+                from .paper_performance import performance_service
+                self._send_json(performance_service(self.store, initialize=True).enroll(body))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PAPER_PERFORMANCE_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path in ("/evaluation/prospective/runs", "/evaluation/prospective/rerun"):
             try:

@@ -334,6 +334,14 @@ See [DATA_CONTRACTS.md](DATA_CONTRACTS.md) for timestamp and ID rules.
 | Projections | `ui_api/projections.py`, `paper_projections.py` |
 
 
+## Paper evaluation reporting
+
+The separately enrolled [day 10/day 20 performance report](PAPER_PERFORMANCE_EVALUATION.md)
+reads canonical fills and costs with original cutoff marks. Its passive observer
+and immutable reports grant no order or execution authority. Manual trades
+remain part of account equity and mark the result mixed. Fixed and covered
+milestones retain one baseline and all intervening returns.
+
 ## Overnight holds and end-of-day close-out
 
 Owner-approved rebuild step 7 (2026-10-25), internal Paper simulation only.

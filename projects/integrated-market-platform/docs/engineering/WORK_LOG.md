@@ -1,5 +1,36 @@
 # IMP Work Log
 
+## 2026-10-26 — Rebuild step 8: continuous Paper evaluation report
+
+Owner explicitly approved the plan from step 7 base `59838c64`. Built explicit
+prospective untraded-account enrollment; fixed and covered-session 10/20
+scorecards; flat-to-flat completed trades; mixed-run and configuration-drift
+withholding; independent passive capture; exact-cutoff detached ledger replay;
+posted/unposted costs; bounded raw SPY/dividend/split reads; immutable evidence
+revisions; account-scoped API; existing Evaluation page integration; HTML/CSV.
+The reporting-only 2026 calendar includes known early closes; execution calendar
+and trading behavior are unchanged. Existing portfolio evaluation link is reused.
+
+Final offline verification is recorded under
+`destination-tests/20261026-paper-performance` outside Git. Focused backend:
+112 passed; fast invariants: 23 passed. Full UI: 1,471 passed across 188 files;
+typecheck, build and 100.84 KiB gzip initial-bundle budget passed. Documentation
+links passed across 311 governance files. Full backend: 9,782 tests, 9,720 passed,
+59 skipped, one failure and two errors, all three previously known: missing
+`apps` import in formulas; news tempfile leak at `tests/news/test_local_intelligence.py:60`;
+unclassified `tools/paper_forecast_build.py`. Affected: 7,870 tests, 7,832 passed,
+36 skipped, only the latter two baseline issues. Neither broad run is green.
+Performance comparisons report INSUFFICIENT_DATA because workload counts differ
+from the stored reference; no performance improvement is claimed.
+
+Independent whole-change review found four issues in adjustment validation,
+resolved-model binding, duplicate actions and exact split ties. Each received a
+failing regression before the fix; all 33 feature tests then passed. No deferred
+review findings. Immutable HTML/CSV software-fixture examples are explicitly
+SOFTWARE_CONTROLLED, not market results. No real state-database access,
+services/tasks, paid calls, push, PR update, merge or deployment. Market-data
+entitlement/continuous-run acceptance remain separate release work.
+
 ## 2026-10-25 — Rebuild step 7: selective overnight holds and close-out fixes
 
 Continues Opus's approved plan and three unfinished files on

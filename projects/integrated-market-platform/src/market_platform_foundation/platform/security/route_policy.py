@@ -79,6 +79,9 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
     if path == "/security/readiness":
         return RoutePolicy(capability="security.config.read")
 
+    if path.startswith("/evaluation/paper-performance/"):
+        return RoutePolicy(capability="audit.read" if method_upper == "GET" else "state.write",
+                           account_scope=AccountScopeKind.PAPER_LEDGER)
     if path.startswith("/evaluation/prospective/"):
         # Evaluation artifacts have state-write authority only; never order authority.
         return RoutePolicy(capability="audit.read" if method_upper == "GET" or path.endswith("/rerun") else "state.write",

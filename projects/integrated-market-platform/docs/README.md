@@ -60,6 +60,7 @@ it in the authoritative doc — do not silently choose.
 | Screener decision freshness and consumer gate | [SCREENER_DECISION_FRESHNESS.md](architecture/SCREENER_DECISION_FRESHNESS.md) |
 | Screener explicit action decisions and Paper handoff | [SCREENER_ACTION_DECISION.md](architecture/SCREENER_ACTION_DECISION.md) |
 | Screener next-session snapshots and governed reevaluation loop | [SCREENER_REEVALUATION.md](architecture/SCREENER_REEVALUATION.md) |
+| Paper day 10/day 20 evaluation | [PAPER_PERFORMANCE_EVALUATION.md](architecture/PAPER_PERFORMANCE_EVALUATION.md) |
 | Screener trade lifecycle (candidate → decision → Paper position → stop → exit → P&L, read-only) | [SCREENER_TRADE_LIFECYCLE.md](architecture/SCREENER_TRADE_LIFECYCLE.md) |
 | System architecture | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
 | Demo / Paper / Live safety | [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md) |
