@@ -459,6 +459,70 @@ when the provider is unhealthy, and it also closes manual positions. Deployed
 $5k / 15 / $75k / $2k, long only, SMA 20 × 1m). Result for the day: zero
 fills; see the 10-23 reconciliation entry above.
 
+## 2026-10-22 — Paper automation lease held through driven cycles
+
+The Paper automation controller has a 180 s lease. It was renewed only at
+three points: the start of its cycle, the order checks, and the cycle's end.
+A driven reevaluation with a long local-model call let it lapse mid-cycle,
+with two effects:
+- The controller's own status read `ERROR` / `CONTROLLER_NOT_ALIVE` while the
+  cycle was working.
+- Another process could start the controller and run beside it.
+
+`run_cycle` now runs the same `LeaseKeeper` as the reevaluation loop (#502).
+- It renews every lease / 3 through the controller heartbeat, which also
+  renews the driven loop.
+- It stops when the cycle ends, and for good at the first refused renewal.
+  Stop, Emergency Stop and Disarm release the lease through `_halt`, and a
+  takeover changes its owner, so neither is ever renewed afterwards.
+
+Deterministic tests, paced by hand against the injected clock:
+- A 490 s driven call keeps the controller `THIS_PROCESS` with no authority
+  blocker, and a second process's Start is refused at every step.
+- A Stop mid-call ends the renewals.
+- A takeover is never reversed.
+
+With the renewal made a no-op, all three fail: the second process's Start
+succeeds mid-cycle. Stacked on #502. Not merged and not deployed.
+
+## 2026-10-22 — Reevaluation lease held through long model calls
+
+The live Screener's AI status kept switching between "Interrupted" and "Running
+in another process" while the loop was working. The loop's 180 s lease was
+renewed only between cycles and just before each model call, so a local-model
+call longer than 180 s let it expire mid-call. A loop driven by Paper
+automation had a second gap: nothing renewed it between the controller's
+cycles, and that cadence can be up to 3600 s.
+
+- **Inside a cycle:** a scheduled cycle now runs a lease keeper that renews
+  every lease / 3. It stops when the cycle ends, and for good at the first
+  refused renewal. The repository refuses once the lease is released (Stop,
+  Emergency Stop, detach) or another process holds it, so a lost lease is
+  never taken back. A worker that dies renews nothing, and its loop reads
+  `INTERRUPTED` once the last renewal runs out. Manual cycles hold no lease
+  and start no keeper.
+- **Between automation cycles:** the Paper automation controller's own
+  heartbeat also renews the loop it drives. After Stop, Emergency Stop or
+  detach, it renews neither lease.
+- **One loop per account:** `latest_loop` could alternate between two loops
+  of one account. That needed a second process to configure another scope
+  while the first still held its lease; both then wrote the account's
+  "latest" in turn. Configure now refuses with
+  `REEVALUATION_LOOP_ALREADY_OWNED` while another process holds a different
+  loop of the same account.
+
+Deterministic regression tests pace the keeper by hand against the injected
+clock:
+- A 490 s call stays `RUNNING_ELSEWHERE` to a second process.
+- A worker that dies reads `INTERRUPTED` 181 s after its last renewal.
+- The keeper never renews after Stop or after another process takes the
+  loop.
+- A 900 s automation cadence keeps the loop held.
+
+With the keeper and driver renewal disabled, all five of these fail. The UI
+"busy · last heartbeat" wording from Screener Sprint 1 (#501) stays as a
+fallback. Not merged and not deployed.
+
 ## 2026-10-22 — Setup switches for keyless sources (Sprint 3 item 30, part 2)
 
 Stacked on Sprint 3 (PR C).

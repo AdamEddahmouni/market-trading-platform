@@ -24,7 +24,7 @@ from market_platform_foundation.platform.security.route_policy import policy_for
 from market_platform_foundation.ui_api import paper_automation as controller_module
 from market_platform_foundation.ui_api.paper_risk_control import SmaStopService
 from market_platform_foundation.xa01.compatibility import register_equity
-from tests.intelligence.test_reevaluation import Clock
+from tests.intelligence.test_reevaluation import Clock, Pacer
 from tests.intelligence.test_sma_trailing_stop import series
 from tests.support.paper_automation_harness import (
     Automation, ClockedFeed, FixtureRuns, PaidProvider, experiment, policy_body,
@@ -1445,6 +1445,94 @@ class WorkerScheduleTests(AutoBase):
         self.assertEqual(text.count('"transient": true'), TRANSIENT_STORE_RETRIES)
         self.assertIn('"phase": "WORKER_EXIT"', text)
         self.assertIn('Traceback (most recent call last)', text)
+
+    def test_a_cadence_longer_than_the_lease_keeps_the_driven_loop_held(self):
+        a = self.auto
+        a.go(schedule=dict(cadence_seconds=900))
+        worker = a.service.worker
+        owners = []
+
+        def wait(seconds):
+            self.clock.value += seconds
+            owners.append(a.reevaluation.status()['liveness']['owner'])
+        worker.wait = wait
+        worker.run(max_cycles=2)  # 900 s between cycles against the loop's 180 s lease
+        self.assertEqual(len(owners), 15)
+        self.assertEqual(set(owners), {'THIS_PROCESS'})
+        a.service.stop()
+        self.assertFalse(a.service.heartbeat())  # a stopped controller renews neither lease
+        status = a.reevaluation.status()
+        self.assertEqual((status['worker_state'], status['liveness']['lease_until']), ('STOPPED', None))
+
+    def paced(self, a, work):
+        """Run one controller cycle whose driven reevaluation first does ``work`` (a long model call)."""
+        pacer = Pacer()
+        self.addCleanup(pacer.close)
+        a.service.lease_wait = pacer.wait
+        original, failed = a.reevaluation.driven_cycle, []
+
+        def driven(*args, **kwargs):
+            a.reevaluation.driven_cycle = original
+            try:
+                work(pacer)
+            except AssertionError as exc:  # the cycle records any exception as a cycle error; surface it here
+                failed.append(exc)
+            return original(*args, **kwargs)
+        a.reevaluation.driven_cycle = driven
+        summary = a.cycle()
+        if failed:
+            raise failed[0]
+        return summary
+
+    def test_the_controller_stays_held_through_a_driven_call_longer_than_its_lease(self):
+        a = self.auto
+        a.go()
+        other = Automation(self.store, clock=self.clock, feed=self.feed, ai=a.ai, provider=a.provider, runs=a.runs, owner='process-b')
+        seen = []
+
+        def long_call(pacer):  # 7 x 70 s = 490 s against the controller's 180 s lease
+            for _ in range(7):
+                self.clock.value += 70
+                self.assertTrue(pacer.tick())
+                status = a.service.status()
+                seen.append((status['liveness']['owner'], [b['code'] for b in status['blockers'] if b['category'] == 'AUTHORITY']))
+                with self.assertRaisesRegex(ValueError, 'AUTOMATION_ALREADY_OWNED'):
+                    other.service.start(threaded=False)
+        summary = self.paced(a, long_call)
+        self.assertEqual(seen, [('THIS_PROCESS', [])] * 7)
+        self.assertEqual((summary['error'], summary.get('superseded')), (None, None))
+        self.assertEqual(a.service._controller()['owner_id'], a.service.owner_id)
+
+    def test_the_controller_keeper_never_renews_after_stop(self):
+        a = self.auto
+        a.go()
+        renewed = []
+
+        def call_then_stop(pacer):
+            self.clock.value += 70
+            renewed.append(pacer.tick())
+            a.service.stop()  # releases the controller and the driven loop while the call is still running
+            self.clock.value += 70
+            renewed.append(pacer.tick())
+        summary = self.paced(a, call_then_stop)
+        controller = a.service._controller()
+        self.assertEqual(renewed, [True, False])
+        self.assertEqual((controller['owner_id'], controller['lease_until'], controller['desired_state']), (None, None, 'STOPPED'))
+        self.assertTrue(summary['superseded'])
+
+    def test_the_controller_keeper_never_takes_back_a_lease_another_process_holds(self):
+        a = self.auto
+        a.go()
+        renewed = []
+
+        def takeover(pacer):  # the host stalls past the lease and another process takes the controller
+            self.clock.value += 200
+            a.service.repository.acquire_lease(a.service._account(), 'process-b', now=self.clock(), lease_seconds=180)
+            renewed.append(pacer.tick())
+        summary = self.paced(a, takeover)
+        self.assertEqual(renewed, [False])
+        self.assertEqual(a.service._controller()['owner_id'], 'process-b')
+        self.assertTrue(summary['superseded'])
 
     def test_a_worker_that_loses_its_lease_stops_scheduling(self):
         a = self.auto

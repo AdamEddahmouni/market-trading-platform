@@ -6,6 +6,7 @@ It has no order, preview, handoff or submission path: Paper stays manual.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import threading
@@ -52,12 +53,14 @@ def consumed_opportunities(ledger):
 
 
 class ReevaluationService:
-    def __init__(self, store, *, repository=None, actions=None, ai=None, clock=time.time, owner_id=None, scope=None):
+    def __init__(self, store, *, repository=None, actions=None, ai=None, clock=time.time, owner_id=None, scope=None,
+                 lease_wait=None):
         self.store = store
         self.repository = repository or reevaluation_repository()
         self._actions, self._ai = actions, ai
         self.clock = clock
         self.owner_id = owner_id or uuid.uuid4().hex
+        self.lease_wait = lease_wait  # tests pace the in-cycle lease keeper; by default it waits in real time
         self.cycle_lock = threading.Lock()
         self.worker = None
         # AUTO-01: a server-owned controller may drive this loop's cycles instead of the worker thread.
@@ -157,6 +160,15 @@ class ReevaluationService:
         existing = self.repository.get_loop(loop_id)
         if existing and existing['owner_id'] and existing['lease_until'] and existing['lease_until'] > now:
             raise ValueError('REEVALUATION_RUNNING_STOP_FIRST')
+        current = self.repository.latest_loop(self._account())
+        if current and current['loop_id'] != loop_id and current['owner_id'] not in (None, self.owner_id) \
+                and current['owner_id'].rsplit(':', 1)[0] != self.owner_id.rsplit(':', 1)[0] \
+                and current['lease_until'] and current['lease_until'] > now:
+            # Another process runs this account's loop on another scope. A second loop would take turns with it as
+            # the account's latest, and status, Stop and the engine lock would follow whichever wrote last.
+            # Scoped services of one controller share its owner prefix (`<controller>:<scope hash>`), so the
+            # controller's own universe scopes are the same process, not a second owner.
+            raise ValueError('REEVALUATION_LOOP_ALREADY_OWNED')
         base = existing or dict(schema_version=LOOP_SCHEMA, loop_id=loop_id, account_id=self._account(), scope_hash=scope_hash,
                                 desired_state='STOPPED', clean_stop=True, anchor_epoch=None, tracked={}, selected=[], ranks={},
                                 intake={}, last_reduction_epoch=None, last_reduction_run_id=None, last_scheduled_epoch=None,
@@ -348,6 +360,14 @@ class ReevaluationService:
             raise ValueError('REEVALUATION_LEASE_LOST')
         return self.evaluate_cycle(trigger, scheduled_for, missed=missed, loop_id=loop['loop_id'], model_gate=model_gate)
 
+    def renew_driver_lease(self):
+        """The driver's own heartbeat keeps the loop it holds, so a cadence longer than the lease is not a lapse.
+        A no-op once the driver is detached; a released or taken lease is never renewed."""
+        if not self.external_driver:
+            return False
+        loop = self._current_loop()
+        return bool(loop) and self.heartbeat(loop['loop_id'])
+
     def stop(self):
         if self.external_driver:
             raise ValueError('REEVALUATION_DRIVEN_BY_' + self.external_driver)  # the controller's own Stop releases it
@@ -438,8 +458,13 @@ class ReevaluationService:
                 """Before a model call: renew the lease, or stop if another process took the loop."""
                 if fence and not self.heartbeat(loop['loop_id']) and self.repository.get_loop(loop['loop_id'])['owner_id'] is not None:
                     raise ValueError('REEVALUATION_LEASE_LOST')  # an operator Stop releases the lease; that cycle still finishes
+            # One model call can outlast the lease; between guards the keeper renews it so the loop never reads as
+            # interrupted while it is working. A manual cycle holds no lease and gets none.
+            keeper = LeaseKeeper(lambda: self.heartbeat(loop['loop_id']), loop['policy']['lease_seconds'] / 3,
+                                 wait=self.lease_wait) if fence else None
             try:
-                receipt = self._cycle(loop, trigger, scheduled_for, started, guard=guard, spent=spent, model_gate=model_gate)
+                with keeper or contextlib.nullcontext():
+                    receipt = self._cycle(loop, trigger, scheduled_for, started, guard=guard, spent=spent, model_gate=model_gate)
             except Exception as exc:  # a failed cycle is recorded, never silently retried
                 code = str(exc) if _CODE.fullmatch(str(exc)) else type(exc).__name__
                 receipt = self._receipt(loop, trigger=trigger, scheduled=scheduled_for, started=started, status=CycleStatus.FAILED)
@@ -834,6 +859,36 @@ class ReevaluationService:
                                          max_per_day=policy['max_model_calls_per_day']),
                        cycle_status=str(status))
         return receipt
+
+
+class LeaseKeeper:
+    """Renews a held lease every ``interval`` seconds for as long as one cycle runs, model calls included.
+
+    It stops with the cycle, and for good at the first refused renewal: the repository refuses once the lease
+    is released (Stop, Emergency Stop, detach) or held by another process, so a lost lease is never taken back.
+    A dead worker renews nothing, because the keeper lives only inside the cycle that worker is running.
+    """
+
+    def __init__(self, renew, interval, *, wait=None):
+        self.renew, self.interval = renew, interval
+        self.stopped = threading.Event()
+        self.wait = wait or self.stopped.wait
+        self.renewals = 0
+        self.thread = threading.Thread(target=self.run, name='imp-reevaluation-lease', daemon=True)
+
+    def __enter__(self):
+        self.thread.start()
+        return self
+
+    def __exit__(self, *exc):
+        self.stopped.set()  # the default wait wakes at once; a renewal already under way is refused or harmless
+
+    def run(self):
+        while True:
+            self.wait(self.interval)
+            if self.stopped.is_set() or not self.renew():
+                return
+            self.renewals += 1
 
 
 class ReevaluationWorker:

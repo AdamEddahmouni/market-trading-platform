@@ -12,10 +12,12 @@ class MultiUniverseControllerTests(unittest.TestCase):
     def test_bound_loop_cannot_follow_another_scope_latest_pointer(self):
         h = Harness()
         h.ai._query = lambda value: dict(SCOPE, **value)
+        # Scoped services of one controller share the owner prefix; only the scope suffix differs.
+        owner = 'controller-a'
         one = ReevaluationService(h.store, repository=h.repo, ai=h.ai, actions=h.actions, clock=h.clock,
-                                  scope=dict(universe='US_EQUITIES'))
+                                  owner_id=owner + ':equities', scope=dict(universe='US_EQUITIES'))
         two = ReevaluationService(h.store, repository=h.repo, ai=h.ai, actions=h.actions, clock=h.clock,
-                                  scope=dict(universe='CRYPTO'))
+                                  owner_id=owner + ':crypto', scope=dict(universe='CRYPTO'))
         first = one.attach_driver('PAPER_AUTOMATION', scope=dict(universe='US_EQUITIES'), requested_cadence_seconds=60)
         second = two.attach_driver('PAPER_AUTOMATION', scope=dict(universe='CRYPTO'), requested_cadence_seconds=60)
         self.assertNotEqual(first, second)
@@ -27,6 +29,33 @@ class MultiUniverseControllerTests(unittest.TestCase):
         two.detach_driver()
         self.assertEqual(one._loop()['selected'], ['held-equity'])
         self.assertEqual(one._loop()['desired_state'], 'RUNNING')
+
+    def test_scoped_driver_renews_its_own_loop_not_the_account_latest(self):
+        h = Harness()
+        h.ai._query = lambda value: dict(SCOPE, **value)
+        owner = 'controller-a'
+        one = ReevaluationService(h.store, repository=h.repo, ai=h.ai, actions=h.actions, clock=h.clock,
+                                  owner_id=owner + ':equities', scope=dict(universe='US_EQUITIES'))
+        two = ReevaluationService(h.store, repository=h.repo, ai=h.ai, actions=h.actions, clock=h.clock,
+                                  owner_id=owner + ':crypto', scope=dict(universe='CRYPTO'))
+        first = one.attach_driver('PAPER_AUTOMATION', scope=dict(universe='US_EQUITIES'), requested_cadence_seconds=60)
+        h.clock.value += 1  # the crypto loop is the account's latest
+        second = two.attach_driver('PAPER_AUTOMATION', scope=dict(universe='CRYPTO'), requested_cadence_seconds=60)
+        latest_before = h.repo.get_loop(second)['lease_until']
+        h.clock.value += 100
+        self.assertTrue(one.renew_driver_lease())
+        self.assertEqual(h.repo.get_loop(first)['lease_until'], h.clock.value + 180)
+        self.assertEqual(h.repo.get_loop(second)['lease_until'], latest_before)
+
+    def test_controller_heartbeat_renews_every_driven_scope_once(self):
+        h, service = self.service()
+        base, scoped = Mock(), Mock()
+        service._reevaluation = base
+        service._scope_services = {'equities': base, 'crypto': scoped}
+        service.repository.heartbeat = Mock()
+        self.assertTrue(service.heartbeat())
+        base.renew_driver_lease.assert_called_once_with()
+        scoped.renew_driver_lease.assert_called_once_with()
 
     def service(self):
         h = Harness()
