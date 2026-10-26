@@ -1,5 +1,30 @@
 # IMP Work Log
 
+## 2026-10-26 — Step 10 Phase C deployed; autonomous internal Paper running
+
+Owner authorized deployment of frozen source
+`364577394a0154935edae8963fa86253ad50e6c2`, the verified operator startup-wait
+correction, and $100,000 simulated starting capital. The approved backup
+completed with matching logical contents and integrity ok. The canonical
+disarm/stop, rehearsed application, operator apply and collector-manifest
+verification succeeded. Step 10 clean startup returned 0.
+
+API/UI/control, OpenD quote login, live feed, collector commits and a healthy
+manual keeper pass were verified. Only IMP-Keeper is enabled; all six prior
+tasks stay disabled. Journal description-only XML preservation passed.
+The approved new short account and overnight policy were configured, then
+armed and started. Two scheduled cycles were observed: 44 local calls in a
+completed selection slice, followed by an actual NO_ACTION model decision
+for JBLU. No order or fill was forced or observed; Live and paid AI remain
+off. Full-universe coverage, order/fill/account-position transitions and
+destructive restart drills are not claimed as observed.
+
+The [Phase C report](STEP10_PHASE_C_20261026.md) records exact source,
+account/policy, operator hashes, task states, evidence and limitations.
+This local documentation-only commit does not redeploy source or change
+the frozen candidate. No remote Git or PR operation was performed.
+
+
 ## 2026-10-26 — Rebuild step 10: held pull requests folded, release candidate prepared
 
 Owner approved Phase A only: local integration, offline validation,
