@@ -1039,13 +1039,25 @@ class PaperAutomationService:
             slice_plan = self._slice_plan(universe, policy, now, engine)
             started = self.runs.start(account, policy['scope'], spend_limit=limit, origin='AUTOMATION',
                                       **({'slice_plan': slice_plan} if slice_plan else {}))
-            universe.update(active_run_id=started['run_id'], last_started_epoch=now, withheld=None, run_fingerprint=fingerprint,
-                            origin='OPERATOR' if started.get('joined') else 'AUTOMATION')
-            self._event('UNIVERSE_RUN_STARTED', run_id=started['run_id'], joined=bool(started.get('joined')), spend_limit=limit,
-                        engine=started.get('engine'), decision='RUN', reason_codes=decision['reason_codes'],
-                        slice=None if not slice_plan else dict(epoch=slice_plan['epoch'], deadline=_iso(slice_plan['deadline_epoch']),
-                                                               rows_with_prior_evaluation=len(slice_plan['last_evaluated'])))
-            summary['universe'] = dict(state='STARTED', run_id=started['run_id'])
+            if started.get('deferred'):
+                # Another scope already owns the single account run slot. This scope defers; it must not adopt
+                # that run's id as its own or attribute the other universe's result to itself.
+                decision = dict(decision='DEFER', reason_codes=['UNIVERSE_RUN_ACTIVE'], next_eligible_epoch=None,
+                                detail=dict(run_id='SHARED_ACCOUNT_RUN_ACTIVE'))
+                universe['last_decision'] = dict(decision, at_iso=_iso(now), next_eligible_iso=None)
+                self._event('UNIVERSE_RUN_DEFERRED', **{key: value for key, value in decision.items() if key != 'detail'},
+                            next_eligible_iso=None, **decision['detail'],
+                            active_run_id=started['run_id'], active_universe=(started.get('scope') or {}).get('universe'))
+                summary['universe'] = dict(state='DEFERRED', decision=decision, active_run_id=started['run_id'],
+                                           active_universe=(started.get('scope') or {}).get('universe'))
+            else:
+                universe.update(active_run_id=started['run_id'], last_started_epoch=now, withheld=None, run_fingerprint=fingerprint,
+                                origin='OPERATOR' if started.get('joined') else 'AUTOMATION')
+                self._event('UNIVERSE_RUN_STARTED', run_id=started['run_id'], joined=bool(started.get('joined')), spend_limit=limit,
+                            engine=started.get('engine'), decision='RUN', reason_codes=decision['reason_codes'],
+                            slice=None if not slice_plan else dict(epoch=slice_plan['epoch'], deadline=_iso(slice_plan['deadline_epoch']),
+                                                                   rows_with_prior_evaluation=len(slice_plan['last_evaluated'])))
+                summary['universe'] = dict(state='STARTED', run_id=started['run_id'])
         elif decision['decision'] != 'RUN':
             kind = {'DEFER': 'UNIVERSE_RUN_DEFERRED', 'SKIP': 'UNIVERSE_RUN_SKIPPED', 'BLOCK': 'UNIVERSE_RUN_BLOCKED'}[decision['decision']]
             if not gate['allowed']:

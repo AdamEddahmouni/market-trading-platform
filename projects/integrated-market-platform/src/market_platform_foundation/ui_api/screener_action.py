@@ -21,6 +21,7 @@ from ..intelligence.inference.contracts import IntelligenceTaskType
 from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.prompts import PromptRegistry
 from ..local_state.action_decisions import action_repository
+from ..local_state.connection import CRITICAL_WRITE_RETRY_SECONDS
 from ..market_data.freshness_contract import timestamp
 from .paper_ai_direct import ai_direct_enabled, direct_opportunity
 from ..rt01.execution_decision_trace.recorder import ExecutionDecisionTraceDraft, materialize_execution_decision_trace
@@ -317,7 +318,7 @@ class ScreenerActionService:
             trace_repo = self.trace_repository or execution_decision_trace_repository()
             connection = self.repository.connection
             if connection is not None and getattr(trace_repo, '_connection', None) is connection:
-                with connection.transaction():
+                with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                     self.repository.put('decision',identity,immutable)
                     trace_repo.put_execution_decision_trace(trace)
             else:

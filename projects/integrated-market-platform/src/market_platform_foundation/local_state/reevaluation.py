@@ -7,6 +7,8 @@ from __future__ import annotations
 import json
 import threading
 
+from .connection import CRITICAL_WRITE_RETRY_SECONDS
+
 from .paths import persistence_enabled
 from .startup import open_local_state
 
@@ -25,7 +27,7 @@ class ReevaluationRepository:
         self.lock = threading.RLock()
         self._snapshots, self._observations, self._cycles, self._loops = {}, {}, {}, {}
         if connection is not None:
-            with connection.transaction():
+            with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                 connection.execute('CREATE TABLE IF NOT EXISTS next_session_records (id TEXT PRIMARY KEY, account_id TEXT NOT NULL, instrument_id TEXT NOT NULL, created_at TEXT NOT NULL, payload TEXT NOT NULL)')
                 connection.execute('CREATE INDEX IF NOT EXISTS next_session_history ON next_session_records(account_id,instrument_id,created_at)')
                 connection.execute('CREATE TABLE IF NOT EXISTS next_session_observations (id TEXT PRIMARY KEY, snapshot_id TEXT NOT NULL, observed_at TEXT NOT NULL, payload TEXT NOT NULL)')
@@ -41,7 +43,7 @@ class ReevaluationRepository:
     def _write(self, operation):
         with self.lock:
             if self.connection and not self.connection.in_transaction:
-                with self.connection.transaction():
+                with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                     return operation()
             return operation()
 

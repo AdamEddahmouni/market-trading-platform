@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import threading
+
+from .connection import CRITICAL_WRITE_RETRY_SECONDS
 from contextlib import nullcontext
 
 from .paths import persistence_enabled
@@ -15,7 +17,7 @@ class ActionDecisionRepository:
         self._memory = {}
         self.lock = threading.RLock()
         if connection is not None:
-            with connection.transaction():
+            with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                 connection.execute('CREATE TABLE IF NOT EXISTS action_decision_records (kind TEXT NOT NULL, id TEXT NOT NULL, instrument_id TEXT, decision_time TEXT, payload TEXT NOT NULL, PRIMARY KEY(kind,id))')
                 connection.execute('CREATE INDEX IF NOT EXISTS action_decision_history ON action_decision_records(kind,instrument_id,decision_time)')
 
@@ -45,7 +47,7 @@ class ActionDecisionRepository:
                         (kind,identifier,value.get('instrument_id'),value.get('decision_time'),encoded))
                 else: self._memory[kind,identifier] = encoded
             if self.connection and not self.connection.in_transaction:
-                with self.connection.transaction(): insert()
+                with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS): insert()
             else: insert()
 
     def recent(self, kind, limit):

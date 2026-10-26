@@ -143,6 +143,23 @@ class UnattendedUniverseRunTests(Base):
         service._halt = None  # a halt must never stop an operator's run: checked through the origin recorded above
         self.assertFalse(runs.read(self.work["account_id"], operator["run_id"])["stop_requested"])
 
+    def test_a_different_query_run_defers_and_is_never_adopted_by_this_scope(self):
+        provider = GatedProvider()
+        self.addCleanup(lambda: [provider.release.release() for _ in range(50)])
+        runs = self.tracker(provider)
+        service = self.controller(runs)
+        operator = runs.start(self.work["account_id"], {**SCOPE, "sort": "price"})
+        self.assertTrue(provider.entered.acquire(timeout=10))
+
+        summary = self.step(service, dict(policy(), scope=dict(SCOPE)))
+
+        self.assertEqual(summary["universe"]["state"], "DEFERRED")
+        self.assertIsNone(self.work["universe"].get("active_run_id"))
+        self.assertEqual(summary["universe"]["active_run_id"], operator["run_id"])
+        self.assertEqual(summary["universe"]["decision"]["reason_codes"], ["UNIVERSE_RUN_ACTIVE"])
+        self.assertEqual(runs.read(self.work["account_id"], operator["run_id"])["state"], "RUNNING")
+        self.assertFalse(runs.read(self.work["account_id"], operator["run_id"])["stop_requested"])
+
 
 class OwnerSpendingCapTests(Base):
     def budgeted(self, **limits):

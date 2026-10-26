@@ -16,11 +16,13 @@ from __future__ import annotations
 import math
 import os
 import time
+import uuid
 from datetime import UTC, datetime
 from typing import Any, Callable
 
 from ..intelligence.inference.candidate_reduction import (
     MAX_INTAKE, MAX_PACKET_BYTES, MAX_SELECTED, PROMPT_ID, SCHEMA_VERSION as OUTPUT_SCHEMA_VERSION, WIRE_SCHEMA_VERSION,
+    output_schema,
 )
 from ..intelligence.inference.coverage_plan import (
     AI_EVALUATED, AI_REJECTED, ELIGIBLE, INELIGIBLE, METHOD_NAME, METHOD_VERSION, NOT_SHORTLISTED, PROVIDER_UNAVAILABLE,
@@ -33,6 +35,9 @@ from ..intelligence.inference.run_progress import relabelled, report_stage
 from .screener_ai_universe import UniverseEnumerationError, enumerate_universe
 
 RESULT_SCHEMA_VERSION = "screener-ai-screener/1.0.0"
+# One identity per serving process. A run ledger head carries it, so recovery can distinguish a genuine
+# previous-process restart from a run of this process whose terminal receipt was lost to a write failure.
+BOOT_ID = uuid.uuid4().hex
 # Terminal statuses. Only the first stores a candidate run.
 GLOBAL_SELECTION_COMPLETE = "GLOBAL_SELECTION_COMPLETE"
 COMPLETE_NO_SELECTION = "COMPLETE_NO_SELECTION"
@@ -74,6 +79,13 @@ PLAN_DRIFT_MARGIN = 1.05
 # a lower ratio removes more evidence per attempt, so fewer attempts are needed.
 CONTEXT_FIT_ATTEMPTS = 2
 CONTEXT_FIT_BYTES_PER_TOKEN = 2.5
+# A local reduction is planned against the exact context budget before the request is sent. The provider's
+# free count is authoritative; a group over budget is split without generation. The hard bounds below stop a
+# pathological finalist set from turning that split into an unbounded run. They are call/time budgets, not
+# selection thresholds: exceeding one defers the remaining finalists with their own reasons.
+REDUCTION_DEADLINE_SECONDS = 180.0
+REDUCTION_REQUESTS_PER_FINALIST = 6
+REDUCTION_REQUESTS_FLOOR = 12
 # 2026-10-23 crypto: six finalists in pairs and byes, both pairs' answers rejected, and the run ended with every
 # entrant advanced. A round that advances everyone is followed by at most this many freshly paired rounds.
 NO_PROGRESS_ROUNDS = 2
@@ -141,6 +153,16 @@ class _Run:
         # were split before sending because they were at least that large.
         self.refused_group: int | None = None
         self.presplit = 0
+        # Context-bounded reduction receipts: requests attempted (including refusals before generation), the
+        # groups/rounds they formed, and the budget the plan was measured against.
+        self.reduction_requests = 0
+        self.reduction_not_sent = 0
+        self.reduction_budget: dict[str, Any] = {}
+        self.reduction_rounds: list[dict[str, Any]] = []
+        # Pairs/singles whose exact count still refused the full evidence: the comparison saw current-market
+        # evidence plus one non-news reference item, never a truncated current quote. The full evidence
+        # remains in the first-pass batch receipts.
+        self.comparison_compacted = 0
         # Slices only: finalists that could not be compared (not admissible at the comparison cutoff, thinned below
         # sufficiency, or whose single-finalist comparison answer was rejected). They are deferred, never selected.
         self.deferred_finalists = 0
@@ -203,7 +225,7 @@ class ScreenerAiCoverage:
             "method_name": opportunity_shortlist.METHOD_NAME if self.shortlist else METHOD_NAME,
             "shortlist": {"policy_id": opportunity_shortlist.POLICY_ID, "size": self._shortlist_size} if self.shortlist else None,
             "optimizer_version": OPTIMIZER_VERSION, "compact_input": reducer.compact_input,
-            "software_sha": self._software_sha or _software_sha(),
+            "software_sha": self._software_sha or _software_sha(), "boot_id": BOOT_ID,
             "provider_id": getattr(provider, "provider_id", None), "model_id": getattr(provider, "model_id", None),
             "runtime": runtime, "prompt_id": prompt.prompt_id, "prompt_version": prompt.version, "prompt_hash": prompt.content_hash,
             "wire_schema_version": WIRE_SCHEMA_VERSION, "output_schema_version": OUTPUT_SCHEMA_VERSION,
@@ -401,6 +423,11 @@ class ScreenerAiCoverage:
         number = 0
         local = getattr(self._provider, "runtime", None) == "LOCAL_MODEL"
         stalled = 0
+        reduction_started = time.monotonic()
+        reduction_requests = max(REDUCTION_REQUESTS_FLOOR, REDUCTION_REQUESTS_PER_FINALIST * len(pool))
+        run.reduction_budget.update(
+            context_window=self._context_window(), configured_output=int(self._reducer.config.max_tokens),
+            finalists=len(pool), max_requests=reduction_requests, max_seconds=REDUCTION_DEADLINE_SECONDS)
         while True:
             number += 1
             # Once the exact count has refused a comparison size, a round is planned in groups one smaller, so a round
@@ -413,10 +440,24 @@ class ScreenerAiCoverage:
             admitted = False
             index = 0
             sequence = 0  # every request of the round has its own call id, including the halves of a split
+            round_requests = run.reduction_requests
+            round_not_sent = run.reduction_not_sent
+            round_compacted = run.comparison_compacted
             while index < len(groups):
                 group = groups[index]
                 if should_stop():
                     return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
+                exhausted = (run.reduction_requests >= reduction_requests
+                             or time.monotonic() - reduction_started > REDUCTION_DEADLINE_SECONDS)
+                if exhausted:
+                    # The split is bounded. Remaining finalists keep their own reasons and are never selected
+                    # on evidence the comparison did not reach.
+                    remaining = list(dict.fromkeys(key for later in groups[index:] for key in later))
+                    for key in remaining:
+                        run.classes[key] = (UNPROCESSED, ["GLOBAL_REDUCTION_BUDGET_EXCEEDED"])
+                    run.reduction_budget["exhausted"] = (
+                        "REQUESTS" if run.reduction_requests >= reduction_requests else "SECONDS")
+                    return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "GLOBAL_REDUCTION_BUDGET_EXCEEDED")
                 if local and run.refused_group is not None and len(group) > 1 and len(group) >= run.refused_group:
                     # The send-time count already refused a comparison this large in this run: split it without
                     # another request that would be refused. The halves keep the fair order and each is still counted
@@ -449,7 +490,9 @@ class ScreenerAiCoverage:
                         run.sliced = True  # not every eligible row was compared: never a global selection
                         index += 1
                         continue
-                    if local and outcome["failure"] == "LOCAL_CONTEXT_EXCEEDED" and (self._slice or not outcome["dropped"]):
+                    if local and outcome["failure"] in ("LOCAL_CONTEXT_EXCEEDED", "EVIDENCE_PACKET_BOUND_EXCEEDED") \
+                            and (self._slice or not outcome["dropped"]
+                                 or outcome["failure"] == "EVIDENCE_PACKET_BOUND_EXCEEDED"):
                         # In a slice the dropped finalists were deferred above; the rest of the group is still compared.
                         sendable = [key for key in group if key not in outcome["dropped"]]
                         if len(sendable) > 1:
@@ -477,7 +520,17 @@ class ScreenerAiCoverage:
             if should_stop():
                 return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
             run.rounds_completed = number
-            self.ledger().append(run.run_id, "round", {"round": number, "calls": len(groups), "entrants": len(pool), "advanced": len(winners)})
+            round_receipt = {
+                "round": number, "groups": len(groups), "calls": run.reduction_requests - round_requests,
+                "entrants": len(pool), "advanced": len(winners),
+                "chunk_sizes": [len(group) for group in groups],
+                "not_sent": run.reduction_not_sent - round_not_sent,
+                "compacted": run.comparison_compacted - round_compacted,
+                "context_window": run.reduction_budget.get("context_window"),
+                "configured_output": run.reduction_budget.get("configured_output"),
+            }
+            run.reduction_rounds.append(round_receipt)
+            self.ledger().append(run.run_id, "round", round_receipt)
             report_stage("GLOBAL_REDUCTION", round=number, finalists=len(winners))
             if len(groups) > 1 and len(set(winners)) >= len(pool):
                 # Every comparison advanced every entrant: another round of the same groups cannot reduce the pool.
@@ -863,11 +916,18 @@ class ScreenerAiCoverage:
         rounds = reduction_rounds(len(batches))
         calls = len(batches) + sum(rounds)
         window = self._context_window()
+        run.reduction_budget = {
+            "context_window": window, "configured_output": int(reducer.config.max_tokens),
+            "max_seconds": REDUCTION_DEADLINE_SECONDS,
+            "max_requests_per_finalist": REDUCTION_REQUESTS_PER_FINALIST,
+            "max_requests_floor": REDUCTION_REQUESTS_FLOOR,
+        }
         run.plan = {
             "order": self._order_label(run), "batches_planned": len(batches), "reduction_rounds_planned": rounds,
             "rows_planned": len(batches), "batch_rows_max": 1 if batches else 0, "batch_rows_average": 1 if batches else 0,
             "packet_bytes_max": None, "batch_tokens_max": None, "largest_batch_tokens": None,
             "context_window": window, "reserved_output_tokens": int(reducer.config.max_tokens),
+            "reduction_context": dict(run.reduction_budget),
             "reference_evidence_thinned": 0, "drift_margin": None, "optimizer_version": OPTIMIZER_VERSION,
             "cached_batches": 0, "batch_optimizer": "LOCAL_ONE_ROW_EXACT_AT_SEND",
             "token_basis": "EXACT_AT_SEND_ONLY", "new_inference_batches": len(batches), "global_reuse_only": False,
@@ -897,6 +957,9 @@ class ScreenerAiCoverage:
         """One bounded request on evidence acquired for it. Never retried."""
         from ..intelligence.inference.anthropic_synthesis import drawing_from_hold
         from .screener_news_evidence import attach_news, fit_news
+
+        if stage == "GLOBAL_REDUCTION":
+            run.reduction_requests += 1
 
         service = self.service
         raw = self._current_rows(run, instrument_ids)
@@ -929,6 +992,7 @@ class ScreenerAiCoverage:
                 dropped[candidate["instrument"]["instrument_id"]] = [UNPROCESSED, ["EVIDENCE_THINNED_BY_PACKET_CAP"]]
             submitted = [candidate["instrument"]["instrument_id"] for candidate in keep]
             fitted: list[dict[str, Any]] = []
+            compacted = False
             base_call_id = call_id
             while keep:
                 if self._reducer.compact_input:
@@ -943,18 +1007,52 @@ class ScreenerAiCoverage:
                     "instrument_ids": submitted, "evidence_cutoff": now, "planned_tokens": planned_tokens,
                     "request_started_at": _iso(service._clock())})
                 position = {"batch": index + 1, "batches_planned": total} if first_pass else {"group": index + 1, "groups": total}
-                with relabelled(stage, round=round_number, **position):
-                    if run.hold:
-                        with drawing_from_hold(run.run_id, planned_tokens):
+                estimate = check = None
+                if stage == "GLOBAL_REDUCTION" and getattr(self._provider, "runtime", None) == "LOCAL_MODEL":
+                    # The exact count is free and authoritative. Measure the packet that would be sent; an
+                    # over-budget group is split (or, for one/two finalists, thinned) without generation.
+                    # A packet whose own estimate is already below the window keeps the cheaper send-time gate.
+                    estimate = self._reducer.estimate(run.scope, keep, now)
+                    window = self._context_window()
+                    floor = self._output_floor(keep)
+                    estimated = estimate.get("input_tokens")
+                    near_budget = (window is None or not isinstance(estimated, int)
+                                   or estimated + floor > window)
+                    if not estimate.get("cached") and near_budget:
+                        check = self._reducer.preflight(run.scope, keep, now, should_stop=should_stop)
+                if check is not None and check.get("context_fit") is False:
+                    result = self._context_refusal(run, keep, now, check, estimate)
+                    run.reduction_not_sent += 1
+                else:
+                    with relabelled(stage, round=round_number, **position):
+                        if run.hold:
+                            with drawing_from_hold(run.run_id, planned_tokens):
+                                result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only, should_stop=should_stop)
+                        else:
                             result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only, should_stop=should_stop)
-                    else:
-                        result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only, should_stop=should_stop)
                 call_id = attempt_id
                 # A comparison of several finalists is split, never thinned: thinning could remove a finalist's only
                 # second strong item and exclude it. One row (any first-pass request, or a group of one) is thinned.
                 # A pair is the smallest comparison: halving it compares nothing, so a pair is thinned like one row.
                 target = self._context_fit_target(result, fitted) if first_pass or len(keep) <= 2 else None
                 if target is None:
+                    if (stage == "GLOBAL_REDUCTION" and len(keep) <= 2 and not compacted
+                            and self._context_refused(result) and self._compact_comparison(keep)):
+                        # News thinning is exhausted and the pair/single still does not fit. Keep every
+                        # current-market item (the quote and risk facts) and one non-news reference item;
+                        # the first-pass receipts retain the full evidence. A candidate that loses its
+                        # second strong item is dropped with the existing reason, never silently kept.
+                        compacted = True
+                        run.comparison_compacted += 1
+                        for candidate in [item for item in keep if not item["sufficient"]]:
+                            keep.remove(candidate)
+                            dropped[candidate["instrument"]["instrument_id"]] = [
+                                UNPROCESSED, ["EVIDENCE_THINNED_BY_PACKET_CAP"]]
+                        submitted = [candidate["instrument"]["instrument_id"] for candidate in keep]
+                        if not keep:
+                            result, failure = None, "LOCAL_CONTEXT_EXCEEDED"
+                            break
+                        continue
                     break
                 # The exact send-time count refused this packet before any generation. The existing deterministic
                 # reference-evidence thinning, given the byte budget the count implies, removes stories from the row
@@ -963,6 +1061,21 @@ class ScreenerAiCoverage:
                 attempted = semantic_hash(packet_candidates(keep))
                 fit_news(run.scope, keep, news, now=now, max_bytes=target)
                 if semantic_hash(packet_candidates(keep)) == attempted:
+                    if (stage == "GLOBAL_REDUCTION" and len(keep) <= 2 and not compacted
+                            and self._context_refused(result) and self._compact_comparison(keep)):
+                        # News thinning cannot change this pair/single; remove only the comparison metadata
+                        # and all but one non-news reference item, then let the exact count decide again.
+                        compacted = True
+                        run.comparison_compacted += 1
+                        for candidate in [item for item in keep if not item["sufficient"]]:
+                            keep.remove(candidate)
+                            dropped[candidate["instrument"]["instrument_id"]] = [
+                                UNPROCESSED, ["EVIDENCE_THINNED_BY_PACKET_CAP"]]
+                        submitted = [candidate["instrument"]["instrument_id"] for candidate in keep]
+                        if not keep:
+                            result, failure = None, "LOCAL_CONTEXT_EXCEEDED"
+                            break
+                        continue
                     break
                 run.counted_not_sent += int(result.get("tokens_input") or 0)
                 fitted.append({"call_id": attempt_id, "input_tokens": result.get("tokens_input"),
@@ -972,7 +1085,8 @@ class ScreenerAiCoverage:
                     "outcome": "NOT_SENT", "state": result["state"], "reason": result.get("reason"),
                     "tokens_input": result.get("tokens_input"), "packet_bytes": result.get("packet_bytes"),
                     "superseded_by": "CONTEXT_FIT_THINNING", "target_bytes": target, "evidence_cutoff": now,
-                    "instrument_ids": submitted, "dropped": dict(dropped), "selected": []})
+                    "instrument_ids": submitted, "dropped": dict(dropped), "selected": [],
+                    "context": self._context_receipt(result, keep)})
                 for candidate in [item for item in keep if not item["sufficient"]]:
                     keep.remove(candidate)
                     dropped[candidate["instrument"]["instrument_id"]] = [UNPROCESSED, ["EVIDENCE_THINNED_BY_PACKET_CAP"]]
@@ -1012,9 +1126,11 @@ class ScreenerAiCoverage:
             report_stage(stage,reused_batches=run.cache_hits,new_inference_requests=run.calls,
                          actual_tokens=run.tokens_input+run.tokens_output)
             unknown = failure is not None and failure.endswith("TIMEOUT")
+            refused = bool(result.get("preflight_refused"))
             self.ledger().append(run.run_id, "batch", {
                 "call_id": call_id, "stage": stage, "round": round_number, "index": index, "of": total,
-                "outcome": "COMPLETED" if failure is None else "UNKNOWN_PROVIDER_OUTCOME" if unknown else "FAILED",
+                "outcome": "COMPLETED" if failure is None else "UNKNOWN_PROVIDER_OUTCOME" if unknown
+                else "NOT_SENT" if refused else "FAILED",
                 "state": result["state"], "reason": result.get("reason"), "validation": result.get("validation"),
                 "reduction_run_id": result["run_id"], "input_hash": result["input_hash"], "packet_bytes": result["packet_bytes"],
                 "output_schema_hash": result["output_schema_hash"], "cache": result["cache"],
@@ -1022,6 +1138,7 @@ class ScreenerAiCoverage:
                 "tokens_input": result.get("tokens_input"), "tokens_output": result.get("tokens_output"),
                 "latency_ms": result.get("latency_ms"), "provider_request_id": result.get("provider_request_id"),
                 "provider_diagnostics": result.get("provider_diagnostics"),
+                "context": self._context_receipt(result, keep),
                 "evidence_cutoff": now, "completed_at": result.get("generated_at"), "valid_until": result.get("valid_until"),
                 "instrument_ids": submitted, "dropped": dropped,
                 "selected": [{"instrument_id": pick["instrument_id"], "rank": pick["rank"]} for pick in picks]})
@@ -1047,6 +1164,100 @@ class ScreenerAiCoverage:
                    and (result.get("state") == "INVALID_OUTPUT" or result.get("reason") == "LOCAL_OUTPUT_LIMIT_REACHED"))
         return {"result": result if failure is None else None, "failure": failure, "submitted": submitted, "dropped": dropped,
                 "rejected": first_pass and invalid, "invalid": invalid}
+
+    def _context_refused(self, result: dict[str, Any] | None) -> bool:
+        """True only for the local engine's exact count refusing before generation."""
+        return (getattr(self._provider, "runtime", None) == "LOCAL_MODEL" and result is not None
+                and result.get("reason") == "LOCAL_CONTEXT_EXCEEDED"
+                and not result.get("inference_dispatched"))
+
+    @staticmethod
+    def _compact_comparison(candidates: list[dict[str, Any]]) -> bool:
+        """Keep comparison-essential evidence when an exact count refuses even a thinned pair/single.
+
+        Current-market evidence is never removed: it carries the quote, spread and the risk facts the
+        downstream decision needs. One admitted non-news reference item stays for the second-strong-evidence
+        gate. News stories were already thinned by ``fit_news``; the empty story status and the alignment
+        projections are omitted, and the candidate is marked insufficient if its second item disappeared.
+        """
+        changed = False
+        for candidate in candidates:
+            reference = list(candidate.get("reference_evidence") or [])
+            kept = [item for item in reference if item.get("capability") != "NEWS"][:1]
+            if len(kept) != len(reference):
+                candidate["reference_evidence"] = kept
+                changed = True
+            if candidate.get("alignments"):
+                candidate["alignments"] = []
+                changed = True
+            news = candidate.get("news")
+            if isinstance(news, dict) and (news.get("story_count") or news.get("providers")):
+                candidate["news"] = {
+                    **{key: news.get(key) for key in ("state", "model_id", "limitations") if key in news},
+                    "story_count": 0, "providers": [],
+                    "limitations": list(dict.fromkeys([*(news.get("limitations") or []), "COMPARISON_PACKET_COMPACTED"])),
+                }
+                changed = True
+            current = candidate.get("current_market_evidence") or []
+            items = [*current, *candidate.get("reference_evidence", [])]
+            quote = any(item.get("capability") == "QUOTE" and (item.get("facts") or {}).get("price") is not None
+                        and not item.get("weak_reasons") for item in current)
+            second = any(item.get("capability") != "QUOTE" and not item.get("weak_reasons") for item in items)
+            if candidate.get("sufficient") and not (quote and second):
+                candidate["sufficient"] = False
+                changed = True
+        return changed
+
+    def _output_floor(self, candidates: list[dict[str, Any]]) -> int:
+        from ..intelligence.inference.local_provider import LOCAL_OUTPUT_FLOOR_BASE, LOCAL_OUTPUT_FLOOR_PER_CANDIDATE
+
+        return min(int(self._reducer.config.max_tokens),
+                   LOCAL_OUTPUT_FLOOR_BASE + LOCAL_OUTPUT_FLOOR_PER_CANDIDATE * max(1, len(candidates)))
+
+    def _context_refusal(self, run: _Run, candidates: list[dict[str, Any]], now: str,
+                         check: dict[str, Any], estimate: dict[str, Any] | None) -> dict[str, Any]:
+        """A measured over-budget packet, recorded exactly like a provider refusal but never sent.
+
+        The exact count is the local runtime's own; the canonical bytes and input hash come from the same
+        ``estimate`` the reducer would have used. ``_context_fit_target`` can therefore thin a one/two-row
+        packet with the same evidence rules as a send-time refusal, while a larger group is split by the caller.
+        """
+        window = check.get("context_window") or self._context_window()
+        configured = int(self._reducer.config.max_tokens)
+        floor = self._output_floor(candidates)
+        tokens = check.get("input_tokens")
+        return {
+            "schema_version": OUTPUT_SCHEMA_VERSION, "run_id": "CTX-" + uuid.uuid4().hex[:32],
+            "decision_cutoff": now, "generated_at": now, "valid_until": now, "scope": run.scope,
+            "provider_id": getattr(self._provider, "provider_id", None), "model_id": getattr(self._provider, "model_id", None),
+            "runtime": getattr(self._provider, "runtime", None), "candidates": [], "evidence": candidates,
+            "state": "UNAVAILABLE", "reason": "LOCAL_CONTEXT_EXCEEDED", "cache": "MISS", "preflight_refused": True,
+            "inference_dispatched": False, "tokens_input": tokens, "tokens_output": 0,
+            "input_hash": (estimate or {}).get("input_hash"), "packet_bytes": (estimate or {}).get("packet_bytes"),
+            "output_schema_hash": input_hash_from_dict(output_schema(candidates)),
+            "provider_diagnostics": {"preflight": dict(check), "context": {
+                "configured_max_tokens": configured, "context_window": window, "input_tokens": tokens,
+                "output_allowance": (window - tokens) if isinstance(window, int) and isinstance(tokens, int) else None,
+                "output_floor": floor, "input_budget": (window - floor) if isinstance(window, int) else None,
+                "context_fit": False, "source": "PREFLIGHT_EXACT_COUNT"}},
+            "coverage": {"candidate_intake": len(candidates), "selected": 0},
+            "limitations": ["The comparison packet exceeds the local model context; it was not sent."],
+        }
+
+    @staticmethod
+    def _context_receipt(result: dict[str, Any], candidates: list[dict[str, Any]]) -> dict[str, Any] | None:
+        """The measured budget of one request, from the provider's own diagnostics."""
+        context = ((result.get("provider_diagnostics") or {}).get("context") or {})
+        if not context:
+            return None
+        window, floor = context.get("context_window"), context.get("output_floor")
+        return {
+            "source": context.get("source", "PROVIDER"),
+            "context_window": window, "input_tokens": context.get("input_tokens"),
+            "output_allowance": context.get("output_allowance"), "output_floor": floor,
+            "input_budget": context.get("input_budget", (window - floor) if isinstance(window, int) and isinstance(floor, int) else None),
+            "candidates": len(candidates),
+        }
 
     def _context_fit_target(self, result: dict[str, Any] | None, fitted: list[dict[str, Any]]) -> int | None:
         """The canonical packet byte budget for a thinned resend, or None when this answer stands.
@@ -1144,7 +1355,10 @@ class ScreenerAiCoverage:
                                            # Finalists whose evidence was no longer admissible when a comparison was due.
                                            "finalists_excluded": run.excluded_finalists[:MAX_EXCLUDED_LISTED],
                                            "finalists_excluded_count": len(run.excluded_finalists),
-                                           "presplit_groups": run.presplit, "smallest_refused_group": run.refused_group},
+                                           "presplit_groups": run.presplit, "smallest_refused_group": run.refused_group,
+                                           "requests": run.reduction_requests, "not_sent": run.reduction_not_sent,
+                                           "compacted_comparisons": run.comparison_compacted,
+                                           "budget": dict(run.reduction_budget), "rounds": run.reduction_rounds[-10:]},
             "finalist_count": len({item["instrument_id"] for item in run.finalists}),
             "budget": {**run.budget, "tokens_input": run.tokens_input, "tokens_output": run.tokens_output},
             "coverage_complete": coverage_complete, "selection_complete": coverage_complete and status in SELECTION_COMPLETE,
@@ -1218,16 +1432,19 @@ class ScreenerAiCoverage:
         return result
 
 
-def interrupt_open_runs(ledger: Any, *, tracked: Any, release: Callable[[str], Any], clock: Callable[[], float] = time.time) -> list[str]:
+def interrupt_open_runs(ledger: Any, *, tracked: Any, release: Callable[[str], Any], clock: Callable[[], float] = time.time,
+                        reason_for: Callable[[dict[str, Any]], str] | None = None) -> list[str]:
     """Close runs a previous process left open. Nothing is resumed: quote evidence older than a minute cannot
     be reused, so a new Run is a new run. A call left without an outcome stays charged; only the part of the
-    run's hold that was never reserved is released."""
+    run's hold that was never reserved is released. ``reason_for`` distinguishes a genuine restart from a
+    run of this same process whose terminal receipt was lost; the default keeps the historical restart code."""
     closed = []
     for run_id in ledger.open_runs():
         # Asked per run, at the moment of closing it: a run that started while this loop ran is never closed.
         if run_id in tracked:
             continue
         head = ledger.records(run_id, "run")[0]
+        reason = reason_for(head) if reason_for is not None else "SERVER_RESTARTED_DURING_RUN"
         unfinished = ledger.unfinished_batches(run_id)
         completed = ledger.records(run_id, "batch")
         try:
@@ -1235,14 +1452,14 @@ def interrupt_open_runs(ledger: Any, *, tracked: Any, release: Callable[[str], A
         except Exception:  # noqa: BLE001 - recovery never fails startup; an unreleased hold expires with the UTC day
             released = None
         ledger.append(run_id, "terminal", {
-            "account_id": head.get("account_id"), "status": INTERRUPTED, "reason": "SERVER_RESTARTED_DURING_RUN",
+            "account_id": head.get("account_id"), "status": INTERRUPTED, "reason": reason,
             "finished_at": _iso(clock()), "candidate_run_id": None, "selected": [], "provisional": [],
             "unknown_provider_outcomes": [{"call_id": item["call_id"], "instrument_ids": item["instrument_ids"],
                                            "planned_tokens": item["planned_tokens"]} for item in unfinished],
             "calls_completed": len(completed), "hold_released": released,
             "universe_coverage": {"method_version": head.get("method_version") or METHOD_VERSION,
                                   "method_name": head.get("method_name") or METHOD_NAME, "coverage_run_id": run_id,
-                                  "status": INTERRUPTED, "reason": "SERVER_RESTARTED_DURING_RUN",
+                                  "status": INTERRUPTED, "reason": reason,
                                   "coverage_complete": False, "selection_complete": False},
             "scope": None})
         closed.append(run_id)

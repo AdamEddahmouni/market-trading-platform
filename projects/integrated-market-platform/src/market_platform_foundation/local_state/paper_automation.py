@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 import threading
 
+from .connection import CRITICAL_WRITE_RETRY_SECONDS
+
 from .paths import persistence_enabled
 from .startup import open_local_state
 
@@ -26,7 +28,7 @@ class PaperAutomationRepository:
         self.lock = threading.RLock()
         self._policies, self._controllers, self._events, self._intents = {}, {}, [], {}
         if connection is not None:
-            with connection.transaction():
+            with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                 connection.execute('CREATE TABLE IF NOT EXISTS paper_automation_policies (policy_id TEXT PRIMARY KEY, account_id TEXT NOT NULL, created_at REAL NOT NULL, payload TEXT NOT NULL)')
                 connection.execute('CREATE TABLE IF NOT EXISTS paper_automation_controllers (account_id TEXT PRIMARY KEY, updated_at REAL NOT NULL, owner_id TEXT, lease_until REAL, payload TEXT NOT NULL)')
                 connection.execute('CREATE TABLE IF NOT EXISTS paper_automation_events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, account_id TEXT NOT NULL, at REAL NOT NULL, kind TEXT NOT NULL, payload TEXT NOT NULL)')
@@ -41,7 +43,7 @@ class PaperAutomationRepository:
     def _write(self, operation):
         with self.lock:
             if self.connection and not self.connection.in_transaction:
-                with self.connection.transaction():
+                with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                     return operation()
             return operation()
 

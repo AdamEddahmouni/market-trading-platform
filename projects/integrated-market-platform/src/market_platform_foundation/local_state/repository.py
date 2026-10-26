@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from ..canonical import canonical_bytes, sha256_bytes
 from ..clock import monotonic_wall_ns
-from .connection import LocalStateConnection
+from .connection import CRITICAL_WRITE_RETRY_SECONDS, LocalStateConnection
 from .schema import LAYOUT_SCHEMA_VERSION, PAPER_EVENT_SCHEMA_VERSION, RECENT_INSTRUMENT_LIMIT
 
 SECRET_KEY_TOKENS = (
@@ -53,7 +53,7 @@ class LocalStateRepository:
         events: list[dict[str, Any]],
         idempotency_index: dict[str, str],
     ) -> None:
-        with self.connection.transaction():
+        with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
             self._upsert_session(session)
             for event in events:
                 self.connection.execute(
@@ -257,7 +257,7 @@ class LocalStateRepository:
 
     def replace_watchlist_items(self, watchlist_id: str, instrument_ids: list[str]) -> None:
         now = _ns()
-        with self.connection.transaction():
+        with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
             self.connection.execute("DELETE FROM watchlist_items WHERE watchlist_id=?", (watchlist_id,))
             for index, instrument_id in enumerate(instrument_ids):
                 self.connection.execute(
@@ -275,7 +275,7 @@ class LocalStateRepository:
     def record_recent_instrument(self, instrument_id: str) -> None:
         now = _ns()
         key = instrument_id.upper()
-        with self.connection.transaction():
+        with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
             self.connection.execute(
                 """
                 INSERT INTO recent_instruments(instrument_id, last_seen_at, sort_rank)
@@ -361,7 +361,7 @@ class LocalStateRepository:
         source_id: str | None,
         opportunity_id: str | None,
     ) -> dict[str, Any]:
-        with self.connection.transaction():
+        with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
             if source_kind == "radar_attention" and source_id is not None:
                 existing = self.connection.execute(
                     "SELECT * FROM workspace_investigations WHERE instrument_id=? AND source_kind='radar_attention' AND source_id=?",
@@ -393,7 +393,7 @@ class LocalStateRepository:
         ).fetchall()]
 
     def update_investigation_note(self, workspace_id: str, note: str, expected_note: str) -> dict[str, Any] | None:
-        with self.connection.transaction():
+        with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
             cursor = self.connection.execute(
                 "UPDATE workspace_investigations SET note=?, updated_at=? WHERE workspace_id=? AND status='ACTIVE' AND note=?",
                 (note, _ns(), workspace_id, expected_note),

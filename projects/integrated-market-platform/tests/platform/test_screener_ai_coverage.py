@@ -7,6 +7,7 @@ import random
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -14,13 +15,15 @@ sys.path.insert(0, str(ROOT / "src"))
 from market_platform_foundation.intelligence.inference.anthropic_synthesis import BudgetedProvider, DailyBudget  # noqa: E402
 from market_platform_foundation.intelligence.inference.candidate_reduction import MAX_INTAKE, MAX_SELECTED  # noqa: E402
 from market_platform_foundation.intelligence.inference.coverage_plan import METHOD_VERSION  # noqa: E402
+from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse  # noqa: E402
 from market_platform_foundation.local_state.action_decisions import action_repository  # noqa: E402
 from market_platform_foundation.local_state.ai_screener_coverage import CoverageLedger  # noqa: E402
 from market_platform_foundation.platform.security.leak_audit import assert_no_secrets_in_payload  # noqa: E402
 from market_platform_foundation.ui_api.screener_ai import ScreenerAiService  # noqa: E402
 from market_platform_foundation.ui_api.screener_ai_coverage import ScreenerAiCoverage, interrupt_open_runs  # noqa: E402
 from tests.support.coverage_universe import (  # noqa: E402
-    NOW, SCOPE, FailingProvider, News, PagingReader, RankingProvider, answer, full_tournament, instrument_id, row, universe,
+    NOW, NOW_ISO, SCOPE, FailingProvider, News, PagingReader, RankingProvider, answer, full_tournament,
+    instrument_id, row, strength, universe,
 )
 
 # These tests cover the full tournament itself; the opportunity shortlist is tested in test_screener_ai_shortlist.
@@ -683,12 +686,14 @@ class LocalCount(RankingProvider):
     def __init__(self, *, refuse=False, window=None) -> None:
         super().__init__()
         self.counts, self.refuse = 0, refuse
+        self.preflights: list[int] = []
         if window is not None:
             from types import SimpleNamespace
             self._server = SimpleNamespace(manifest=SimpleNamespace(context=window, revision="r", runtime_version="b1"))
 
     def preflight(self, packet, *, rendered_prompt, config):
         self.counts += 1
+        self.preflights.append(len(packet.candidates))
         return {"accepted": True, "input_tokens": 1000, "context_window": 8192, "context_fit": True, "reason": None}
 
     def on_call(self, call, packet):
@@ -699,10 +704,12 @@ class LocalCount(RankingProvider):
 
 
 class LocalSendTimeCountTests(unittest.TestCase):
-    def test_local_planning_counts_nothing_and_plans_one_row_per_request(self):
+    def test_local_planning_sends_one_row_per_request_and_counts_only_at_send(self):
         h = Harness(universe(120, strong={7: 90.0}), LocalCount())
         h.run()
-        self.assertEqual(h.provider.counts, 0)
+        # Planning itself performs no provider call. Every count here is the send-time exact gate: a one-row
+        # comparison is measured like any other request, while the 120 first-pass rows were planned without one.
+        self.assertGreaterEqual(h.provider.counts, 1)
         self.assertEqual(h.block["plan"]["batch_optimizer"], "LOCAL_ONE_ROW_EXACT_AT_SEND")
         self.assertEqual(h.block["plan"]["token_basis"], "EXACT_AT_SEND_ONLY")
         self.assertEqual(h.block["batches_planned"], 120)
@@ -963,6 +970,20 @@ class BudgetTests(unittest.TestCase):
 
 
 class RecoveryTests(unittest.TestCase):
+    def test_interruption_reason_distinguishes_a_previous_process_from_a_lost_terminal(self):
+        ledger = CoverageLedger()
+        ledger.append("restart", "run", {"account_id": "PAPER-1", "boot_id": "previous"})
+        ledger.append("orphan", "run", {"account_id": "PAPER-1", "boot_id": "current"})
+        ledger.append("live", "run", {"account_id": "PAPER-1", "boot_id": "current"})
+        closed = interrupt_open_runs(
+            ledger, tracked={"live"}, release=lambda run_id: None,
+            reason_for=lambda head: "RUN_TERMINAL_NOT_RECORDED" if head.get("boot_id") == "current"
+            else "SERVER_RESTARTED_DURING_RUN")
+        self.assertEqual(set(closed), {"restart", "orphan"})
+        self.assertEqual(ledger.terminal("restart")["reason"], "SERVER_RESTARTED_DURING_RUN")
+        self.assertEqual(ledger.terminal("orphan")["reason"], "RUN_TERMINAL_NOT_RECORDED")
+        self.assertIsNone(ledger.terminal("live"))
+
     def test_sqlite_candidate_and_terminal_roll_back_together(self):
         import tempfile
         from unittest.mock import patch
@@ -1488,6 +1509,97 @@ class ReductionSplitTests(unittest.TestCase):
         pairs = {(record["round"], frozenset(record["instrument_ids"])) for record in rounds if len(record["instrument_ids"]) == 2}
         self.assertGreater(len({pair for _, pair in pairs}), len([1 for number, _ in pairs if number == 1]),
                            "later rounds compared the same pairs again")
+
+
+class ContextBoundedReductionTests(unittest.TestCase):
+    """The 2026-10-26 crypto shape: 12 finalists, 68,834 input tokens, 8,192-token local window."""
+
+    class Oversized(RankingProvider):
+        runtime = "LOCAL_MODEL"
+
+        def __init__(self):
+            super().__init__()
+            self._server = SimpleNamespace(manifest=SimpleNamespace(context=8192, revision="r", runtime_version="b1"))
+            self.preflights: list[tuple[int, int]] = []
+            self.infer_tokens: list[int] = []
+            self.over_budget: list[tuple[int, int]] = []
+
+        @staticmethod
+        def _tokens(packet) -> int:
+            count = len(packet.candidates)
+            if count == 12:
+                return 68834  # the exact failed GLOBAL_REDUCTION packet
+            references = sum(len(c.get("reference_evidence") or []) for c in packet.candidates)
+            missing = sum(len(c.get("missing") or []) for c in packet.candidates)
+            return 2000 + 500 * count + 800 * references + 100 * missing
+
+        @staticmethod
+        def _floor(packet) -> int:
+            return min(2600, 512 + 256 * max(1, len(packet.candidates)))
+
+        def preflight(self, packet, *, rendered_prompt, config):
+            tokens, floor = self._tokens(packet), self._floor(packet)
+            self.preflights.append((tokens, len(packet.candidates)))
+            fit = tokens + floor <= 8192
+            return {"accepted": fit, "input_tokens": tokens, "context_window": 8192, "context_fit": fit,
+                    "reason": None if fit else "LOCAL_CONTEXT_EXCEEDED"}
+
+        def on_call(self, call, packet):
+            tokens, floor = self._tokens(packet), self._floor(packet)
+            self.infer_tokens.append(tokens)
+            if tokens + floor > 8192:
+                self.over_budget.append((tokens, len(packet.candidates)))
+                from dataclasses import replace
+                return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=tokens, inference_dispatched=False)
+            picks = list(packet.candidates) if len(packet.candidates) == 1 else [
+                max(packet.candidates, key=lambda c: (strength(c), c["instrument"]["instrument_id"]))]
+            return ProviderInferenceResponse(answer(packet.candidates, picks), self.provider_id, self.model_id,
+                                             tokens_input=tokens, tokens_output=100, latency_ms=1, simulated=True)
+
+    @staticmethod
+    def _reference(identifier: str, index: int) -> dict:
+        return {
+            "capability": "NEWS" if index < 2 else "SENTIMENT", "instrument_id": identifier,
+            "role": "REFERENCE_CONTEXT", "source": "IMP_TEST", "as_of": NOW_ISO, "received_at": NOW_ISO,
+            "delivery_mode": "REFERENCE", "freshness_status": "CURRENT", "decision_admissibility": "ADMISSIBLE",
+            "valid_until": "2026-10-02T19:00:00Z", "policy": "CONTROLLED", "basis": "EVENT_TIME",
+            "weak_reasons": [], "facts": {"headline": "Controlled reference", "summary": "Controlled context."},
+            "evidence_id": f"EV:SYN{index}{identifier.replace(':', '')}",
+        }
+
+    def test_the_twelve_finalist_packet_is_measured_split_and_completed(self):
+        provider = self.Oversized()
+        h = Harness(universe(12, strong={index: 90.0 + index for index in range(12)}), provider)
+        original = h.service._candidates
+
+        def with_reference(*args, **kwargs):
+            candidates, extra = original(*args, **kwargs)
+            for candidate in candidates:
+                identifier = candidate["instrument"]["instrument_id"]
+                candidate["reference_evidence"].extend(self._reference(identifier, index) for index in range(3))
+                candidate["sufficient"] = True
+            return candidates, extra
+
+        h.service._candidates = with_reference
+        h.run()
+
+        self.assertIn((68834, 12), provider.preflights)  # the exact failed shape was measured, not sent
+        self.assertNotIn(68834, provider.infer_tokens)
+        self.assertEqual(provider.over_budget, [])
+        self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
+        self.assertTrue(h.block["selection_complete"])
+        self.assertGreaterEqual(h.block["reduction"]["compacted_comparisons"], 1)
+        self.assertLessEqual(h.block["reduction"]["requests"],
+                             h.block["reduction"]["budget"]["max_requests"])
+        reconciled(self, h.block, 12)
+        self.assertTrue(h.result["candidates"])
+        pick = h.result["candidates"][0]
+        evidence = next(c for c in h.result["evidence"] if c["instrument"]["instrument_id"] == pick["instrument_id"])
+        # The compacted comparison kept the quote and the admitted second item the decision needs.
+        self.assertTrue(any(e["capability"] == "QUOTE" and e["facts"].get("price") is not None
+                            for e in evidence["current_market_evidence"]))
+        self.assertTrue(evidence["sufficient"])
+        assert_no_secrets_in_payload(h.result)
 
 
 if __name__ == "__main__":

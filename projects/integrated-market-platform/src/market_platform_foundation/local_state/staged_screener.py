@@ -2,6 +2,8 @@
 from __future__ import annotations
 import json
 import threading
+
+from .connection import CRITICAL_WRITE_RETRY_SECONDS
 from contextlib import nullcontext
 from .ai_screener_coverage import CoverageLedger
 from .paths import persistence_enabled
@@ -15,7 +17,7 @@ class StagedRepository:
     def __init__(self,connection=None):
         self.connection,self.lock,self._memory=connection,threading.RLock(),{}
         if connection:
-            with connection.transaction():
+            with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                 connection.execute("CREATE TABLE IF NOT EXISTS ai_screener_experimental_results (id TEXT PRIMARY KEY, payload TEXT NOT NULL)")
     def get(self,identifier):
         with self.connection._lock if self.connection else nullcontext(),self.lock:
@@ -44,7 +46,7 @@ class StagedRepository:
         with self.connection._lock if self.connection else nullcontext(),self.lock,ledger.lock:
             memory,records=dict(self._memory),list(ledger._memory)
             try:
-                with self.connection.transaction() if self.connection else nullcontext():
+                with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS) if self.connection else nullcontext():
                     self.put(result)
                     ledger.append(run_id,"terminal",terminal)
             except Exception:

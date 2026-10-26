@@ -1,6 +1,8 @@
 """Account-scoped, append-only step 8 evidence on existing local-state storage."""
 import json
 import threading
+
+from .connection import CRITICAL_WRITE_RETRY_SECONDS
 from contextlib import nullcontext
 
 def encode(value):
@@ -12,7 +14,7 @@ class PerformanceRepository:
         self.lock=threading.RLock()
         self.memory={}
         if connection:
-            with connection.transaction():
+            with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                 connection.execute("CREATE TABLE IF NOT EXISTS paper_performance_records ("
                     "id INTEGER PRIMARY KEY AUTOINCREMENT,account_id TEXT NOT NULL,run_id TEXT NOT NULL,"
                     "kind TEXT NOT NULL,artifact_key TEXT NOT NULL,payload TEXT NOT NULL,"
@@ -30,7 +32,7 @@ class PerformanceRepository:
         encoded=encode(payload)
         if len(encoded.encode())>4_000_000:
             raise ValueError("PERFORMANCE_ARTIFACT_TOO_LARGE")
-        with self.lock, (self.connection.transaction() if self.connection else nullcontext()):
+        with self.lock, (self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS) if self.connection else nullcontext()):
             if self.connection:
                 prior=self.connection.fetchone("SELECT payload FROM paper_performance_records "
                     "WHERE account_id=? AND run_id=? AND kind=? AND artifact_key=?",(account,run_id,kind,key))

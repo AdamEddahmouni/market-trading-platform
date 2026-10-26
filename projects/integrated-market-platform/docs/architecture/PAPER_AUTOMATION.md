@@ -70,7 +70,7 @@ account, one experiment and the ledger risk-policy hash, and identified by
 |---|---|
 | `scope` | the Screener query (universe, filters, sort); the experimental staged method is refused |
 | `schedule` | `sessions` (`REGULAR` only), `cadence_seconds` (60–3600), `universe_evaluation_interval_seconds` (300–86400), `no_new_entries_minutes_before_close` |
-| `risk` | `max_position_notional_minor`, `max_aggregate_exposure_minor` (≤ experiment capital), `max_open_positions`, `max_daily_loss_minor`, `max_per_trade_risk_minor`, `assumed_adverse_move_bps`, `allowed_universes` (`US_EQUITIES`, `US_ETFS`), `order_types` (`MARKET` only), `allow_long`, `allow_short` (only if the Paper account allows it), `allow_entries`, `allow_exits` |
+| `risk` | `max_position_notional_minor`, `max_aggregate_exposure_minor` (≤ experiment capital), `max_open_positions`, `max_daily_loss_minor`, `max_per_trade_risk_minor`, `assumed_adverse_move_bps`, `allowed_universes` (`US_EQUITIES`, `US_ETFS`, `CRYPTO`; crypto is USD-settled only), `order_types` (`MARKET` only), `allow_long`, `allow_short` (only if the Paper account allows it), `allow_entries`, `allow_exits` |
 | `exits` | `on_stop_breach`, `on_thesis_exit` |
 | `ai` | `allow_local_inference`, `allow_paid_inference`, `max_paid_requests_per_day`, `max_paid_tokens_per_day` |
 | `emergency_stop` | `max_consecutive_failures` (1–20) |
@@ -78,6 +78,27 @@ account, one experiment and the ledger risk-policy hash, and identified by
 The existing governed limits stay in force underneath and are not restated by
 the policy: the ledger's `max_order_shares`, `max_position_shares` and
 `max_open_orders`, and the BUILD 22 NAV, concentration and exposure fractions.
+
+`CRYPTO` is permitted only as a USD-settled Paper scope: the CRYPTO Screener
+scope must carry a `quote_asset` filter of `eq USD`, and the account and
+experiment currency must be USD. The controller does not fund, convert or
+settle another currency. The Step 10 experiment's original `source_scope`
+label is `US_EQUITY_ETF`; the configured automation policy is the operative
+scope contract, and the immutable experiment record is not rewritten.
+Local reduction is context-bounded (2026-10-26 repair): the local engine's
+exact token count is taken before a `GLOBAL_REDUCTION` request is sent, the
+finalists are split into groups that fit, and rounds are hierarchical. A pair
+or single whose full evidence still does not fit is compared on current-market
+evidence plus one non-news reference item; the first-pass receipts retain the
+full evidence. Requests, chunk sizes, rounds and the measured budget are
+recorded on the coverage receipt, and a call/time bound defers the remaining
+finalists with an explicit reason rather than truncating evidence. One active
+full-universe run exists per Paper account: a second scope defers instead of
+adopting the active run, and recovery distinguishes a genuine process restart
+from a run whose terminal write was lost. SQLite reads are materialized under
+the connection lock and critical automation writes use a bounded lock-retry
+window. Operational verification of the repaired path is recorded separately;
+this is a software/context repair, not a risk authorization.
 
 ## Arming and controls
 

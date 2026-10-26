@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 import threading
 
+from .connection import CRITICAL_WRITE_RETRY_SECONDS
+
 from ..risk.sma_trailing_stop import TERMINAL, loosens
 from .paths import persistence_enabled
 from .startup import open_local_state
@@ -28,7 +30,7 @@ class SmaStopRepository:
         self.lock = threading.RLock()
         self._records, self._events = {}, []
         if connection is not None:
-            with connection.transaction():
+            with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                 connection.execute('CREATE TABLE IF NOT EXISTS sma_stop_records (kind TEXT NOT NULL, id TEXT NOT NULL, account_id TEXT, instrument_id TEXT, updated_at INTEGER NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(kind,id))')
                 connection.execute('CREATE INDEX IF NOT EXISTS sma_stop_record_scope ON sma_stop_records(kind,account_id,instrument_id,updated_at)')
                 connection.execute('CREATE TABLE IF NOT EXISTS sma_stop_events (id INTEGER PRIMARY KEY AUTOINCREMENT, stop_state_id TEXT NOT NULL, account_id TEXT NOT NULL, instrument_id TEXT NOT NULL, payload TEXT NOT NULL)')
@@ -41,7 +43,7 @@ class SmaStopRepository:
     def _write(self, operation):
         with self.lock:
             if self.connection and not self.connection.in_transaction:
-                with self.connection.transaction():
+                with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                     return operation()
             return operation()
 

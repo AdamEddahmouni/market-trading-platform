@@ -135,9 +135,33 @@ class AiScreenerRuns:
         self._lock = threading.Lock()
         self._runs: OrderedDict[str, dict[str, Any]] = OrderedDict()
         self._active: dict[str, dict[str, Any]] = {}
+        self._start_locks: dict[str, threading.Lock] = {}
         self._latencies: dict[str, deque[int]] = {}
         self._reservations: dict[str, int] = {}
         self._recovered: list[dict[str, Any]] = []
+
+    def _start_lock(self, account_id: str) -> threading.Lock:
+        """One start/recover section per account, so two scopes cannot both find the slot free."""
+        with self._lock:
+            lock = self._start_locks.get(account_id)
+            if lock is None:
+                lock = self._start_locks[account_id] = threading.Lock()
+            return lock
+
+    def _tracked(self) -> set[str]:
+        """Run ids alive in this process, including an active run whose ``_LIVE`` mark was lost."""
+        with self._lock:
+            return set(_LIVE) | {run["run_id"] for run in self._active.values()}
+
+    @staticmethod
+    def _same_question(active: dict[str, Any], scope: dict[str, Any]) -> bool:
+        return _question(active.get("scope") or {}) == _question(scope)
+
+    @staticmethod
+    def _recovery_reason(head: dict[str, Any]) -> str:
+        from .screener_ai_coverage import BOOT_ID
+
+        return "RUN_TERMINAL_NOT_RECORDED" if head.get("boot_id") == BOOT_ID else "SERVER_RESTARTED_DURING_RUN"
 
     def recover_at_boot(self) -> list[dict[str, Any]]:
         """Once, when the serving process starts: close the runs a dead process left open, so none of them holds
@@ -160,11 +184,13 @@ class AiScreenerRuns:
                 # ``_LIVE`` itself, not a copy: a run is registered there before it writes its first receipt.
                 from ..local_state.staged_screener import staged_stores
                 staged, _ = staged_stores()
-                staged_live = _LIVE | {value + "-premium" for value in _LIVE}
+                tracked = self._tracked()
+                staged_live = tracked | {value + "-premium" for value in tracked}
                 for staged_id in interrupt_open_runs(staged, tracked=staged_live, release=service.release_hold, clock=self._clock):
                     terminal=staged.terminal(staged_id) or {}
                     self._recovered.append({'run_id':staged_id,'account_id':terminal.get('account_id'), 'method':'STAGED_LOCAL_FIRST_EXPERIMENTAL', 'status':terminal.get('status'), 'reason':terminal.get('reason'), 'finished_at':terminal.get('finished_at'), 'calls_completed':terminal.get('calls_completed'), 'unknown_provider_outcomes':len(terminal.get('unknown_provider_outcomes') or [])})
-                for run_id in interrupt_open_runs(ledger, tracked=_LIVE, release=service.release_hold, clock=self._clock):
+                for run_id in interrupt_open_runs(ledger, tracked=tracked, release=service.release_hold, clock=self._clock,
+                                                  reason_for=self._recovery_reason):
                     terminal = ledger.terminal(run_id) or {}
                     self._recovered.append({"run_id": run_id, "account_id": terminal.get("account_id"), "status": terminal.get("status"),
                                             "reason": terminal.get("reason"), "finished_at": terminal.get("finished_at"),
@@ -185,15 +211,17 @@ class AiScreenerRuns:
             ledger = coverage_ledger()
             from ..local_state.staged_screener import staged_stores
             staged,_=staged_stores()
+            tracked = self._tracked()
             for staged_id in staged.open_runs():
                 head=staged.records(staged_id,"run")
-                if staged_id in _LIVE or staged_id.removesuffix("-premium") in _LIVE or not head or head[0].get("account_id")!=account_id: continue
+                if staged_id in tracked or staged_id.removesuffix("-premium") in tracked or not head or head[0].get("account_id")!=account_id: continue
                 found.append({"run_id":staged_id,"account_id":account_id,"method":"STAGED_LOCAL_FIRST_EXPERIMENTAL","status":"INTERRUPTED","reason":"SERVER_RESTARTED_DURING_RUN","finished_at":None,"calls_completed":len(staged.records(staged_id,"batch")),"unknown_provider_outcomes":len(staged.unfinished_batches(staged_id))})
             for run_id in ledger.open_runs():
                 head = ledger.records(run_id, "run")
-                if run_id in _LIVE or not head or head[0].get("account_id") != account_id:
+                if run_id in tracked or not head or head[0].get("account_id") != account_id:
                     continue
-                found.append({"run_id": run_id, "account_id": account_id, "status": "INTERRUPTED", "reason": "SERVER_RESTARTED_DURING_RUN",
+                found.append({"run_id": run_id, "account_id": account_id, "status": "INTERRUPTED",
+                              "reason": self._recovery_reason(head[0]),
                               "finished_at": None, "calls_completed": len(ledger.records(run_id, "batch")),
                               "unknown_provider_outcomes": len(ledger.unfinished_batches(run_id))})
         except Exception:  # noqa: BLE001 - a status read never fails on bookkeeping
@@ -215,32 +243,33 @@ class AiScreenerRuns:
         terms it was started under. ``slice_plan`` makes an automation run a rolling slice (local engine only)."""
         service = self._service()
         scope = service.validate_scope(body)
-        self._recover(service)
-        with self._lock:
-            active = self._active.get(account_id)
-            if active is not None:
-                return self._snapshot(active, joined=True)
-        engine = service.engine()
-        with self._lock:
-            active = self._active.get(account_id)
-            if active is not None:
-                return self._snapshot(active, joined=True)
-            run = {"run_id": uuid.uuid4().hex, "account_id": account_id, "scope": scope, "state": "RUNNING",
-                   "started_at": self._clock(), "started": self._monotonic(), "finished_at": None, "finished": None,
-                   "engine": {key: engine[key] for key in ("provider_id", "model_id", "runtime")},
-                   "timeout_seconds": engine["timeout_seconds"], "stages": [], "intake_count": None,
-                   "sufficient_count": None, "packet_bytes": None, "result": None, "error": None,
-                   "progress": {}, "stop": threading.Event(), "stop_requested_at": None,
-                   "spend_limit": dict(spend_limit) if spend_limit is not None else None, "origin": origin,
-                   "slice_plan": dict(slice_plan) if slice_plan else None}
-            self._active[account_id] = run
-            self._runs[run["run_id"]] = run
-            _LIVE.add(run["run_id"])
-            for run_id in [key for key, value in self._runs.items() if value["state"] != "RUNNING"][:max(0, len(self._runs) - MAX_TRACKED_RUNS)]:
-                del self._runs[run_id]
-            snapshot = self._snapshot(run)
-        threading.Thread(target=self._work, args=(service, run, scope), name="imp-ai-screener-run", daemon=True).start()
-        return snapshot
+        # The whole find/recover/create section is serialized per account. Recovery is inside it so it cannot
+        # close a run this section is about to create, and a second scope cannot pass the free-slot check
+        # between the first scope's check and its insertion.
+        with self._start_lock(account_id):
+            self._recover(service)
+            engine = service.engine()
+            with self._lock:
+                active = self._active.get(account_id)
+                if active is not None:
+                    same = self._same_question(active, scope)
+                    return self._snapshot(active, joined=True, joined_scope=same)
+                run = {"run_id": uuid.uuid4().hex, "account_id": account_id, "scope": scope, "state": "RUNNING",
+                       "started_at": self._clock(), "started": self._monotonic(), "finished_at": None, "finished": None,
+                       "engine": {key: engine[key] for key in ("provider_id", "model_id", "runtime")},
+                       "timeout_seconds": engine["timeout_seconds"], "stages": [], "intake_count": None,
+                       "sufficient_count": None, "packet_bytes": None, "result": None, "error": None,
+                       "progress": {}, "stop": threading.Event(), "stop_requested_at": None,
+                       "spend_limit": dict(spend_limit) if spend_limit is not None else None, "origin": origin,
+                       "slice_plan": dict(slice_plan) if slice_plan else None}
+                self._active[account_id] = run
+                self._runs[run["run_id"]] = run
+                _LIVE.add(run["run_id"])
+                for run_id in [key for key, value in self._runs.items() if value["state"] != "RUNNING"][:max(0, len(self._runs) - MAX_TRACKED_RUNS)]:
+                    del self._runs[run_id]
+                snapshot = self._snapshot(run, joined_scope=True)
+            threading.Thread(target=self._work, args=(service, run, scope), name="imp-ai-screener-run", daemon=True).start()
+            return snapshot
 
     def row_records(self, run_id: str) -> dict[str, tuple[str, list[str]]]:
         """Each row's final class and reasons in a finished run, from its immutable ledger rows."""
@@ -462,13 +491,15 @@ class AiScreenerRuns:
                 del self._active[run["account_id"]]
             _LIVE.discard(run["run_id"])
 
-    def _snapshot(self, run: dict[str, Any], *, joined: bool = False, result: bool = True) -> dict[str, Any]:
+    def _snapshot(self, run: dict[str, Any], *, joined: bool = False, result: bool = True,
+                  joined_scope: bool | None = None) -> dict[str, Any]:
         now = self._monotonic()
         running = run["state"] == "RUNNING"
         samples = self._latencies.get(run["engine"]["model_id"] or "", ())
         return {
             "schema_version": RUN_SCHEMA, "run_id": run["run_id"], "account_id": run["account_id"], "state": run["state"],
-            "joined": joined, "scope": run["scope"], "origin": run.get("origin", "OPERATOR"),
+            "joined": joined, "joined_scope": joined_scope, "deferred": bool(joined and joined_scope is False),
+            "scope": run["scope"], "origin": run.get("origin", "OPERATOR"),
             "stage": run["stages"][-1]["stage"] if running and run["stages"] else None, "stage_order": list(_stage_order(run["scope"])),
             "stages": [{"stage": item["stage"], "started_at": _iso(item["started_at"]),
                         "elapsed_ms": int(round(((item["ended"] if item["ended"] is not None else now) - item["started"]) * 1000)),

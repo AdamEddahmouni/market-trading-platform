@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 import threading
+
+from .connection import CRITICAL_WRITE_RETRY_SECONDS
 from typing import Any
 
 from .paths import persistence_enabled
@@ -27,7 +29,7 @@ class PaperExperimentRepository:
         self._experiments: dict[str, dict[str, Any]] = {}
         self._snapshots: list[dict[str, Any]] = []
         if connection is not None:
-            with connection.transaction():
+            with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                 connection.execute(
                     "CREATE TABLE IF NOT EXISTS paper_experiments ("
                     "experiment_id TEXT PRIMARY KEY, created_at INTEGER NOT NULL, status TEXT NOT NULL, "
@@ -50,7 +52,7 @@ class PaperExperimentRepository:
     def _write(self, operation):
         with self.lock:
             if self.connection and not self.connection.in_transaction:
-                with self.connection.transaction():
+                with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                     return operation()
             return operation()
 

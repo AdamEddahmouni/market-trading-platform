@@ -178,8 +178,13 @@ or method.
 - **No entry without a governed Opportunity.** The Action Decision gate still requires an
   `OpportunityV1` sharing the candidate's evidence lineage (`NO_GOVERNED_OPPORTUNITY`).
 - **No strategy feedback.** The report describes outcomes; it changes nothing.
-- Regular US session, US equities and ETFs, market orders, the experiment account only. There
-  is no early-close list, so the entry window is wrong on half days.
+- Regular US session for US equities and ETFs; Continuous session for USD-settled crypto pairs
+  only. Market orders, the experiment account, no other quote currency. There is no early-close
+  list, so the US entry window is wrong on half days. The local reduction is context-bounded:
+  exact preflight, hierarchical split, and a bounded comparison compaction for pairs/singles that
+  keeps current-market evidence; a call/time bound defers the rest explicitly. The earlier
+  `LOCAL_CONTEXT_EXCEEDED` limitation is repaired in source; operational verification is recorded
+  in the repair receipt.
 
 ## 10. Common refusals and what they mean
 

@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import threading
+
+from .connection import CRITICAL_WRITE_RETRY_SECONDS
 from contextlib import nullcontext
 from typing import Any
 
@@ -28,7 +30,7 @@ class CoverageLedger:
         self._memory: list[tuple[str, int, str, str]] = []
         self.lock = threading.RLock()
         if connection is not None:
-            with connection.transaction():
+            with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                 connection.execute(f'CREATE TABLE IF NOT EXISTS {self.table} (run_id TEXT NOT NULL, seq INTEGER NOT NULL, '
                                    'kind TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(run_id,seq))')
                 index = 'ai_screener_coverage_kind' if self.table == 'ai_screener_coverage_records' else 'ai_screener_staged_kind'
@@ -79,7 +81,7 @@ class CoverageLedger:
                 else:
                     self._memory.append(record)
             if self.connection and not self.connection.in_transaction:
-                with self.connection.transaction():
+                with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                     insert()
             else:
                 insert()
@@ -103,7 +105,7 @@ class CoverageLedger:
             memory = dict(repository._memory) if self.connection is None else None
             records = list(self._memory) if self.connection is None else None
             try:
-                with self.connection.transaction() if self.connection else nullcontext():
+                with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS) if self.connection else nullcontext():
                     repository.put('candidate_run', candidate['run_id'], candidate)
                     self.append(run_id, 'terminal', payload)
             except Exception:

@@ -174,12 +174,65 @@ class AiScreenerRunTests(unittest.TestCase):
 
         self.assertEqual(second["run_id"], first["run_id"])
         self.assertTrue(second["joined"])
+        self.assertFalse(second["joined_scope"])
+        self.assertTrue(second["deferred"])
         self.assertEqual(second["scope"]["sort"], "volume")
         release_all(provider)
         settled(runs, "PAPER-1", first["run_id"])
         # One run, one set of requests: the duplicate click started nothing and spent nothing.
         self.assertEqual(provider.calls, 4)
         self.assertEqual(len(coverage_ledger().records(first["run_id"], "run")), 1)
+
+    def test_a_second_start_with_the_same_query_joins_without_deferral(self):
+        provider = GatedProvider()
+        self.addCleanup(release_all, provider)
+        runs = self.runs_for(provider)
+        first = runs.start("PAPER-1", SCOPE)
+        self.assertTrue(provider.entered.acquire(timeout=10))
+
+        second = runs.start("PAPER-1", dict(SCOPE))
+
+        self.assertEqual(second["run_id"], first["run_id"])
+        self.assertTrue(second["joined"])
+        self.assertTrue(second["joined_scope"])
+        self.assertFalse(second["deferred"])
+        release_all(provider)
+        settled(runs, "PAPER-1", first["run_id"])
+
+    def test_two_scopes_starting_at_once_create_one_run_and_one_deferred_join(self):
+        provider = GatedProvider()
+        self.addCleanup(release_all, provider)
+        runs = self.runs_for(provider)
+        results: list[dict] = []
+        barrier = threading.Barrier(2)
+
+        def start(scope):
+            barrier.wait(5)
+            results.append(runs.start("PAPER-1", scope))
+
+        threads = [threading.Thread(target=start, args=(scope,))
+                   for scope in (SCOPE, {**SCOPE, "sort": "price"})]
+        [thread.start() for thread in threads]
+        [thread.join(10) for thread in threads]
+        self.assertEqual(len({result["run_id"] for result in results}), 1)
+        self.assertEqual(sum(1 for result in results if not result["joined"]), 1)
+        self.assertEqual(sum(1 for result in results if result["deferred"]), 1)
+        release_all(provider)
+        settled(runs, "PAPER-1", results[0]["run_id"])
+
+    def test_recovery_never_closes_an_active_run_even_if_its_live_mark_was_lost(self):
+        provider = GatedProvider()
+        self.addCleanup(release_all, provider)
+        runs = self.runs_for(provider)
+        started = runs.start("PAPER-1", SCOPE)
+        self.assertTrue(provider.entered.acquire(timeout=10))
+        screener_ai_runs._LIVE.discard(started["run_id"])
+
+        runs._recover(runs._service())
+
+        self.assertEqual(runs.read("PAPER-1", started["run_id"])["state"], "RUNNING")
+        release_all(provider)
+        settled(runs, "PAPER-1", started["run_id"])
 
     def test_a_reloaded_page_reattaches_to_the_active_run_then_to_the_latest_result(self):
         provider = GatedProvider()

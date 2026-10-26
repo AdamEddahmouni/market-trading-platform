@@ -2,6 +2,8 @@
 import json
 import threading
 
+from .connection import CRITICAL_WRITE_RETRY_SECONDS
+
 from .paths import persistence_enabled
 from .startup import open_local_state
 from ..evaluation.prospective import encode
@@ -13,7 +15,7 @@ class EvaluationRepository:
         self.lock=threading.RLock()
         self.memory={}
         if connection:
-            with connection.transaction():
+            with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                 connection.execute('CREATE TABLE IF NOT EXISTS prospective_evaluation_runs '
                                    '(id TEXT PRIMARY KEY, account_id TEXT NOT NULL, cutoff TEXT NOT NULL, payload TEXT NOT NULL)')
                 connection.execute('CREATE INDEX IF NOT EXISTS prospective_evaluation_account ON prospective_evaluation_runs(account_id,cutoff)')
@@ -48,7 +50,7 @@ class EvaluationRepository:
                 else:
                     self.memory[(run['run_id'],account_id)]=encoded
             if self.connection and not self.connection.in_transaction:
-                with self.connection.transaction():
+                with self.connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
                     write()
             else:
                 write()
