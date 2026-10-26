@@ -1,3 +1,4 @@
+import { stampText } from "../screenerText";
 import type { BondItem, BondSource } from "../../../api/screenerBonds";
 
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -50,7 +51,7 @@ export const sourceLabel = (source: string | null) => (source && (SOURCE_LABEL[s
 
 /** "Treasury Fiscal Data · auctions · Sep 9, 2026" — the value's own source and clock. */
 export function provenance(item: Pick<BondItem, "source" | "as_of">) {
-  const clock = item.as_of ? (item.as_of.length > 10 ? `retrieved ${new Date(item.as_of).toLocaleString()}` : isoDate(item.as_of)) : "";
+  const clock = item.as_of ? (item.as_of.length > 10 ? `retrieved ${stampText(item.as_of)}` : isoDate(item.as_of)) : "";
   return [sourceLabel(item.source), clock].filter(Boolean).join(" · ");
 }
 
@@ -62,11 +63,13 @@ const STATE_TEXT: Record<string, string> = {
 };
 export const sourceState = (source: BondSource) => STATE_TEXT[source.state ?? ""] ?? humanize(source.state ?? "UNAVAILABLE");
 const REASON_TEXT: Record<string, string> = {
-  IMP_TREASURY_LIVE_NOT_SET: "set IMP_TREASURY_LIVE=1", FRED_API_KEY_MISSING: "FRED API key not configured",
-  IMP_FRED_LIVE_NOT_SET: "set IMP_FRED_LIVE=1", IMP_FINRA_LIVE_NOT_SET: "set IMP_FINRA_LIVE=1",
-  FINRA_CREDENTIALS_MISSING: "FINRA credentials not configured", LICENSED_TRACE_FEED_REQUIRED: "licensed TRACE feed required",
-  IMP_NPORT_DATA_ROOT_NOT_SET: "set IMP_NPORT_DATA_ROOT (tools/fixed_income/nport_refresh.py)",
-  NPORT_CATALOG_NOT_BUILT: "build with tools/fixed_income/nport_refresh.py", IMP_OPENFIGI_LIVE_NOT_SET: "set IMP_OPENFIGI_LIVE=1",
+  // Words only: where a setting is the fix, Setup or the "How to turn it on" disclosure names it.
+  IMP_TREASURY_LIVE_NOT_SET: "Treasury data is switched off", FRED_API_KEY_MISSING: "FRED key not saved; add it in Setup",
+  IMP_FRED_LIVE_NOT_SET: "FRED is switched off; saving its key in Setup turns it on",
+  IMP_FINRA_LIVE_NOT_SET: "FINRA is switched off; saving its credentials in Setup turns it on",
+  FINRA_CREDENTIALS_MISSING: "FINRA credentials not saved; add them in Setup", LICENSED_TRACE_FEED_REQUIRED: "licensed TRACE feed required",
+  IMP_NPORT_DATA_ROOT_NOT_SET: "fund-holdings (N-PORT) catalog not set up on this workstation",
+  NPORT_CATALOG_NOT_BUILT: "fund-holdings (N-PORT) catalog not built yet", IMP_OPENFIGI_LIVE_NOT_SET: "OpenFIGI lookups are switched off",
   LICENSED_RATINGS_FEED_REQUIRED: "licensed ratings feed required", NOT_LICENSED_FOR_REDISTRIBUTION: "not licensed for redistribution",
   NO_CURRENT_SECURITY_YIELD: "needs a current security yield",
 };

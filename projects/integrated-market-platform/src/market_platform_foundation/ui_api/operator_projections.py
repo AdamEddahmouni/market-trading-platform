@@ -160,14 +160,24 @@ def _refresh_services(names: list[str]) -> None:
 
 
 def save_provider_config(body: dict[str, Any]) -> dict[str, Any]:
-    """One provider's settings: set ``values`` (blank = keep) and/or ``clear`` names. Echoes names, never values."""
+    """One provider's settings: set ``values`` (blank = keep) and/or ``clear`` names, or ``switch`` a keyless
+    source ``ON``/``OFF``. Echoes names, never values."""
 
     provider = str(body.get("provider") or "").strip().lower()
     values = body.get("values") or {}
     clear = body.get("clear") or []
+    switch = body.get("switch")
     if not provider or not isinstance(values, dict) or not isinstance(clear, list):
         raise ValueError("PROVIDER_AND_VALUES_REQUIRED")
-    result = default_store().write(provider, values, clear)
+    if switch is not None:
+        # A keyless source's on/off switch is its own request: never combined with values or a clear.
+        if values or clear:
+            raise ValueError("SWITCH_WITH_VALUES_CONFLICT")
+        if switch not in ("ON", "OFF"):
+            raise ValueError("INVALID_SWITCH")
+        result = default_store().switch(provider, switch == "ON")
+    else:
+        result = default_store().write(provider, values, clear)
     try:
         _refresh_services(result["refresh"])
     except Exception:  # noqa: BLE001 — the value is saved; a failed refresh only delays it to the next rebuild

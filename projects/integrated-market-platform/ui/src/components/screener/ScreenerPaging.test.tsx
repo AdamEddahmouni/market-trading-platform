@@ -208,7 +208,7 @@ describe("Screener S6 server paging", () => {
     const bid = screen.getByRole("columnheader", { name: /Bid/ });
     expect(bid).toHaveAttribute("aria-disabled", "true");
     expect(bid).not.toHaveAttribute("aria-sort");
-    expect(bid.getAttribute("title")).toMatch(/visible rows only/);
+    expect(bid).toHaveAccessibleDescription(/visible rows only/);
     const calls = mocks.fetch.mock.calls.length;
     fireEvent.click(bid);
     expect(mocks.fetch.mock.calls.length).toBe(calls);

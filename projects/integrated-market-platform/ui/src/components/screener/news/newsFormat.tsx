@@ -2,9 +2,11 @@ import { useState } from "react";
 import type { ScreenerUniverse } from "../../../api/screener";
 import type { NewsMatch, NewsStory, ProviderStatus, StorySentiment } from "../../../api/screenerNews";
 import { RemedyHint } from "../setup/Remedy";
+import { ET_ZONE } from "../screenerText";
 
-const zoneOf = (universe: ScreenerUniverse) => universe === "CRYPTO" ? "UTC" : "America/New_York";
-const suffixOf = (universe: ScreenerUniverse) => universe === "CRYPTO" ? "UTC" : "ET";
+// Every universe reads ET (Crypto included); the universe argument stays for callers.
+const zoneOf = (_universe: ScreenerUniverse) => ET_ZONE;
+const suffixOf = (_universe: ScreenerUniverse) => "ET";
 const formatters = new Map<string, Intl.DateTimeFormat>();
 function formatter(zone: string, withDay: boolean) {
   const key = `${zone}|${withDay}`;
@@ -16,7 +18,7 @@ function formatter(zone: string, withDay: boolean) {
   }
   return item;
 }
-/** HH:MM on the universe clock (Crypto UTC, US markets ET). */
+/** HH:MM ET. */
 export const newsClock = (iso: string | null | undefined, universe: ScreenerUniverse) =>
   iso ? `${formatter(zoneOf(universe), false).format(new Date(iso))} ${suffixOf(universe)}` : "—";
 /** Weekday + HH:MM: a 72h window spans days. */

@@ -61,6 +61,14 @@ class FinvizProviderTests(unittest.TestCase):
         self.assertEqual(row.rsi_14, 65.67)
         self.assertEqual(row.volume, 30_002_507)
 
+    def test_dash_placeholder_parses_to_missing_not_zero(self) -> None:
+        # Finviz writes "-" when it has no value; the Screener must show it as missing, never as 0.00.
+        text = "Ticker,Company,P/E,Short Ratio,Relative Volume,Price\nAAPL,Apple Inc,-,-,-,231.5\n"
+        rows, _, error = parse_screener_csv(text)
+        self.assertIsNone(error)
+        row = rows[0]
+        self.assertEqual((row.pe, row.short_ratio, row.rel_volume, row.price), (None, None, None, 231.5))
+
     def test_news_normalization(self) -> None:
         text = (FIXTURES / "news_sample.csv").read_text(encoding="utf-8")
         items, err = parse_news_csv(text)

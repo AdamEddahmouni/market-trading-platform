@@ -62,7 +62,7 @@ describe("S15 Institutional & Whale Futures positioning", () => {
       expect(within(section).getByRole("heading", { name: heading })).toBeInTheDocument();
     }
     expect(section).toHaveTextContent("E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE · code 13874A · Traders in Financial Futures (futures only)"
-      + " · positions as of 2026-09-22 · released 2026-09-25 19:30 UTC");
+      + " · positions as of 2026-09-22 · released Sep 25 15:30 ET");
     const table = within(section).getByRole("table", { name: /categories for ES/ });
     const headers = within(table).getAllByRole("columnheader").map((cell) => cell.textContent);
     expect(headers).toEqual(["Category", "Long", "Short", "Spreading", "Wk chg L / S", "Net (derived)", "Net chg (derived)",
@@ -110,7 +110,7 @@ describe("S15 Institutional & Whale Futures positioning", () => {
     const section = screen.getByRole("region", { name: "CFTC Commitments of Traders" });
     expect(section).toHaveTextContent("A known CFTC market, but not in the CFTC releases of the last 35 days");
     // Final closure: the last public report is shown as a date, never as current positioning.
-    expect(section).toHaveTextContent("CFTC market 023655: last reported 2024-08-27, released 2024-08-30 19:30 UTC (release time inferred). Older reports are not shown as current positioning.");
+    expect(section).toHaveTextContent("CFTC market 023655: last reported 2024-08-27, released Aug 30, 2024 15:30 ET (release time inferred). Older reports are not shown as current positioning.");
     expect(section).not.toHaveTextContent("CFTC positioning unavailable");
     expect(within(section).queryByRole("table")).toBeNull();
   });
@@ -143,7 +143,7 @@ describe("S15 Quick Preview Futures context", () => {
   it("shows a compact summary with the categories each report is read for", () => {
     const { unmount } = render(<FuturesPositioning compact section={mapped(tff)} />);
     let section = screen.getByRole("region", { name: "CFTC Commitments of Traders" });
-    expect(section).toHaveTextContent("Traders in Financial Futures (futures only) · as of 2026-09-22 · released 2026-09-25 19:30 UTC");
+    expect(section).toHaveTextContent("Traders in Financial Futures (futures only) · as of 2026-09-22 · released Sep 25 15:30 ET");
     expect(within(section).getAllByRole("row").slice(1).map((row) => within(row).getByRole("rowheader").textContent))
       .toEqual(["Asset manager / institutional", "Leveraged funds"]);
     expect(within(section).queryByRole("heading", { name: "Provenance" })).toBeNull();
@@ -225,7 +225,7 @@ describe("S15 Positioning view coverage", () => {
     expect(tffGroup).toHaveTextContent("ESZ26 · CFTC 13874A · mapped by exchange plus product · OI weekly change -1,500 (published)");
     expect(within(tffGroup).getByRole("columnheader", { name: "Net (derived)" })).toBeInTheDocument();
     expect(within(view).getByRole("region", { name: "Disaggregated (futures only)" })).toHaveTextContent("Managed money");
-    expect(view).toHaveTextContent("Known CFTC markets not in the releases of the last 35 days: QG: last reported 2024-08-27, released 2024-08-30 19:30 UTC.");
+    expect(view).toHaveTextContent("Known CFTC markets not in the releases of the last 35 days: QG: last reported 2024-08-27, released Aug 30, 2024 15:30 ET.");
     expect(view.textContent).not.toMatch(/below the CFTC reporting threshold\)/);
     expect(within(view).getByRole("region", { name: "Roots without CFTC positioning" })).toHaveTextContent("Ambiguous CFTC market · 1");
     expect(view).toHaveTextContent("Legacy (commercial / non-commercial) is used only as mapping reference.");

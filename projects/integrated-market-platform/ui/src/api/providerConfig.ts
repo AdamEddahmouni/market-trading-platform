@@ -13,7 +13,7 @@ const FieldSchema = z.object({
   sensitive: z.boolean(),
   required: z.boolean(),
   configured: z.boolean(),
-  source: z.enum(["ENVIRONMENT", "PRIVATE_FILE", "ENV_FILE", "NONE"]),
+  source: z.enum(["ENVIRONMENT", "PRIVATE_FILE", "ENV_FILE", "PROVIDER_STORE", "NONE"]),
   editable: z.boolean(),
   removable: z.boolean(),
   help: z.string().nullable(),
@@ -31,8 +31,12 @@ const ProviderSchema = z.object({
   unlocks: z.array(z.string()),
   configurable: z.boolean(),
   external_setup: z.string().nullable(),
-  state: z.enum(["CONFIGURED", "PARTIAL", "NEEDS_SETUP", "OPTIONAL", "EXTERNAL"]),
+  // ON / OFF: a keyless public source whose only control is its switch.
+  state: z.enum(["CONFIGURED", "PARTIAL", "NEEDS_SETUP", "OPTIONAL", "EXTERNAL", "ON", "OFF"]),
   live_gates: z.array(z.object({ name: z.string(), enabled: z.boolean(), source: z.string() }).passthrough()),
+  switchable: z.boolean().optional(),
+  /** The one read gate Setup may switch; `editable` is false when the API's environment sets it. */
+  switch: z.object({ name: z.string(), on: z.boolean(), source: z.string(), editable: z.boolean() }).passthrough().nullable().optional(),
   applies: z.enum(["NEXT_REQUEST", "RESTART"]),
   applies_note: z.string().nullable(),
   verification: z.string(),
@@ -49,6 +53,7 @@ const ResultSchema = z.object({
   applies: z.enum(["NEXT_REQUEST", "RESTART"]),
   verification: z.string(),
   refresh_failed: z.boolean().optional(),
+  switch: z.enum(["ON", "OFF"]).optional(),
 }).passthrough();
 export type SaveResult = z.infer<typeof ResultSchema>;
 
@@ -72,6 +77,11 @@ export function saveProviderSettings(provider: string, values: Record<string, st
   return postJson("/operator/config/provider", { provider, values, clear }, SaveResponseSchema);
 }
 
+/** Explicit operator switch of a keyless source's one read gate. Never sent together with values. */
+export function switchProvider(provider: string, on: boolean) {
+  return postJson("/operator/config/provider", { provider, switch: on ? "ON" : "OFF" }, SaveResponseSchema);
+}
+
 const ERRORS: Record<string, string> = {
   VALUE_REQUIRED: "Enter a value.",
   NO_CHANGES: "Nothing to save: every field is blank.",
@@ -91,6 +101,7 @@ const ERRORS: Record<string, string> = {
   SETTING_OVERRIDDEN_BY_ENVIRONMENT: "The API's environment sets this. Change it there; a value saved here would never be used.",
   PROVIDER_FIELD_NOT_ALLOWED: "IMP doesn't accept that setting.",
   PROVIDER_NOT_SUPPORTED: "This provider isn't set up from IMP.",
+  PROVIDER_NOT_SWITCHABLE: "This source can't be switched from IMP.",
   OPERATOR_CONFIG_ORIGIN_REJECTED: "Settings can only be changed from IMP on this computer.",
 };
 

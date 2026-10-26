@@ -82,6 +82,10 @@ def _load_store() -> ReplayStore:
 
         install_ibkr_observational_provider()
         get_live_runtime(create=True)
+        # IBKR delayed futures quotes and bars fill what OpenD does not supply; absent unless IBKR TWS is enabled.
+        from tools.ibkr.runtime_bootstrap import install_delayed_futures_source
+
+        install_delayed_futures_source()
     return store
 
 

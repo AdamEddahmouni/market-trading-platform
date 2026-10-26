@@ -184,7 +184,9 @@ describe("Screener Quick Preview", () => {
     mount();
     await clickRow("AAPL");
     const pane = await screen.findByRole("complementary", { name: "Quick preview" });
-    fireEvent.click(within(pane).getByRole("button", { name: "Close quick preview" }));
+    // With the AI tab beside it, the rail's own bar carries the close button.
+    expect(pane.closest(".screener-rail")).toHaveClass("with-tabs");
+    fireEvent.click(screen.getByRole("button", { name: "Close right rail" }));
     expect(screen.queryByRole("complementary", { name: "Quick preview" })).not.toBeInTheDocument();
     expect(screen.getByRole("grid")).toHaveFocus();
     await waitFor(() => expect(mocks.layout).toHaveBeenCalledWith({ open: false, width: 400 }));
@@ -206,7 +208,7 @@ describe("Screener Quick Preview", () => {
     fireEvent.keyDown(splitter, { key: "ArrowRight" });
     expect(splitter).toHaveAttribute("aria-valuenow", "320");
     await waitFor(() => expect(mocks.layout).toHaveBeenLastCalledWith({ open: true, width: 320 }));
-    expect(screen.getByRole("complementary", { name: "Quick preview" })).toHaveStyle({ width: "320px" });
+    expect(screen.getByRole("complementary", { name: "Quick preview" }).closest(".screener-rail")).toHaveStyle({ width: "320px" });
   });
 
   it("uses an overlay drawer at narrow desktop widths", async () => {
@@ -217,9 +219,25 @@ describe("Screener Quick Preview", () => {
     expect(screen.queryByRole("complementary", { name: "Quick preview" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("AAPL"));
     const pane = await screen.findByRole("complementary", { name: "Quick preview" });
-    expect(pane).toHaveClass("overlay");
+    expect(pane.closest(".screener-rail")).toHaveClass("overlay");
     fireEvent.keyDown(pane, { key: "Escape" });
     expect(screen.queryByRole("complementary", { name: "Quick preview" })).not.toBeInTheDocument();
+    // A drawer, not a pane floating over the rows: the rest of the page is dimmed and a press there closes it.
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await screen.findByRole("complementary", { name: "Quick preview" });
+    const backdrop = document.querySelector(".screener-rail-backdrop")!;
+    expect(backdrop).toHaveAttribute("aria-hidden", "true");
+    fireEvent.pointerDown(backdrop);
+    expect(screen.queryByRole("complementary", { name: "Quick preview" })).not.toBeInTheDocument();
+    expect(document.querySelector(".screener-rail-backdrop")).toBeNull();
+    expect(screen.getByRole("grid")).toHaveFocus();
+  });
+
+  it("has no backdrop when the grid and the rail fit side by side", async () => {
+    mount();
+    await clickRow("AAPL");
+    await screen.findByRole("complementary", { name: "Quick preview" });
+    expect(document.querySelector(".screener-rail-backdrop")).toBeNull();
   });
 
   it("switches timeframe and shows an unavailable chart and levels without fallback", async () => {
@@ -238,6 +256,11 @@ describe("Screener Quick Preview", () => {
     expect(within(pane).getByText("Auto S/R · 15m · Extended")).toBeInTheDocument();
     expect(mocks.preview).toHaveBeenCalledWith("AAPL", "15m", "EXTENDED", [], expect.anything(), "US_EQUITIES", null);
     expect(within(pane).queryByRole("img", { name: /candles/ })).not.toBeInTheDocument();
+    // An unavailable chart can be asked for again now instead of waiting for the next refresh.
+    const calls = mocks.preview.mock.calls.length;
+    fireEvent.click(within(within(pane).getByRole("region", { name: "Current chart" })).getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(mocks.preview.mock.calls.length).toBeGreaterThan(calls));
+    expect(mocks.preview).toHaveBeenLastCalledWith("AAPL", "15m", "EXTENDED", [], expect.anything(), "US_EQUITIES", null);
   });
 
   it("moves the live price marker from L1 while levels keep their own clock", async () => {

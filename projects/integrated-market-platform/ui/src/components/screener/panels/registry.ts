@@ -22,6 +22,10 @@ export const ALWAYS_PANELS: ReadonlyArray<PanelId> = ["setup"];
 export const PANEL_TITLES = Object.fromEntries(PANELS.map((panel) => [panel.id, panel.title])) as Record<PanelId, string>;
 /** Panels that hold a live provider subscription while open. */
 export const LIVE_PANELS: ReadonlySet<PanelId> = new Set<PanelId>(["order_flow", "cvd", "level2", "short_squeeze"]);
+/** Panels about the workstation rather than the selected instrument: they have something to show with no selection. */
+export const WORKSTATION_PANELS: ReadonlySet<PanelId> = new Set<PanelId>(["setup", "ai_screener"]);
+/** The dock's tab strip alone, shown while every open panel is waiting for a selection. */
+export const DOCK_SLIM_HEIGHT = 30;
 export const DOCK_HEIGHT_DEFAULT = 300;
 export const DOCK_HEIGHT_MIN = 140;
 export const DOCK_HEIGHT_MAX = 1200;

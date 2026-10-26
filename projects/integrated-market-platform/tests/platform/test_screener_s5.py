@@ -88,6 +88,18 @@ class UniverseContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "UNSUPPORTED_UNIVERSE"):
             universe_spec("OPTIONS")
 
+    def test_redundant_columns_leave_defaults_but_stay_in_one_view(self) -> None:
+        # Sprint 3 item 35: the futures lead flag is a "Front" badge and the crypto venue is named in the footer, so
+        # neither is a default column. Saved columns and sorts are gated by the views, so each stays in one view.
+        futures, crypto = universe_spec(FUTURES), universe_spec("CRYPTO")
+        self.assertNotIn("lead", futures.default_columns)
+        self.assertNotIn("lead", futures.views["Overview"])
+        self.assertIn("lead", futures.views["Contract"])
+        self.assertNotIn("venue", crypto.default_columns)
+        self.assertNotIn("venue", crypto.views["Overview"])
+        self.assertIn("venue", crypto.views["Liquidity"])
+        self.assertEqual(("lead" in futures.columns, "venue" in crypto.columns), (True, True))
+
     def test_fields_and_screens_cannot_cross_universes(self) -> None:
         self.assertIn("dte", {item["field"] for item in filter_catalog(FUTURES)})
         self.assertNotIn("short_float_pct", {item["field"] for item in filter_catalog(FUTURES)})

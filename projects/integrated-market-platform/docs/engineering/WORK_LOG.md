@@ -459,6 +459,250 @@ when the provider is unhealthy, and it also closes manual positions. Deployed
 $5k / 15 / $75k / $2k, long only, SMA 20 × 1m). Result for the day: zero
 fills; see the 10-23 reconciliation entry above.
 
+## 2026-10-22 — Setup switches for keyless sources (Sprint 3 item 30, part 2)
+
+Stacked on Sprint 3 (PR C).
+
+- **Registry (`operator_config.py`).** `ProviderSetup.switchable`. New keyless entries, each with exactly one read
+  gate:
+
+  | Entry | Gate |
+  |---|---|
+  | `rss` | `IMP_NEWS_RSS_LIVE` |
+  | `treasury` | `IMP_TREASURY_LIVE` |
+  | `kraken` | `IMP_CRYPTO_LIVE` |
+  | `public_records` | `IMP_PUBLIC_RECORDS_LIVE` |
+
+  OpenFIGI gains `IMP_OPENFIGI_LIVE`. Its optional key still switches nothing on.
+- **Not switchable.** Finviz live stays an environment setting (`path_a_rth_preflight.py` treats it as a blocker).
+  Senate eFD still needs the terms attestation. Execution, broker, Paper and billing gates are never registered.
+- **Store.** `ProviderConfigStore.switch(provider, on)` writes `GATE=1` to `.private/providers.env`, or removes the
+  line. When the repository `.env` would still switch the gate on, it writes `GATE=0`. It then syncs the process
+  environment, and it refuses a gate the environment sets (`SETTING_OVERRIDDEN_BY_ENVIRONMENT`). The response carries
+  names only.
+- **When it applies.** Every one of these sources reads the live `os.environ` on each request, before any cache, so
+  `applies` is `NEXT_REQUEST`:
+  - Kraken: `screener_crypto._catalog`;
+  - Treasury and the NY Fed: `screener_bonds.enabled`;
+  - OpenFIGI: `openfigi.enabled`;
+  - RSS: `rss_feeds.enabled`;
+  - public records: `public_records.http.live_state`.
+
+  RSS and public records also refresh the News and Participants services.
+- **Route.** The same `POST /operator/config/provider`, so the loopback-origin check and `security.config.write` still
+  apply. The body is `{provider, switch: "ON"|"OFF"}`; combining it with `values` or `clear` is refused.
+- **UI.**
+  - Setup shows a `role="switch"` with the unlocks list.
+  - A gate the environment sets is read-only, with "Set in the API environment".
+  - The provider queries refresh after a switch.
+  - Remedies for these sources are a CONFIGURE action, "Turn on in Setup"; the environment how-to stays for Finviz
+    only.
+  - The Screener page owns the switch dialog opened from a source error, so the dialog and its result line stay open
+    when switching the source on replaces the error message.
+- Browser check against the isolated backend. Treasury was switched on in the disposable store: the dialog said
+  "switched on … no restart needed", and the Bonds page changed to the network-refused state on the next request.
+  Treasury was then switched back off. Kraken, which that backend pins in its environment, showed the read-only
+  switch with "Set in the API environment".
+- Tests:
+  - Python store tests: on and off, other lines kept, the `.env` override, refusal when the environment sets the gate,
+    refusal for unknown and non-switchable providers, switch combined with values refused, the switchable allowlist,
+    and the cross-site route refusal;
+  - vitest: the switch, the POST body, the environment-controlled state, a refused switch, and the remedy button.
+
+## 2026-10-22 — Screener Sprint 3: plain language and formatting
+
+Items 27–35 and 40–43 of the 2026-10-22 visual pass, stacked on Sprint 2.
+Wording and formatting only: no methodology, AI or Paper behaviour changes.
+Each raw code stays in a tooltip, so it can still be searched.
+
+- **Shared text (`screenerText.tsx`).** `codeWords` reads a code as words
+  (`FUTURE_CONTRACT` → "Future contract") and `<Code>` keeps the code in
+  `title`. `stampText` / `<Stamp>` give one time format, always ET 24-hour
+  ("14:03:38 ET" today, "Oct 21 14:03 ET" on another day), with UTC and the
+  machine's clock on hover. `sessionText`, `filterText`, `exchangeText`,
+  `universeText` and `distinctJoin` replace per-panel copies.
+  `screenerTimeFormat.test.ts` fails on raw `toLocaleTimeString`,
+  `toLocaleString()` or `toISOString()` in Screener sources.
+- **Times in ET everywhere (33).** Crypto included (owner's choice):
+  `marketClock` always returns ET, and the crypto preview, participants, news,
+  bonds and rates panels use `stampText`.
+- **Freshness (27).** `DecisionFreshness` is one collapsed "Data freshness"
+  section below the content, with a roll-up badge ("All current", "2 stale ·
+  1 unavailable", worst first). Each input reads as one line in words; its
+  record is one level down. `PanelFrame` also shows the roll-up in the header
+  when an input is not current. The server's eligibility logic is unchanged.
+- **Cross-Asset (28) and AI (29).** Asset classes, kinds, states,
+  relationships, bases and versions read as words. The AI strip no longer
+  appends "(CODE)": the code is in the line's tooltip. The workspace shows
+  filters as chip text, not JSON; names the engine as "Local model" or by its
+  label, not by provider id or `LOCAL_MODEL`; and names the other run's scope
+  in words.
+- **Switched-off sources (30, 42).** The API remedy is words plus a COMMAND
+  action with the setting (`screener_remedies._flag`). Finviz
+  `NOT_CONFIGURED` shows "Enter Finviz token". A source switched off by an
+  environment setting shows a collapsed "How to turn it on" (`HowToTurnOn`,
+  `ENV_SWITCHES`). "Retry source" is only offered for other errors. PR D adds
+  Setup switches for the keyless sources.
+- **Session (31).** One label in the header, toolbar and footer. Futures read
+  only the quote window's session, which describes the visible contracts.
+  "Mixed sessions" has a tooltip with a count per session. An unknown session
+  reads "Unknown" everywhere (it was "Market" in the header, "—" in the
+  footer, and "Session Session unknown" for Crypto).
+- **Repeats (32).** Options shows one state badge. Institutional states a
+  source reason shared by several sections once (`SharedReasonContext`).
+  Flow history says "nothing captured in this range yet" instead of "—–—".
+  Grid tooltips drop repeated parts ("snapshot · snapshot").
+- **Numbers (34).** Fixed decimals per field (RSI 1; RVOL, P/E, Short Ratio 2,
+  with "<0.01" for tiny non-zero values). Prices under $1 show 4 decimals in
+  the grid and Quick Preview alike.
+- **Columns (35).** The futures lead contract is a "Front" badge in the symbol
+  cell, and crypto venue is named once in the footer. Both left the default and
+  Overview views. They stay in Contract and Liquidity, because a field outside
+  every view could not be a saved column or sort.
+- **Built-in screens (40).** The five that cannot run have their own reason
+  from the server (`_UNSUPPORTED_REASONS`). They are listed under "Not available
+  yet", with the reason shown inline and linked by `aria-describedby`.
+- **Price filter (41).** A new number filter opens at "At least". The server
+  lists `gt` before `gte`, so the old first-match rule opened at "Greater
+  than".
+- **News (43).** The Type column was empty for almost every story, so it is
+  gone; the "Official filing" badge sits before the headline. Provider notices
+  state each provider in words, with the reason codes on hover. The footer
+  reads "Source not configured", not "not_configured".
+- Tests:
+  - updated pins: DecisionFreshness, the AI strip, workspace and history,
+    Bonds, Crypto, Participants, Connectivity and ScreenerPage;
+  - new component tests for each item;
+  - Python: per-preset reasons, the view change, and that Finviz "-" parses
+    to missing.
+
+  `validate changed` passed: 2,125 tests, 8 skipped, 0 failures.
+- Checked in a browser at 1600×900, 1280×720 and 800×600 against the isolated
+  backend. Data-dependent items need a live check after the next release:
+  freshness inputs, Cross-Asset, AI results, and the Futures mixed session.
+
+## 2026-10-22 — Screener Sprint 2: layout
+
+Items 19–26 of the 2026-10-22 visual pass, stacked on the right-rail AI tab
+branch. UI only; no API change.
+
+- **Grid room (19).** With no selection, a dock whose open panels all need an
+  instrument shrinks to its tab strip (`DOCK_SLIM_HEIGHT`). A selection, a
+  press or focus in the dock, or opening a panel expands it to the saved
+  height, which is never changed. Clearing the selection shrinks it again.
+  Setup and the AI Screener shortcut keep it open. At 1280×720 the grid shows
+  about 11 rows with nothing selected, up from 3.
+- **Narrow windows (20).** Below 1280px the right rail is a drawer over a dimmed
+  backdrop, not a pane floating over the rows. A press on the backdrop or
+  Escape closes it and returns focus to the grid. The toolbar and the AI line
+  already fit at 800×600 after Sprint 1, so no "More" menu was needed. The
+  plan proposed raising the breakpoint to 1400px. At 1280×720 the grid and
+  the rail fit side by side (about 870px of grid), and a drawer there would
+  cover 400px of rows on every selection, so the breakpoint stays at 1280px.
+- **Scrollbars (21).** Thin and dark across the page (`scrollbar-color`
+  inherits from `.screener-page`; `scrollbar-width: thin` on every element).
+- **Quick Preview chart (22).** The canvas is sized inside its border and
+  isolated, so it no longer paints over the sticky Open Instrument footer.
+  The TradingView logo is off and a "Charts by TradingView" link sits under
+  the chart, which the library's licence accepts in place of the logo. The
+  dock charts keep the logo. The price scale has a minimum width, so labels
+  are not clipped.
+- **Dock columns (23).** A new panel gets its own column only when every
+  column can stay at least 480px wide (`maxColumns`); after that it becomes a
+  tab, with dockview's overflow list for tabs that do not fit. Before, five
+  columns at 1600px meant about 265px each and titles cut to "evel 2". A
+  layout saved with more columns keeps them until Reset Panel Layout.
+- **Overview width (24).** The default widths of six Overview columns were
+  trimmed (1,190px → 1,126px), and the last header's resize handle no longer
+  sticks out. At 1600px with the rail open the grid no longer scrolls
+  sideways. The Symbol column stays pinned for narrower windows. Saved
+  screens keep their own widths.
+- **Type scale (25).** Every Screener stylesheet has an 11px minimum (106
+  declarations raised from 8–10.5px), as do the chart axes.
+  `screenerTypeScale.test.ts` fails on any smaller size.
+- **Fonts and controls (26).** Buttons, inputs and selects on the page take
+  the page font through a zero-specificity rule, so every styled control keeps
+  its own size. Unstyled controls inside panels (decision, reevaluation,
+  Paper automation, AI method) use the dark theme instead of white browser
+  defaults.
+- Checked in a browser at 1600×900, 1280×720 and 800×600, against the
+  isolated backend described in the previous entry.
+
+## 2026-10-22 — Screener: AI Screener in the right rail (Phase 1c, part 2)
+
+The follow-up #479 promised: plan
+`docs/superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md`
+1c, "an AI tab beside Quick Preview in the right rail". Stacked on Sprint 1
+(#501) with #479 merged in. UI only; no API or methodology change.
+
+- The right rail has two tabs, Preview and AI (`RightRail.tsx`). The AI tab
+  is the home for run controls, results, decisions, reevaluation, Paper
+  automation and run history. It needs no selected row, loads its code on
+  first visit, and stays mounted while hidden, so switching tabs keeps a
+  run's progress and any open decision. Hidden, it stops polling.
+- The panel body moved, unchanged, from the dock panel to
+  `ai/AiScreenerWorkspace.tsx`. It now takes its scope and callbacks as
+  props instead of reading the dock's context. Every React Query key is
+  unchanged.
+- The dock's AI Screener panel is now a shortcut: one status line read from
+  the AI strip's cache (it starts no request) and Show in right rail. The
+  controls are never mounted twice, so the reevaluation, Paper automation
+  and decision timers run once. Saved layouts with the panel still load.
+- The AI strip's Open, the dock shortcut, and opening AI Screener from the
+  Open Panels row all select the AI tab, open the rail if it is closed, and
+  move focus there. None of them closes it.
+- The rail owns the width and overlay that Quick Preview had. With the AI
+  tab present, the rail's bar carries the close button. The last tab is
+  remembered per viewer in localStorage (`imp.screener.railTab`), and a
+  blocked storage is tolerated. The server-saved preview layout is still
+  `{open, width}`.
+- Universes without the AI Screener show the Quick Preview alone, with no
+  tabs.
+- Fixed on the way: the server's panel-layout check did not list
+  `ai_screener`. Any dock arrangement with the AI Screener open was refused
+  (`INVALID_PANEL_IDS`) and silently never saved. A new test reads the UI's
+  `PANEL_IDS` and requires that the server accepts exactly that set
+  (`test_screener_s4`).
+- Checked in a browser against an isolated backend at 1600×900, 1280×720 and
+  800×600: fixture store, session flag only, every provider and execution
+  gate 0, every socket connection refused. The live API was in collect-only
+  mode after the close.
+
+## 2026-10-22 — Screener Sprint 1: broken behaviour and accessibility
+
+The first batch from the 2026-10-22 visual pass of the live Screener (items
+11–18 and 36–39), stacked on the demo-polish branch. UI only; no API change.
+
+- The Screens, Columns and Add Filter popovers close on Escape wherever focus
+  is and on a press outside (`ui/src/lib/useDismiss.ts`). Escape is taken in
+  the capture phase, so it closes the popover without also clearing the grid
+  selection. The Screens list moves focus to its first screen, and picking,
+  resetting or deleting returns focus to the trigger.
+- Open Panels buttons are toggles: a pressed button closes its panel
+  (`DockHandle.close`). Links from the preview, news and AI still open or
+  focus.
+- Run now (strip) and Run AI Screener (panel) are refused when the preview
+  reports that the packet does not fit the selected engine, with the sizes
+  stated. Both read one shared preview query
+  (`ai/useAiScreenerPreview.ts`). An unknown fit never blocks.
+- The worker's 180 s lease can lapse during one long model call, so the
+  reevaluation status alternated between INTERRUPTED and RUNNING_ELSEWHERE.
+  An INTERRUPTED status with a heartbeat under 10 minutes old now reads
+  "busy · last heartbeat N min ago". The strip's main line is one line with
+  the full text as its tooltip, so a state change no longer shifts the page.
+  The server-side lease renewal is still open.
+- Quick Preview's unavailable chart has Retry. Level 2 says "No order book
+  from {provider} after Ns" with the demand reason and Check again, once
+  `AWAITING_BOOK_SNAPSHOT` has lasted 20 s for the selection.
+- Non-sortable headers are named by their column; "Not sortable" is now
+  their description, not their name. Row freshness badges show one word,
+  with the full line in the accessible name and tooltip. Column-move buttons
+  say up/down to match their arrows. The search hint has one space before
+  "/", and the sentiment filter's default reads "Any sentiment".
+- Back to the row an instrument was opened from, and a repeated click never
+  leaving the Screener, were already fixed on the base branch; regression
+  tests now cover both.
+
 ## 2026-10-21 — Installation moved from the E: SSD to D:\IMP
 
 The portable root and its migration-backup sibling were copied to `D:\IMP`
@@ -656,7 +900,6 @@ BTC/USD was CURRENT after real local inference; ETH/USD grounded output expired
 under the unchanged quote lifetime. Broader baseline failures remain separately
 recorded; the temporary shared-schema minimum regression was corrected.
 
-
 ## 2026-10-12 — Autonomous Paper operations (AUTO-01)
 
 Added one server-owned controller that runs the existing authorities
@@ -846,6 +1089,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | New controlled 20-row price/volume regression failed with zero retained stories before the correction; afterward it retains 3 NEWS and 3 SENTIMENT items in a 93,489-byte packet. All 29 tests in the two directly affected candidate/evidence modules passed; documentation links passed for 292 governance files. Broader manifest-selected validation is delegated to protected CI to avoid contention with the active RTH runtime. |
 | **Related** | [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#limits-and-lifecycle) |
 | **Notes** | Controlled fixtures remain separate from prospective receipts. No live runtime, historical input, model, prompt, candidate cap, source-time gate, risk rule or Paper account was changed during preparation. This repairs evidence delivery and makes no claim that the model must select candidates. |
+## 2026-10-07 — AI Screener results where the rows are (Phase 1c, part 1)
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | `ui/screener` (row marks, reason chips, run history), backend `ui_api/screener_ai_runs.py`, `local_state/action_decisions.py` |
+| **Summary** | Results lived only in the bottom panel, and "nothing selected" was one long paragraph of model prose. Screener rows now carry the latest pass's rank (`AI 1`) or a "shown, not selected" mark; an empty or thin selection is explained by short chips the server derives from the evidence packet (blocked evidence by capability and reason, no news story, insufficient evidence) with the model's own text behind a disclosure; and a run history lists stored passes with engine, result, tokens, model time and what each added or removed against the previous pass of the same query. |
+| **Key files** | `src/market_platform_foundation/ui_api/{screener_ai_runs,server}.py`, `src/market_platform_foundation/local_state/action_decisions.py` (`recent`), `ui/src/components/screener/ai/{aiRowMarks.tsx,AiRunInsights.tsx,AiRunInsights.test.tsx}`, `ui/src/components/screener/{ScreenerPage.tsx,ScreenerPage.test.tsx,screener.css}`, `ui/src/components/screener/panels/{AiScreenerPanel.tsx,AiScreenerPanel.test.tsx,dock.css}`, `ui/src/api/screenerAi.ts`, `tests/platform/test_screener_ai_history.py` (new), `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | `tests/platform/test_screener_ai_history.py` (8, written before the implementation: reasons with counts and named exceptions, bounded chips, summary intake, history order, diff only within one query, page bound, durable store order, read-only route policy); `AiRunInsights.test.tsx` (9: chip wording, history table, row marks including the expiry instant); `ScreenerPage.test.tsx` (+1) and `AiScreenerPanel.test.tsx` (+1) |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 1c; [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#results-where-the-rows-are) |
+| **Notes** | No methodology change: reasons and history are read models over records the run already stored; nothing new reaches the model. The plan's "in the current shortlist" marker is shown as "shown to the AI Screener, not selected", because the shortlist itself belongs to Phase 3, which is not approved. History rows are ordered by when they were stored, not by a run's own clock. Not in this change: the AI tab beside Quick Preview in the right rail (the rest of Phase 1c). Merged with main on 2026-10-22 (full-universe runs, Stop, local-first experimental): `intake` and `reasons` describe a full-universe run's final selection, so its not-selected mark says "finalist"; experimental passes mark nothing; history reads a full-universe run's query from the coverage terminal and its intake from `ai_evaluated_count` (`tests/platform/test_screener_ai_history.py` +1, `AiRunInsights.test.tsx` +1). |
 
 ---
 
@@ -1103,6 +1357,77 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Notes** | Dirty older main preserved on `codex/hold-main-pre-oct1-01-20261002`; local files verified unchanged. Runtime-local history limitations accepted. No new empirical or execution authority. OCT1-02 not started. |
 
 ---
+
+## 2026-10-01 — Screener provider follow-ups: FINRA window, IBKR delayed futures, machine-zone clocks
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/finra`, `backend/market-data`, `tools/ibkr`, `ui/screener` |
+| **Summary** | Found while exercising newly configured providers (FINRA, FRED, OpenFIGI, IB Gateway) on the live Screener. |
+| **Key files** | `finra/query.py`, `finra/live.py`, `market_data/delayed_futures_bridge.py`, `tools/ibkr/futures_delayed.py`, `ui_api/screener_multi.py`, `ui_api/screener_preview.py`, `ui_api/screener_futures_context.py`, `market_data/current_bars.py`, `ui/src/components/screener/localZone.ts` |
+| **Tests** | `ui: vitest 1240 passed`, `ui: typecheck pass`, `tests.ibkr.test_futures_delayed` 11 passed, `tests.platform.test_screener_s3/s5/s6/s8/s9` pass, `tests/short_intelligence` 37 passed |
+
+- **FINRA short data read its oldest rows as the latest publication.** FINRA answers an unbounded query oldest-first and
+  refuses to sort without the date partition key, so short interest came from 2019-2020 and short-sale volume from
+  January. The probes now pass a date window (75 days / 10 days).
+- **IBKR delayed futures.** `tools/ibkr/futures_delayed.py` holds one read-only IB Gateway connection requesting delayed
+  data only and is injected through `market_data/delayed_futures_bridge.py` by `tools/ibkr/runtime_bootstrap.py`
+  (the one IBKR tool allowed to import `src`; `ib_insync` is reached through `tws_client.py`). It fills Futures grid quotes, the Futures
+  preview chart and the Futures Context panel only where OpenD supplies nothing; values are `DELAYED` with source
+  `IBKR_DELAYED`, never live. A contract is used only on a unique USD match of root, month and expiry. Off unless
+  `IMP_IBKR_LIVE=1` and `IMP_IBKR_TRANSPORT=tws` (local `.env`); Moomoo remains primary and execution authority is unchanged.
+- **Share-class bars.** `BRK-A` was sent to OpenD as `US.BRK-A`; bars now use the provider's dot form. The live L1
+  subscription still uses the dash form, so such symbols show a snapshot quote, not a streaming one (open).
+- **Clocks.** Crypto panels, charts and news, and Institutional/Congress timestamps read the machine's time zone
+  instead of UTC. Calendar dates and the UTC-day-change definition are unchanged. UI tests pin `TZ=UTC`.
+- **Row clicks** select and preview only; a repeated or double click no longer leaves the Screener.
+- **Open:** the launcher's `restart` refuses to stop processes it started ("no longer matches launcher-owned"); stop and
+  start by hand works. EIA has a saved key but no Screener surface reads it.
+
+---
+
+## 2026-10-01 — Screener demo-readiness polish
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `backend/news`, `backend/participants`, `backend/operator-config` |
+| **Summary** | Live five-universe walkthrough before the professor meeting; fixed what it found. No new product scope. |
+| **Key files** | `news/story_clusters.py`, `news/providers.py`, `ui_api/screener_news.py`, `congressional_ptr/normalized.py`, `ui_api/operator_config.py`, `ui/src/components/screener/**` |
+| **Tests** | `ui: vitest 1240 passed`, `ui: build pass`, `imp.py lint: pass`, affected backend unittest modules 159 passed |
+
+**Defects fixed**
+
+- **Congress & Government panel returned HTTP 500 for any instrument with amended disclosures.** Versioned rows carried
+  `version.key`; the response secret-leak audit blocks every field named like a credential. The field is now
+  `version.report` (nothing read the old name). The audit itself is unchanged.
+- **Every Finnhub story for an instrument collapsed into one "story".** Finnhub addresses articles as
+  `/api/news?id=<hash>`; story clustering dropped the whole query string, so ~250 articles shared one canonical URL and
+  the panel showed only delayed NewsAPI headlines. Canonical URLs now keep an article-id parameter and still drop
+  tracking parameters. Cluster ids are unchanged (they derive from headline and date).
+- **Instrument news relevance.** A provider ticker tag on an article whose text never names the instrument (the existing
+  `PROVIDER_LINKAGE_TICKER_NOT_IN_TEXT` flag) no longer enters that instrument's panel; NewsAPI is asked to match
+  title and description only, not article bodies.
+- **First selection latency.** One instrument's panel scores the newest 120 stories; older ones in the 72h window are
+  reported as not scored instead of being waited for.
+- **Setup said Finviz Elite was "not set" while Finviz was feeding the grid.** Finviz keeps its validated token in its own
+  private store; the provider registry now reports that as `PROVIDER_STORE` (presence only, never the value).
+- **A numeric filter defaulted to "Equals"** (Short Float = 20 matched nothing); it now defaults to "At least".
+- **Browser Back from an opened instrument lost the selected row**; the selection now rides on the history entry.
+
+**Presentation**
+
+- Raw codes replaced with words where they reached the screen: market session badge, catalog source in the footer,
+  exchange codes, the S/R method id, trade conditions, Short Squeeze reasons and its duplicated "snapshot · snapshot".
+- The name under a symbol is dropped when its own column is visible (ETFs showed it twice); one news chip per instrument.
+- AI synthesis: a missing paid key points at Setup instead of naming an environment variable; cache state reads
+  "served from cache" / "newly generated".
+
+**Notes**
+
+- Launcher chips still read "· unavailable" for panels a universe does not offer; left as is (pinned by tests).
+- Futures quotes and bars remain unavailable without a futures quote entitlement; the state is shown, not hidden.
 
 ## 2026-10-01 — OCT1-01 retained flow history and final audit
 

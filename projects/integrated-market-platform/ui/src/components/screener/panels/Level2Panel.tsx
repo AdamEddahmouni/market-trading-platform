@@ -1,13 +1,15 @@
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchDepth, type DepthPayload } from "../../../api/screenerPanels";
-import { age, Age, EntitlementNote, ErrorDetail, marketClock, marketPrice, marketSize, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, spreadBps, usePanelVisible, useSelection } from "./shared";
+import { age, Age, EntitlementNote, ErrorDetail, marketClock, marketPrice, marketSize, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, spreadBps, useNow, usePanelVisible, useSelection } from "./shared";
 import { OpenDConnect } from "../setup/Remedy";
 
 // Ladder values are shown only for these states; STALE and SESSION_CLOSED are dimmed and labelled.
 const SHOWN = new Set(["CURRENT", "PARTIAL", "STALE", "SESSION_CLOSED"]);
 const DIMMED = new Set(["STALE", "SESSION_CLOSED"]);
+/** How long "waiting for a book snapshot" is shown as normal before the panel says the book has not arrived. */
+export const BOOK_WAIT_MS = 20_000;
 
 function Ladder({ data, label, money, size }: { data: DepthPayload; label: string; money: (value: number) => string; size: (value: number) => string }) {
   const maxSize = Math.max(1, ...data.bids.map((level) => level.size), ...data.asks.map((level) => level.size));
@@ -44,7 +46,7 @@ function Imbalance({ data }: { data: DepthPayload }) {
 }
 
 export default function Level2Panel({ api }: IDockviewPanelProps) {
-  const { row, settledId, universe } = useSelection();
+  const { row, settledId, universe, demand } = useSelection();
   const visible = usePanelVisible(api);
   const query = useQuery({
     queryKey: ["screener-depth", universe, settledId],
@@ -58,12 +60,24 @@ export default function Level2Panel({ api }: IDockviewPanelProps) {
   const venueBook = data?.completeness?.venue_scope === "SINGLE_VENUE_KRAKEN";
   const completeness = data?.completeness ? `${venueBook ? "Venue book" : "MBP"} ${data.completeness.bid_levels}×${data.completeness.ask_levels} levels` : "MBP";
   const money = (value: number) => marketPrice(value, row, universe);
+  // The server has no timeout for a book that never arrives, so the panel times the wait itself, per selection.
+  const waitKey = data?.reason === "AWAITING_BOOK_SNAPSHOT" ? `${universe}|${data.instrument_id}` : null;
+  const [waitStart, setWaitStart] = useState<{ key: string; at: number } | null>(null);
+  useEffect(() => { setWaitStart((current) => !waitKey ? null : current?.key === waitKey ? current : { key: waitKey, at: Date.now() }); }, [waitKey]);
+  const now = useNow(1_000, Boolean(waitKey));
+  const waitedMs = waitKey && waitStart?.key === waitKey ? Math.max(0, now - waitStart.at) : 0;
+  const depthDemand = demand?.instrument_id === data?.instrument_id ? demand?.capabilities.find((item) => item.panel === "level2") : undefined;
+  const waitReason = !depthDemand ? "the provider has not said why"
+    : !depthDemand.accepted ? reasonText(depthDemand.reason) || "the subscription was not accepted"
+    : !depthDemand.provider_subscription_active ? "the provider subscription is not active" : "subscribed, but no book has been delivered";
   const clock = data?.latest_received_at ? <>book {marketClock(universe).clock(data.latest_event_at)} · rcvd <Age iso={data.latest_received_at} staleMs={data.freshness?.ttl_ms ?? 10_000} /> ago{data.freshness ? ` · TTL ${data.freshness.ttl_ms / 1000}s` : ""}</> : null;
   return <PanelFrame decisionInputs={data?.decision_inputs} id="level2" state={data?.state} detail={data ? `${completeness} · ${providerLabel(data.provider)}` : null} clock={clock}>
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Level 2 request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol}…</PanelMessage>
       : !SHOWN.has(data.state) || (!data.bids.length && !data.asks.length) ? <>
-        <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{data.state === "SESSION_CLOSED" && !data.latest_received_at ? "Session closed · no book captured for this subscription" : reasonText(data.reason) || data.state}<OpenDConnect reason={data.reason} /></PanelMessage>
+        {waitedMs >= BOOK_WAIT_MS ? <PanelMessage tone="warn" role="status">No order book from {providerLabel(data.provider)} after {Math.floor(waitedMs / 1000)}s · {waitReason}.{" "}
+          <button type="button" onClick={() => void query.refetch()} disabled={query.isFetching}>Check again</button><OpenDConnect reason={data.reason} /></PanelMessage>
+        : <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{data.state === "SESSION_CLOSED" && !data.latest_received_at ? "Session closed · no book captured for this subscription" : reasonText(data.reason) || data.state}<OpenDConnect reason={data.reason} /></PanelMessage>}
         <EntitlementNote entitlement={data.entitlement} /></>
       : <>
         {data.state !== "CURRENT" && <PanelMessage tone="warn">{data.state === "SESSION_CLOSED" ? `Session closed · last captured book, received ${age(data.latest_received_at)} ago` : data.state === "STALE" ? `Stale · no book update for ${age(data.latest_received_at)}` : reasonText(data.reason)}</PanelMessage>}

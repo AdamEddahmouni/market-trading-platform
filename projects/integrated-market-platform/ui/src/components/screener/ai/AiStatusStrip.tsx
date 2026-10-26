@@ -3,13 +3,21 @@ import type { AiScreenerRun, AiScreenerRuns, AiScreenerScope } from "../../../ap
 import { reevaluationStatus, stopReevaluation, type ReevaluationStatus } from "../../../api/screenerReevaluation";
 import { compactTokens } from "../news/SynthesisControl";
 import { ErrorDetail, etClock, useNow } from "../panels/shared";
+import { codeWords } from "../screenerText";
 import { coverageStatusText } from "./AiCoverage";
 import { currentStageText, modelCallContext, modelCallInFlight, progressText } from "./AiRunProgress";
+import { fitText } from "./EngineSwitch";
+import { blockingFit, useAiScreenerPreview } from "./useAiScreenerPreview";
 import { useAiScreenerRuns } from "./useAiScreenerRuns";
 
 export const LOOP_STATUS_KEY = ["screener-reevaluation-status"] as const;
+/**
+ * The worker's lease lapses during one long model call and returns at its next heartbeat, so the server can report
+ * INTERRUPTED between two "running" reads. A heartbeat this recent is a busy worker, not a stopped one.
+ */
+const BUSY_HEARTBEAT_MS = 10 * 60_000;
 
-/** Reason codes in plain words; the code stays visible underneath so it can be searched. */
+/** Reason codes in plain words. The code itself is in the strip's tooltip, so it can still be searched. */
 const REASONS: Record<string, string> = {
   SYNTHESIS_DAILY_BUDGET_EXHAUSTED: "today's model budget is used up",
   SYNTHESIS_DAILY_TOKEN_LIMIT: "the run would exceed today's token budget",
@@ -29,7 +37,17 @@ const REASONS: Record<string, string> = {
   PAID_AI_DAILY_DOLLAR_CAP: "the call would cross today's dollar cap",
   PAID_AI_MONTHLY_DOLLAR_CAP: "the call would cross this month's dollar cap",
 };
-export const plainReason = (code: string | null | undefined) => !code ? "no reason reported" : REASONS[code] ? `${REASONS[code]} (${code})` : code;
+export const plainReason = (code: string | null | undefined) => !code ? "no reason reported" : REASONS[code] ?? codeWords(code).toLowerCase();
+/** The raw reason codes behind the strip's line, for its tooltip. */
+function reasonCodes(data: AiScreenerRuns) {
+  const latest = data.latest;
+  const summary = latest?.summary;
+  const codes = data.state === "RUNNING" ? []
+    : data.state !== "IDLE" ? [data.ai.reason]
+    : [latest?.error?.code, summary?.coverage && !summary.coverage.selection_complete ? summary.coverage.status : null,
+      summary && summary.state !== "CURRENT" && summary.state !== "NO_GROUNDED_CANDIDATES" ? summary.reason ?? summary.state : null];
+  return [...new Set(codes.filter((code): code is string => Boolean(code)))];
+}
 
 /** "2:13", or "1:02:13" past the hour. */
 export function countdown(ms: number) {
@@ -60,6 +78,10 @@ function loopText(loop: ReevaluationStatus | undefined, failed: boolean, now: nu
   if (loop.worker_state === "RUNNING" || loop.worker_state === "DELAYED") {
     const left = loop.next_scheduled ? Date.parse(loop.next_scheduled) - now : null;
     return left !== null && left > 0 ? `next automatic cycle in ${countdown(left)}` : loop.worker_state === "DELAYED" ? "automatic cycle delayed" : "automatic cycle due";
+  }
+  const beat = loop.liveness?.heartbeat_at ? now - Date.parse(loop.liveness.heartbeat_at) : null;
+  if (loop.worker_state === "INTERRUPTED" && beat !== null && beat >= 0 && beat < BUSY_HEARTBEAT_MS) {
+    return `automatic passes: busy · last heartbeat ${beat < 60_000 ? "under a minute" : `${Math.floor(beat / 60_000)} min`} ago`;
   }
   return `automatic passes: ${loop.worker_label.toLowerCase()}`;
 }
@@ -111,18 +133,25 @@ export default function AiStatusStrip({ scope, onOpen }: { scope: AiScreenerScop
   const looping = loop.data?.worker_state === "RUNNING" || loop.data?.worker_state === "DELAYED";
   const call = data?.active && modelCallInFlight(data.active) ? modelCallContext(data.active) : undefined;
   const interrupted = data?.interrupted?.[data.interrupted.length - 1];
+  // Run now is refused here when the server already says the packet cannot fit the selected engine.
+  const preview = useAiScreenerPreview(scope, data?.state === "IDLE");
+  const tooLarge = blockingFit(preview.data);
+  const line = data ? `${mainText(data, loopText(loop.data, loop.isError, now), now)}${call ? ` · ${call}` : ""}` : null;
+  const codes = data ? reasonCodes(data) : [];
   return <section className={`ai-strip ${data ? data.state.toLowerCase() : "unknown"}`} aria-label="AI status">
     <span className="ai-strip-tag">AI</span><span className="ai-strip-dot" aria-hidden="true" />
     {/* The engine every AI panel on this machine uses; a run in progress names its own model in the line itself. */}
     {data && data.state !== "RUNNING" && data.ai.model_id && <span className="ai-strip-engine" title="The engine used by every AI panel on this machine">
       {data.ai.model_id} · {data.ai.runtime === "LOCAL_MODEL" ? "local" : "paid"}</span>}
     {/* Not a live region: this line changes every second while a model works, and announcing that would drown everything else. */}
-    {data ? <p className="ai-strip-main">{mainText(data, loopText(loop.data, loop.isError, now), now)}{call ? ` · ${call}` : ""}</p>
+    {line !== null ? <p className="ai-strip-main" title={codes.length ? `${line}\nReason code: ${codes.join(", ")}` : line}>{line}</p>
       : runs.isError ? <p className="ai-strip-main">Status unavailable; a run may still be in progress on the server.<ErrorDetail error={runs.error} /></p>
       : <p className="ai-strip-main">Checking AI status…</p>}
     {data && budgetText(data) && <p className="ai-strip-budget" title={budgetDetail(data)}>{budgetText(data)}</p>}
     {start.isError && <p className="ai-strip-error" role="alert">Could not start a run.<ErrorDetail error={start.error} /></p>}
     {stop.isError && <p className="ai-strip-error" role="alert">Could not stop automatic passes.</p>}
+    {data?.state === "IDLE" && tooLarge && <p className="ai-strip-error" title={`The ${fitText(tooLarge)}. Choose another engine or narrow the Screener scope.`}>
+      Too large for {data.ai.model_id ?? "the selected engine"}: needs ~{compactTokens(tooLarge.packet_size ?? 0)}, holds {compactTokens(tooLarge.context_window ?? 0)}</p>}
     {stopRun.isError && <p className="ai-strip-error" role="alert">Could not stop the run.<ErrorDetail error={stopRun.error} /></p>}
     {/* Shown until a later run has finished: after that the latest pass is the news. */}
     {data && !data.active && !data.latest && interrupted && <p className="ai-strip-error">{coverageStatusText(interrupted.status ?? "INTERRUPTED")} · {interrupted.calls_completed ?? 0} model {interrupted.calls_completed === 1 ? "call" : "calls"} had finished{interrupted.unknown_provider_outcomes ? ` · ${interrupted.unknown_provider_outcomes} had no recorded outcome and ${interrupted.unknown_provider_outcomes === 1 ? "stays" : "stay"} charged` : ""}. Nothing was resumed.</p>}
@@ -130,8 +159,8 @@ export default function AiStatusStrip({ scope, onOpen }: { scope: AiScreenerScop
       {data?.active && <button type="button" disabled={stopRun.isPending || data.active.stop_requested === true} onClick={() => stopRun.mutate(data.active!.run_id)}
         title="No further model call starts. A call already sent is not cancelled and its tokens stay charged; finished batches are kept as provisional.">{data.active.stop_requested ? "Stopping…" : "Stop run"}</button>}
       {looping && <button type="button" disabled={stop.isPending} onClick={() => stop.mutate()} title="Stops the scheduled loop. A model call already in flight finishes; nothing is submitted.">Stop automatic passes</button>}
-      {data?.state === "IDLE" && <button type="button" disabled={start.isPending || scope.settled === false} onClick={() => start.mutate(scope)}
-        title="Assesses every row of the current Screener query and sends each eligible row to the model in batches. The run plans its whole cost first and calls no model if today's budget cannot pay for it.">Run now</button>}
+      {data?.state === "IDLE" && <button type="button" disabled={start.isPending || scope.settled === false || Boolean(tooLarge)} onClick={() => start.mutate(scope)}
+        title={tooLarge ? `The ${fitText(tooLarge)}. Choose another engine or narrow the Screener scope.` : "Assesses every row of the current Screener query and sends each eligible row to the model in batches. The run plans its whole cost first and calls no model if today's budget cannot pay for it."}>Run now</button>}
       <button type="button" onClick={onOpen}>Open</button>
     </div>
   </section>;

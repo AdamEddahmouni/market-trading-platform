@@ -4,12 +4,14 @@ import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StrictMode } from "react";
 import { ScreenerPage, fieldFor } from "./ScreenerPage";
+import { RAIL_TAB_KEY } from "./RightRail";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
   aiRuns: vi.fn(), aiLoop: vi.fn(),
 }));
-vi.mock("../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../api/screenerAi")>(), fetchAiScreenerRuns: mocks.aiRuns }));
+vi.mock("../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../api/screenerAi")>(), fetchAiScreenerRuns: mocks.aiRuns,
+  fetchAiScreenerPreview: () => Promise.reject(new Error("AI preview not under test")) }));
 vi.mock("../../api/screenerReevaluation", async (importOriginal) => ({ ...await importOriginal<typeof import("../../api/screenerReevaluation")>(), reevaluationStatus: mocks.aiLoop }));
 vi.mock("../../api/screener", () => ({
   fetchScreener: mocks.fetch,
@@ -17,9 +19,14 @@ vi.mock("../../api/screener", () => ({
   saveScreenerScreen: mocks.save,
   deleteScreenerScreen: mocks.remove,
   persistLastScreenerConfig: mocks.last,
+  persistScreenerPreviewLayout: () => Promise.resolve(),
   updateScreenerWindow: mocks.window,
   releaseScreenerWindow: mocks.release,
   releaseScreenerWindowOnUnload: mocks.release,
+}));
+// The AI tab's own content is covered by AiScreenerWorkspace.test.tsx; here only where it lives and when it shows.
+vi.mock("./ai/AiScreenerWorkspace", () => ({
+  default: ({ visible }: { visible: boolean }) => <section aria-label="AI Screener workspace" data-visible={String(visible)} />,
 }));
 vi.mock("@tanstack/react-virtual", () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
@@ -127,6 +134,8 @@ function mount(path = "/screener") {
   </MemoryRouter></QueryClientProvider>);
 }
 
+const rowOf = (symbol: string) => screen.getByText(symbol, { selector: ".screener-symbol strong" }).closest("[role=row]")!;
+
 function HistoryBack() {
   const navigate = useNavigate();
   return <button type="button" onClick={() => navigate(-1)}>Browser back</button>;
@@ -134,6 +143,7 @@ function HistoryBack() {
 
 describe("ScreenerPage", () => {
   beforeEach(() => {
+    window.localStorage.removeItem(RAIL_TAB_KEY);
     mocks.config.mockReset().mockResolvedValue({ schema_version: 1, persistence_available: true, universes: [equitySpec],
       catalog: [
         { field: "price", label: "Price", category: "Price & Movement", type: "number", unit: "USD", operators: ["gt", "between"], universes: ["US_EQUITIES"], availability: "SNAPSHOT" },
@@ -172,7 +182,119 @@ describe("ScreenerPage", () => {
     expect(screen.queryByRole("region", { name: "Specialist panels" })).toBeNull();
     expect(within(strip).getByRole("button", { name: "Run now" })).toBeEnabled();
     fireEvent.click(within(strip).getByRole("button", { name: "Open" }));
-    expect(await screen.findByRole("region", { name: "Specialist panels" })).toBeInTheDocument();
+    // Open shows the AI tab of the right rail and moves focus there; the dock stays as it was.
+    await waitFor(() => expect(screen.getByRole("tab", { name: "AI" })).toHaveAttribute("aria-selected", "true"));
+    await waitFor(() => expect(screen.getByRole("tabpanel", { name: "AI" })).toHaveFocus());
+    expect(screen.getByRole("region", { name: "AI Screener workspace" })).toHaveAttribute("data-visible", "true");
+    expect(screen.queryByRole("region", { name: "Specialist panels" })).toBeNull();
+    // A second Open never closes it.
+    fireEvent.click(within(strip).getByRole("button", { name: "Open" }));
+    expect(screen.getByRole("tab", { name: "AI" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getAllByRole("region", { name: "AI Screener workspace" })).toHaveLength(1);
+  });
+
+  describe("right rail AI tab", () => {
+    const aiConfig = () => mocks.config.mockResolvedValue({ schema_version: 1, persistence_available: true,
+      universes: [{ ...equitySpec, panels: [...equitySpec.panels, "ai_screener"] }], catalog: [], presets: [], saved: [] });
+    beforeEach(() => {
+      window.localStorage.removeItem(RAIL_TAB_KEY);
+      mocks.aiRuns.mockResolvedValue({ schema_version: "screener-ai-screener-runs/1.2.0", state: "IDLE", budget: null, active: null, latest: null,
+        ai: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" } });
+      mocks.aiLoop.mockResolvedValue({ schema_version: "reevaluation-status/1.0.0", worker_state: "NOT_CONFIGURED", worker_label: "Not configured",
+        engine: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL", budget: null }, durability: "DURABLE", paper_execution: "MANUAL_ONLY" });
+    });
+
+    it("sits beside Quick Preview, needs no selected row, and switches by click and arrow keys", async () => {
+      aiConfig();
+      mount();
+      await screen.findByText("AAPL");
+      const tabs = await screen.findByRole("tablist", { name: "Right rail" });
+      const preview = within(tabs).getByRole("tab", { name: "Preview" });
+      const ai = within(tabs).getByRole("tab", { name: "AI" });
+      expect(preview).toHaveAttribute("aria-selected", "true");
+      // Loaded on first visit only.
+      expect(screen.queryByRole("region", { name: "AI Screener workspace" })).toBeNull();
+      fireEvent.click(ai);
+      expect(ai).toHaveAttribute("aria-selected", "true");
+      expect(await screen.findByRole("region", { name: "AI Screener workspace" })).toHaveAttribute("data-visible", "true");
+      expect(screen.getByRole("tabpanel", { name: "AI" })).toBeVisible();
+      expect(window.localStorage.getItem(RAIL_TAB_KEY)).toBe("ai");
+      fireEvent.keyDown(ai, { key: "ArrowLeft" });
+      expect(preview).toHaveAttribute("aria-selected", "true");
+      expect(preview).toHaveFocus();
+      // Hidden, not unmounted: a run's progress and an open decision survive the switch, and polling stops.
+      expect(screen.getByRole("region", { name: "AI Screener workspace", hidden: true })).toHaveAttribute("data-visible", "false");
+      fireEvent.keyDown(preview, { key: "End" });
+      expect(ai).toHaveAttribute("aria-selected", "true");
+      expect(screen.getAllByRole("region", { name: "AI Screener workspace" })).toHaveLength(1);
+    });
+
+    it("restores the last tab, and still switches when storage is blocked", async () => {
+      aiConfig();
+      window.localStorage.setItem(RAIL_TAB_KEY, "ai");
+      const first = mount();
+      await screen.findByText("AAPL");
+      expect(await screen.findByRole("tab", { name: "AI" })).toHaveAttribute("aria-selected", "true");
+      first.unmount();
+      const read = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+      const write = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
+      try {
+        mount();
+        await screen.findByText("AAPL");
+        const ai = await screen.findByRole("tab", { name: "AI" });
+        expect(screen.getByRole("tab", { name: "Preview" })).toHaveAttribute("aria-selected", "true");
+        fireEvent.click(ai);
+        expect(ai).toHaveAttribute("aria-selected", "true");
+      } finally { read.mockRestore(); write.mockRestore(); }
+    });
+
+    it("has no tabs for a universe without the AI Screener", async () => {
+      mount();
+      await screen.findByText("AAPL");
+      expect(await screen.findByRole("complementary", { name: "Quick preview" })).toBeInTheDocument();
+      expect(screen.queryByRole("tablist", { name: "Right rail" })).toBeNull();
+    });
+
+    it("closes from its own bar and with Escape on the AI tab", async () => {
+      aiConfig();
+      mount();
+      await screen.findByText("AAPL");
+      fireEvent.click(await screen.findByRole("tab", { name: "AI" }));
+      const panel = screen.getByRole("tabpanel", { name: "AI" });
+      fireEvent.keyDown(panel, { key: "Escape" });
+      expect(screen.queryByRole("tablist", { name: "Right rail" })).toBeNull();
+      expect(screen.getByRole("grid")).toHaveFocus();
+      fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Close right rail" }));
+      expect(screen.queryByRole("tablist", { name: "Right rail" })).toBeNull();
+    });
+  });
+
+  it("marks the rows of the latest pass for this query: the rank it selected and the rows it was shown", async () => {
+    const run = (search: string) => ({ schema_version: "screener-ai-screener-run/1.0.0", run_id: "track-1", account_id: "paper", state: "COMPLETED", joined: false,
+      scope: { universe: "US_EQUITIES", search, sort: "volume", descending: true, filters: [], view: "Overview", screen: "", result_set: null }, stage: null, stage_order: [], stages: [],
+      started_at: "2026-10-07T13:58:00Z", finished_at: "2026-10-07T13:58:12Z", elapsed_ms: 12_000, engine: { provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" },
+      timeout_seconds: 300, typical_latency_ms: null, typical_latency_samples: 0, intake_count: 2, sufficient_count: 1, packet_bytes: 1, result: null, error: null,
+      summary: { state: "CURRENT", reason: null, candidate_run_id: "run-1", selected: [{ instrument_id: "MSFT", rank: 1 }], intake: ["AAPL", "MSFT"], reasons: [],
+        provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL", valid_until: "2099-01-01T00:00:00Z", limitations: [] } });
+    const status = (search: string) => ({ schema_version: "screener-ai-screener-runs/1.2.0", state: "IDLE", budget: null, active: null, latest: run(search),
+      ai: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" } });
+    mocks.config.mockResolvedValue({ schema_version: 1, persistence_available: true, universes: [{ ...equitySpec, panels: [...equitySpec.panels, "ai_screener"] }], catalog: [], presets: [], saved: [] });
+    mocks.aiRuns.mockResolvedValue(status(""));
+    const view = mount();
+    // Cells re-render as quotes and marks arrive, so each look reads the table afresh.
+    await waitFor(() => expect(screen.getByText("AI 1").closest('[role="row"]')).toHaveTextContent("MSFT"));
+    expect(screen.getByText("AI", { selector: ".ai-row-seen" }).closest('[role="row"]')).toHaveTextContent("AAPL");
+    expect(screen.getByText("AI 1")).toHaveAttribute("title", expect.stringContaining("A candidate for review, not an instruction to trade."));
+    view.unmount();
+    // A pass that answered a different Screener query marks nothing here.
+    mocks.aiRuns.mockResolvedValue(status("other"));
+    mount();
+    await screen.findByText("AAPL");
+    await waitFor(() => expect(mocks.aiRuns.mock.calls.length).toBeGreaterThan(1));
+    await screen.findByText(/Idle · last pass/);
+    expect(screen.queryByText("AI 1")).toBeNull();
+    expect(document.querySelector(".ai-row-seen")).toBeNull();
   });
 
   it("shows no AI strip for a universe that does not offer the AI Screener", async () => {
@@ -248,11 +370,86 @@ describe("ScreenerPage", () => {
     await waitFor(() => expect(mocks.release).toHaveBeenCalledWith("abc123"));
   });
 
+  it("fits the Overview columns beside the default preview at 1600px, so the grid needs no sideways scroll", async () => {
+    mount();
+    await screen.findByText("AAPL", { selector: ".screener-symbol strong" });
+    const width = Number.parseFloat((document.querySelector(".screener-virtual") as HTMLElement).style.width);
+    // 1600 wide, less the 400px default rail, its splitter and a thin vertical scrollbar.
+    expect(width).toBeLessThanOrEqual(1600 - 400 - 5 - 12);
+    // The symbol column stays pinned, so narrower windows scroll with the symbol in view.
+    expect(screen.getAllByRole("gridcell")[0]).toHaveStyle({ position: "sticky" });
+  });
+
   it("labels source failure without fixture fallback", async () => {
     mocks.fetch.mockResolvedValueOnce({ ...payload, rows: [], result_count: 0, source_error: "NOT_CONFIGURED" });
     mount();
     expect(await screen.findByRole("alert")).toHaveTextContent("Screener source unavailable");
     expect(screen.getByRole("alert")).toHaveTextContent("Finviz access is not configured");
+    // Sprint 3 item 42: a configuration error is fixed in Setup, never by retrying.
+    expect(screen.queryByRole("button", { name: "Retry source" })).toBeNull();
+    expect(within(screen.getByRole("alert")).getByRole("button", { name: /Enter Finviz token/ })).toBeInTheDocument();
+  });
+
+  it("lists built-in screens that cannot run in their own group, each with its reason inline", async () => {
+    const reason = "Needs the pre-market gap and a catalyst flag, which the universe snapshot does not carry.";
+    mocks.config.mockResolvedValue({ ...(await mocks.config()), presets: [
+      { id: "UNUSUAL_VOLUME_DISCOVERY", name: "Unusual Volume", version: "1.0.0", status: "SUPPORTED", reason: null, filters: [{ id: "u", field: "rel_volume", operator: "gt", value: 2 }] },
+      { id: "GAP_CATALYST_DISCOVERY", name: "Gap / Catalyst", version: "1.0.0", status: "UNSUPPORTED", reason, filters: [] }] });
+    mount();
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: /Unsaved Screen/ }));
+    const dialog = screen.getByRole("dialog", { name: "Saved screens" });
+    expect(within(dialog).getByRole("heading", { name: "Not available yet" })).toBeInTheDocument();
+    const gap = within(dialog).getByRole("button", { name: "Gap / Catalyst" });
+    expect(gap).toBeDisabled();
+    expect(gap).toHaveAccessibleDescription(reason);
+    expect(within(dialog).getByText(reason)).toBeVisible();
+    expect(dialog).not.toHaveTextContent("· unavailable");
+    expect(within(dialog).getByRole("button", { name: "Unusual Volume" })).toBeEnabled();
+  });
+
+  it("opens a new Price filter at At least, never Equals", async () => {
+    mocks.config.mockResolvedValue({ ...(await mocks.config()), catalog: [{ field: "price", label: "Price", category: "Price & Movement", type: "number",
+      unit: "USD", operators: ["eq", "gt", "gte", "lt", "lte", "between"], universes: ["US_EQUITIES"], availability: "SNAPSHOT" }] });
+    mount();
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: /Add Filter/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Price" }));
+    const operator = screen.getByRole("combobox", { name: "Filter operator" }) as HTMLSelectElement;
+    expect(operator.value).toBe("gte");
+    expect(operator.selectedOptions[0]).toHaveTextContent("At least");
+  });
+
+  it("names the session once, the same way in the header, toolbar and footer", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    expect(document.querySelector(".screener-market-badge")).toHaveTextContent(/^Regular session$/);
+    const sessions = Array.from(document.querySelectorAll("span[title]")).filter((item) => /^Session /.test(item.textContent ?? ""));
+    expect(sessions.map((item) => item.textContent)).toEqual(["Session Regular session", "Session Regular session"]);
+    expect(document.body.textContent).not.toMatch(/\bREGULAR\b/);
+  });
+
+  it("Futures: the session comes from the visible contracts only, Mixed explains itself, and the lead contract is a Front badge", async () => {
+    mockS5();
+    mocks.window.mockResolvedValue({ market_session: "MIXED", active: 0, cap: 32, quotes: {
+      "XA01-FUTURE-ESZ26": { state: "UNAVAILABLE", reason: "PROVIDER_UNAVAILABLE", fields: {}, session_state: "TRADING" },
+      "XA01-FUTURE-NQZ26": { state: "UNAVAILABLE", reason: "PROVIDER_UNAVAILABLE", fields: {}, session_state: "CLOSED" } } });
+    mount("/screener?universe=FUTURES");
+    await screen.findByText("ESZ26");
+    const badge = document.querySelector(".screener-market-badge")!;
+    await waitFor(() => expect(badge).toHaveTextContent(/^Mixed sessions$/));
+    expect(badge.getAttribute("title")).toContain("Visible contracts: 1 trading · 1 market closed.");
+    // The page's universe-wide PROVIDER_SPECIFIC never shows once the window has answered.
+    expect(document.body.textContent).not.toMatch(/Per contract|PROVIDER_SPECIFIC|PROVIDER SPECIFIC/);
+    const sessions = Array.from(document.querySelectorAll("span[title]")).filter((item) => /^Session /.test(item.textContent ?? ""));
+    expect(sessions.map((item) => item.textContent)).toEqual(["Session Mixed sessions", "Session Mixed sessions"]);
+    expect(within(rowOf("ESZ26") as HTMLElement).getByText("Front", { selector: ".screener-front-badge" })).toHaveAttribute("title", "Front (lead) contract for its root");
+  });
+
+  it("offers Retry for a transient source failure and refreshes on it", async () => {
+    mocks.fetch.mockResolvedValueOnce({ ...payload, rows: [], result_count: 0, source_error: "PROVIDER_UNAVAILABLE" });
+    mount();
+    expect(await screen.findByRole("alert")).toHaveTextContent("could not be refreshed");
     fireEvent.click(screen.getByRole("button", { name: "Retry source" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith(...called({ sort: "volume" }, { refresh: true })));
     await waitFor(() => expect(screen.getByText("AAPL")).toBeInTheDocument(), { timeout: 3_000 });
@@ -302,11 +499,118 @@ describe("ScreenerPage", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Price" }));
     expect(screen.queryByRole("columnheader", { name: /Price/ })).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Custom" })).toHaveAttribute("aria-selected", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Move Volume left" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move Volume up" }));
     fireEvent.click(screen.getByRole("button", { name: "Pin Volume" }));
     expect(screen.getByRole("button", { name: "Unpin Volume" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Reset to view default" }));
     expect(screen.getByRole("columnheader", { name: /Price/ })).toBeInTheDocument();
+  });
+
+  it("moves focus into the Screens menu and closes popovers on Escape, a press outside, or a second press of the trigger", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const trigger = screen.getByRole("button", { name: /Unsaved Screen/ });
+    fireEvent.click(trigger);
+    const menu = screen.getByRole("dialog", { name: "Saved screens" });
+    expect(within(menu).getByRole("button", { name: "Unusual Volume" })).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Saved screens" })).toBeNull();
+    expect(trigger).toHaveFocus();
+    // Escape works with focus still on the trigger (the menu's own key handler never saw it before).
+    fireEvent.click(trigger);
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Saved screens" })).toBeNull();
+    // A press on the open trigger toggles it closed instead of closing and reopening.
+    fireEvent.click(trigger);
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
+    expect(screen.queryByRole("dialog", { name: "Saved screens" })).toBeNull();
+    // A press anywhere outside closes it, and focus stays where the user pressed.
+    fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+    expect(screen.getByRole("dialog", { name: "Configure columns" })).toBeInTheDocument();
+    fireEvent.pointerDown(screen.getByRole("grid"));
+    expect(screen.queryByRole("dialog", { name: "Configure columns" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "+ Add Filter" }));
+    fireEvent.pointerDown(screen.getByRole("dialog", { name: "Add filter" }));
+    expect(screen.getByRole("dialog", { name: "Add filter" })).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("dialog", { name: "Add filter" })).toBeNull();
+    // Picking a screen closes the menu and returns focus to its trigger.
+    fireEvent.click(trigger);
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Saved screens" })).getByRole("button", { name: "Unusual Volume" }));
+    expect(screen.queryByRole("dialog", { name: "Saved screens" })).toBeNull();
+    expect(screen.getByRole("button", { name: /Unusual Volume ▾/ })).toHaveFocus();
+  });
+
+  it("closes an open popover on Escape without also clearing the grid selection", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const grid = screen.getByRole("grid");
+    fireEvent.keyDown(grid, { key: "ArrowDown" });
+    expect(rowOf("AAPL")).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+    grid.focus();
+    fireEvent.keyDown(grid, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Configure columns" })).toBeNull();
+    expect(rowOf("AAPL")).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("names non-sortable headers by their column and gives the reason as their description", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const bid = screen.getByRole("columnheader", { name: /^Bid/ });
+    expect(bid).not.toHaveAttribute("title");
+    expect(bid).toHaveAccessibleDescription("Current quotes for visible rows only; not sortable across the universe");
+    expect(screen.getByRole("columnheader", { name: /^Price/ })).not.toHaveAccessibleDescription();
+  });
+
+  it("never leaves the Screener on a repeated click or double click of the selected row", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const row = rowOf("AAPL")!;
+    fireEvent.click(row);
+    fireEvent.click(row);
+    fireEvent.doubleClick(row);
+    expect(screen.queryByText("Instrument workspace")).toBeNull();
+    expect(row).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("returns to the opened row after browser Back", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const grid = screen.getByRole("grid");
+    fireEvent.keyDown(grid, { key: "ArrowDown" });
+    fireEvent.keyDown(grid, { key: "ArrowDown" });
+    fireEvent.keyDown(grid, { key: "Enter" });
+    expect(await screen.findByText("Instrument workspace")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Browser back" }));
+    await screen.findByText("MSFT", { selector: ".screener-symbol strong" });
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalled());
+    await waitFor(() => expect(rowOf("MSFT")).toHaveAttribute("aria-selected", "true"));
+    expect(rowOf("AAPL")).toHaveAttribute("aria-selected", "false");
+  });
+
+  it("shows a row's freshness as one short word and keeps the full detail in its name and tooltip", async () => {
+    const evidence = { capability: "quote", source: "Finviz Elite", delivery_mode: "PUBLICATION_BASED", freshness_status: "UNKNOWN",
+      decision_admissibility: "DEGRADED", eligible_for_current_decision: false, eligible_for_reference: true, basis: "SNAPSHOT_TIME",
+      as_of: "2026-09-25T13:00:00Z", received_at: null, fetched_at: null, age_ms: null, stale_after_ms: null, policy: "quote/v1",
+      policy_version: "v1", evaluated_at: "2026-09-25T13:00:01Z", valid_until: null, reason_codes: ["NO_PROVIDER_CLOCK"] };
+    mocks.fetch.mockResolvedValue({ ...payload, rows: [{ ...rows[0], decision_inputs: [evidence] }], result_count: 1 });
+    mount();
+    await screen.findByText("AAPL");
+    const badge = document.querySelector(".screener-row-freshness")!;
+    // Sprint 3 item 27: words on the badge and in its name; the tooltip reads in words, then lists the raw codes.
+    expect(badge).toHaveTextContent(/^freshness unknown$/);
+    expect(badge).toHaveAttribute("aria-label", "published · freshness unknown");
+    expect(badge).toHaveAttribute("title", expect.stringContaining("published · freshness unknown · Finviz Elite · snapshot time"));
+    expect(badge).toHaveAttribute("title", expect.stringContaining("Codes: PUBLICATION_BASED, UNKNOWN, SNAPSHOT_TIME, DEGRADED, NO_PROVIDER_CLOCK"));
+  });
+
+  it("keeps the search hint to one space before the slash", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    expect(screen.getByRole("textbox", { name: "Search instruments" })).toHaveAttribute("placeholder", "Search symbol or name /");
   });
 
   it("loads a built-in preset and saves edits as a personal screen", async () => {

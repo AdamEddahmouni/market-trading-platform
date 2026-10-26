@@ -660,6 +660,24 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 if run_id == "active":
                     self._send_json(ai_screener_runs().current(account))
                     return
+                if run_id == "history":
+                    # Stored candidate runs, newest first, with the change against the previous run of the same query.
+                    from ..local_state.action_decisions import action_repository
+                    from ..local_state.ai_screener_coverage import coverage_ledger
+                    from .screener_ai_runs import run_history
+
+                    def query_of(record: dict) -> dict | None:
+                        # A full-universe record's query is on its coverage terminal, not on the reduction result.
+                        coverage_run_id = (record.get("universe_coverage") or {}).get("coverage_run_id")
+                        terminal = coverage_ledger().terminal(coverage_run_id) if coverage_run_id else None
+                        return (terminal or {}).get("scope")
+
+                    try:
+                        self._send_json(run_history(action_repository(), limit=int((query.get("limit") or ["20"])[0]), scope_for=query_of))
+                    except (ValueError, TypeError) as exc:
+                        self._send_error_json("SCREENER_AI_INVALID", str(exc) if str(exc) == "INVALID_HISTORY_LIMIT" else "INVALID_HISTORY_LIMIT",
+                                              status=HTTPStatus.BAD_REQUEST)
+                    return
                 if run_id.endswith("/coverage"):
                     # One run's receipts and per-row accounting, from the ledger. Reads only.
                     try:

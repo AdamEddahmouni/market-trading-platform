@@ -75,9 +75,9 @@ UNIVERSES: dict[str, Universe] = {
     FUTURES: Universe(
         FUTURES, "Futures", "FUTURE", "FUTURE_CONTRACT", "MOOMOO_OPEND_CONTRACT_CATALOG",
         "PROVIDER_STATE", "root",
-        ("symbol", "root", "company", "exchange", "expiry", "dte", "lead", "price", "change_pct", "volume", "open_interest"),
+        ("symbol", "root", "company", "exchange", "expiry", "dte", "price", "change_pct", "volume", "open_interest"),
         {
-            "Overview": ("symbol", "root", "company", "exchange", "expiry", "dte", "lead", "price", "change_pct", "volume", "open_interest"),
+            "Overview": ("symbol", "root", "company", "exchange", "expiry", "dte", "price", "change_pct", "volume", "open_interest"),
             "Contract": ("symbol", "root", "company", "exchange", "contract_month", "expiry", "dte", "lead", "tick_size", "multiplier"),
             "Performance": ("symbol", "root", "price", "change_pct", "volume", "open_interest"),
             "Custom": ("symbol", "root", "expiry", "dte"),
@@ -139,9 +139,9 @@ UNIVERSES: dict[str, Universe] = {
     CRYPTO: Universe(
         CRYPTO, "Crypto", "CRYPTO", "CRYPTO_PAIR", "KRAKEN_SPOT_PUBLIC",
         "24_7", "symbol",
-        ("symbol", "price", "change_pct", "quote_volume", "bid", "ask", "spread_pct", "venue"),
+        ("symbol", "price", "change_pct", "quote_volume", "bid", "ask", "spread_pct"),
         {
-            "Overview": ("symbol", "price", "change_pct", "quote_volume", "bid", "ask", "spread_pct", "venue"),
+            "Overview": ("symbol", "price", "change_pct", "quote_volume", "bid", "ask", "spread_pct"),
             "Performance": ("symbol", "price", "change_pct", "high_24h", "low_24h", "base_volume", "quote_volume"),
             "Liquidity": ("symbol", "bid", "ask", "spread_pct", "quote_volume", "trade_count", "venue"),
             "Custom": ("symbol", "base_asset", "quote_asset", "price", "change_pct", "quote_volume"),

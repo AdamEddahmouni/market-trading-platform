@@ -14,6 +14,7 @@ A service without ``run_universe`` (an acceptance harness carrying a prebuilt re
 """
 from __future__ import annotations
 
+import json
 import re
 import statistics
 import threading
@@ -27,6 +28,10 @@ from ..intelligence.inference.run_progress import observing
 
 RUN_SCHEMA = "screener-ai-screener-run/2.0.0"
 RUNS_SCHEMA = "screener-ai-screener-runs/2.0.0"
+HISTORY_SCHEMA = "screener-ai-screener-history/1.0.0"
+MAX_HISTORY = 50
+_REASON_SYMBOLS = 3
+_MAX_REASONS = 8
 # The order the work happens in. A stage that did not happen (no budget, nothing eligible) is absent from a run.
 # BATCH_INFERENCE and GLOBAL_REDUCTION each cover many bounded calls; their detail names the call in progress.
 STAGES = ("ENUMERATION", "ELIGIBILITY", "PLANNING", "TOKEN_PLANNING", "REUSE_ASSESSMENT", "BUDGET_HELD",
@@ -53,6 +58,38 @@ def _iso(seconds: float) -> str:
     return datetime.fromtimestamp(seconds, UTC).isoformat().replace("+00:00", "Z")
 
 
+def evidence_reasons(result: dict[str, Any]) -> list[dict[str, Any]]:
+    """Why a run had little to select from, read from its evidence packet and never from model prose.
+
+    Each reason counts the candidates it applies to and names a few of them: blocked evidence by capability and
+    reason code, candidates the model saw with no news story, and candidates without sufficient evidence. For a
+    full-universe run the packet is the final selection's: the finalists, not every row the batches assessed."""
+    candidates = result.get("evidence") or []
+    total = len(candidates)
+    found: dict[tuple[str, str | None, str | None], list[str]] = {}
+
+    def note(kind: str, capability: str | None, reason: str | None, candidate: dict[str, Any]) -> None:
+        instrument = candidate.get("instrument") or {}
+        symbol = str(instrument.get("symbol") or instrument.get("instrument_id") or "")
+        symbols = found.setdefault((kind, capability, reason), [])
+        if symbol not in symbols:
+            symbols.append(symbol)
+
+    for candidate in candidates:
+        for item in candidate.get("blocked") or []:
+            for code in item.get("reason_codes") or [None]:
+                note("BLOCKED", str(item.get("capability")), code, candidate)
+        items = [*(candidate.get("current_market_evidence") or []), *(candidate.get("reference_evidence") or [])]
+        if not any(item.get("capability") == "NEWS" for item in items):
+            note("NO_NEWS", "NEWS", None, candidate)
+        if not candidate.get("sufficient"):
+            note("INSUFFICIENT", None, None, candidate)
+    order = {"BLOCKED": 0, "NO_NEWS": 1, "INSUFFICIENT": 2}
+    ranked = sorted(found.items(), key=lambda entry: (-len(entry[1]), order[entry[0][0]], str(entry[0][1]), str(entry[0][2])))
+    return [{"kind": kind, "capability": capability, "reason": reason, "count": len(symbols), "of": total, "symbols": symbols[:_REASON_SYMBOLS]}
+            for (kind, capability, reason), symbols in ranked[:_MAX_REASONS]]
+
+
 def _coverage(result: dict[str, Any]) -> dict[str, Any] | None:
     """The run's accounting without its plan detail. None for a result that carries none."""
     block = result.get("universe_coverage")
@@ -65,8 +102,9 @@ def _coverage(result: dict[str, Any]) -> dict[str, Any] | None:
     return {key: block.get(key) for key in keys}
 
 
-def _summary(result: dict[str, Any]) -> dict[str, Any]:
-    """What a status strip needs from a finished run, without the evidence packet."""
+def run_summary(result: dict[str, Any]) -> dict[str, Any]:
+    """What the Screener needs from a finished run without the evidence packet: the outcome, which rows the model
+    was shown in the selection it made and which it selected, and the evidence-derived reasons."""
     coverage = _coverage(result)
     # Only a completed global selection (or a single-request result) names a stored candidate run.
     stored = result.get("method") != "STAGED_LOCAL_FIRST_EXPERIMENTAL" and (
@@ -77,6 +115,8 @@ def _summary(result: dict[str, Any]) -> dict[str, Any]:
         "candidate_run_id": result.get("run_id") if stored else None,
         "state": result.get("state"), "reason": result.get("reason"),
         "selected": [{"instrument_id": pick["instrument_id"], "rank": pick["rank"]} for pick in result.get("candidates", [])],
+        "intake": [str((candidate.get("instrument") or {}).get("instrument_id")) for candidate in result.get("evidence") or []],
+        "reasons": evidence_reasons(result),
         "intake_count": result.get("intake_count"), "cache": result.get("cache"), "simulated": result.get("simulated"),
         "provider_id": result.get("provider_id"), "model_id": result.get("model_id"), "runtime": result.get("runtime"),
         "tokens_input": result.get("tokens_input"), "tokens_output": result.get("tokens_output"),
@@ -250,7 +290,7 @@ class AiScreenerRuns:
                 "timeout_seconds": 120, "typical_latency_ms": None, "typical_latency_samples": 0,
                 "intake_count": record["intake_count"], "sufficient_count": record["staged"]["counters"]["deterministically_eligible"],
                 "packet_bytes": record["packet_bytes"], "progress": {}, "stop_requested": False,
-                "stop_requested_at": None, "summary": _summary(record), "result": record if result else None, "error": None}
+                "stop_requested_at": None, "summary": run_summary(record), "result": record if result else None, "error": None}
 
     def _restored(self, account_id: str, *, run_id: str | None = None, result: bool = True) -> dict[str, Any] | None:
         """Read a completed selection after restart from its immutable parent and candidate receipts.
@@ -285,7 +325,7 @@ class AiScreenerRuns:
                 "engine": {key: head.get(key) for key in ("provider_id", "model_id", "runtime")},
                 "timeout_seconds": self._service().engine()["timeout_seconds"], "typical_latency_ms": None, "typical_latency_samples": 0,
                 "intake_count": block["ai_evaluated_count"], "sufficient_count": block["eligible_count"], "packet_bytes": record["packet_bytes"],
-                "progress": {}, "stop_requested": False, "stop_requested_at": None, "summary": _summary(restored),
+                "progress": {}, "stop_requested": False, "stop_requested_at": None, "summary": run_summary(restored),
                 "result": restored if result else None, "error": None}
 
     def stop(self, account_id: str, run_id: str) -> dict[str, Any] | None:
@@ -441,9 +481,53 @@ class AiScreenerRuns:
             "progress": dict(run.get("progress") or {}),
             "stop_requested": bool(run.get("stop") and run["stop"].is_set()),
             "stop_requested_at": _iso(run["stop_requested_at"]) if run.get("stop_requested_at") is not None else None,
-            "summary": _summary(run["result"]) if run["result"] is not None else None,
+            "summary": run_summary(run["result"]) if run["result"] is not None else None,
             "result": run["result"] if result else None, "error": dict(run["error"]) if run["error"] else None,
         }
+
+
+def _question(scope: dict[str, Any]) -> str:
+    """Identity of the Screener query a run answered. The list snapshot is not part of it."""
+    return json.dumps({key: scope.get(key) for key in ("universe", "search", "sort", "descending", "filters", "view", "screen")},
+                      sort_keys=True, default=str)
+
+
+def run_history(repository: Any, *, limit: int = 20,
+                scope_for: Callable[[dict[str, Any]], dict[str, Any] | None] | None = None) -> dict[str, Any]:
+    """Stored candidate runs, newest first, each with what it added or removed against the previous run of the
+    same Screener query. Reads the durable record, so runs made by the scheduled loop are listed too.
+
+    A full-universe record stores its final reduction's result, whose scope is not the operator's query; that
+    query lives on the coverage ledger's terminal record, which ``scope_for`` reads. Without it the record's own
+    scope is used."""
+    if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= MAX_HISTORY:
+        raise ValueError("INVALID_HISTORY_LIMIT")
+    # Read past the page so the oldest listed run can still be compared with its real predecessor.
+    records = repository.recent("candidate_run", min(200, limit * 4))
+    scopes = [(scope_for(record) if scope_for is not None else None) or record.get("scope") or {} for record in records]
+    rows = []
+    for index, record in enumerate(records[:limit]):
+        scope = scopes[index]
+        selected = [pick["instrument_id"] for pick in record.get("candidates") or []]
+        previous_index = next((later for later in range(index + 1, len(records)) if _question(scopes[later]) == _question(scope)), None)
+        previous = records[previous_index] if previous_index is not None else None
+        before = [pick["instrument_id"] for pick in previous.get("candidates") or []] if previous is not None else None
+        coverage = record.get("coverage") or {}
+        universe = record.get("universe_coverage") or {}
+        rows.append({
+            "candidate_run_id": record.get("run_id"), "generated_at": record.get("generated_at"), "decision_cutoff": record.get("decision_cutoff"),
+            "state": record.get("state"), "reason": record.get("reason"), "provider_id": record.get("provider_id"),
+            "model_id": record.get("model_id"), "runtime": record.get("runtime"), "cache": record.get("cache"), "simulated": record.get("simulated"),
+            "tokens_input": record.get("tokens_input"), "tokens_output": record.get("tokens_output"), "latency_ms": record.get("latency_ms"),
+            "selected": [{"instrument_id": pick["instrument_id"], "rank": pick["rank"]} for pick in record.get("candidates") or []],
+            # A full-universe run's intake is every row the batches evaluated, not the finalists of its last call.
+            "selected_count": len(selected), "intake_count": universe.get("ai_evaluated_count", coverage.get("candidate_intake")),
+            "scope": {key: scope.get(key) for key in ("universe", "search", "sort", "descending", "filters", "view", "screen")},
+            "previous_run_id": previous.get("run_id") if previous is not None else None,
+            "added": [item for item in selected if item not in before] if before is not None else None,
+            "removed": [item for item in before if item not in selected] if before is not None else None,
+        })
+    return {"schema_version": HISTORY_SCHEMA, "runs": rows, "limit": limit}
 
 
 _RUNS: AiScreenerRuns | None = None
@@ -456,4 +540,5 @@ def ai_screener_runs() -> AiScreenerRuns:
     return _RUNS
 
 
-__all__ = ["AiScreenerRuns", "MAX_TRACKED_RUNS", "RUNS_SCHEMA", "RUN_SCHEMA", "STAGES", "ai_screener_runs"]
+__all__ = ["AiScreenerRuns", "HISTORY_SCHEMA", "MAX_HISTORY", "MAX_TRACKED_RUNS", "RUNS_SCHEMA", "RUN_SCHEMA", "STAGES", "ai_screener_runs",
+           "evidence_reasons", "run_history", "run_summary"]
