@@ -1,5 +1,46 @@
 # IMP Work Log
 
+## 2026-10-25 — Rebuild step 7: selective overnight holds and close-out fixes
+
+Continues Opus's approved plan and three unfinished files on
+`claude/overnight-holds-20261025`, based on step 6 `a550c22c`.
+The recorded owner answers are 5 positions / $25,000 / 5 trading days,
+shorts included, and retry failed closes then close at the next open.
+
+Built: optional bounded risk settings, prompt v5 and server-only overnight
+condition, hashed review context, ten-position daily review, deterministic
+carry selection, fill-derived manual/automation ownership, reserved `PAI-`
+manual-route identifiers, bounded close retries, unplanned carry recovery,
+restart/scope persistence, overnight equity loss anchor, and panel controls
+and status. Existing policy IDs remain unchanged when fields are omitted.
+
+Rulings within the approved behavior: enforce the owner's 5/$25k ceilings
+at the backend as well as the screen; unknown position age or missing prior
+equity cannot authorize a carry/new entry. Preserve approved holds through
+midnight and non-trading days. The existing frozen calendar's lack of early
+close metadata remains disclosed; no exchange-calendar expansion is included.
+
+Validation: final results and commands are in
+`destination-tests/20261025-overnight-holds` outside Git, with the final
+verification summary added below before commit. The starting AI suite had
+33 passes and two prompt-version assertion failures; both were completed
+as part of prompt v5. New tests use temporary Paper stores and controlled
+providers, never the real state database or paid inference.
+
+No push, PR update, merge, deployment, service start or scheduled-task change.
+Live execution remains disabled. Step 8 is outside this change.
+
+**Final verification (2026-10-26 ET):** 221 focused backend tests and 19 adaptive-policy tests
+passed. Broad changed validation: 6995 tests, 35 skips,
+0 failures/errors. The final isolated-symbol guard then passed 628 affected tests
+with 0 failures/errors. Fast 23 passed. Full UI 1,466 passed; typecheck, build/bundle
+budget and docs links passed. The full run had 9,747 tests with one stale
+optional-field assertion (updated and revalidated), plus the three existing
+issues: missing formulas `apps`, the news temporary-file leak, and the
+unclassified forecast script. Full output and the precise timing/limitations
+are in external `verification-summary.md`. Independent review has no unresolved
+findings. No live acceptance or fully green repository claim.
+
 ## 2026-10-25 — Rebuild step 6: Paper short selling
 
 This is the sixth owner-approved rebuild step (owner decision 2), built on step 5 (`claude/switchable-ai-20261024`).

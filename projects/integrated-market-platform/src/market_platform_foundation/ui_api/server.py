@@ -2118,6 +2118,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
         if path == "/paper/orders/preview":
             try:
+                if any(str(body.get(field) or '').strip().startswith('PAI-') for field in ('client_order_id', 'idempotency_key')):
+                    raise ValueError('CLIENT_ORDER_ID_RESERVED')
                 self._send_json(paper_projections.preview_paper_order(self.store, body))
             except ValueError as exc:
                 self._send_error_json("PAPER_ORDER_PREVIEW_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
@@ -2125,6 +2127,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
         if path == "/paper/orders":
             try:
+                if any(str(body.get(field) or '').strip().startswith('PAI-') for field in ('client_order_id', 'idempotency_key')):
+                    raise ValueError('CLIENT_ORDER_ID_RESERVED')
                 with LEDGER_ROUTE_LOCK:
                     payload = paper_projections.submit_paper_order(self.store, body)
                 self._send_json(payload)

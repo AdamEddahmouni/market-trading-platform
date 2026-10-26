@@ -32,6 +32,7 @@ from ..intelligence.inference.paper_automation import (
     ARM_ACKNOWLEDGEMENT, AutomationStatus, IntentState, build_policy, decision_permitted, derive_status,
     entry_risk_blockers, exposure_minor, intent_identity, optional_fields, required_fields, should_run_universe,
     size_entry, spending_gate, universe_fingerprint, universe_material_change, universe_scopes,
+    overnight_limits, sessions_held, select_overnight_carry,
 )
 from ..local_state.paper_automation import paper_automation_repository
 from ..market_data.freshness_contract import timestamp
@@ -64,6 +65,8 @@ _ENDED_UNFILLED = ('REJECTED', 'CANCELLED', 'EXPIRED', 'RISK_REJECTED')
 # cadence * 2^n, capped here. A new order always needs a new Action Decision; this only spaces them out.
 EXIT_BACKOFF_CAP_SECONDS = 900
 # Open equity positions are closed once this close to the regular-session bell (owner policy 2026-10-23).
+OVERNIGHT_REVIEW_MINUTES = 45
+EOD_MAX_ATTEMPTS = 6
 EOD_FLATTEN_MINUTES = 10  # two 300 s cadence slots, so a slow cycle still lands inside the window
 # After a full-universe run ends without adopting a selection, the next attempt waits cadence * 2^n, capped here.
 # A run that fails for a lasting reason is not relaunched every cycle.
@@ -138,6 +141,40 @@ def market_session(epoch):
     # The canonical calendar has no early-close list; the regular 16:00 close is used and that is stated.
     return dict(label=label, trading_day=trading, session_date=moment.date().isoformat(), minutes_to_close=minutes,
                 early_close_metadata='UNAVAILABLE')
+
+
+def _automation_quantities(ledger):
+    """Replay immutable fills into signed automation/manual ownership buckets.
+
+    A reducing fill consumes its owner's bucket first. Any reversal remainder
+    belongs to the fill's owner. No order or intent without a fill owns shares.
+    """
+    buckets = {}
+    for event in ledger.events:
+        if event.get('event_type') != 'FillRecorded':
+            continue
+        payload = event.get('payload') or {}
+        fill = payload.get('fill') or {}
+        order = ledger.lookup_order(str(payload.get('order_id') or '')) or {}
+        iid = str(order.get('instrument_id') or fill.get('instrument_id') or '')
+        if not iid:
+            continue
+        amount = quantity_number(fill.get('fill_quantity') or 0)
+        delta = amount if order.get('side', fill.get('side')) == 'BUY' else -amount
+        owner = 0 if str(order.get('client_order_id') or '').startswith('PAI-') else 1
+        parts = buckets.setdefault(iid, [0, 0])
+        total = sum(parts)
+        if total and total * delta < 0:
+            remaining = abs(delta)
+            for index in (owner, 1 - owner):
+                reduction = min(abs(parts[index]), remaining)
+                parts[index] -= reduction if total > 0 else -reduction
+                remaining -= reduction
+            if remaining:
+                parts[owner] = remaining if delta > 0 else -remaining
+        else:
+            parts[owner] += delta
+    return {iid: parts[0] for iid, parts in buckets.items() if parts[0]}
 
 
 class PaperAutomationService:
@@ -672,7 +709,7 @@ class PaperAutomationService:
                               or fresh.get('desired_state') != 'RUNNING'
                               or fresh.get('owner_id') != self.owner_id)
                 if not superseded:
-                    for key in ('consecutive_failures', 'last_error', 'day', 'universe', 'universes', 'last_universe_started_epoch', 'subscriptions', 'exit_backoff'):
+                    for key in ('consecutive_failures', 'last_error', 'day', 'universe', 'universes', 'last_universe_started_epoch', 'subscriptions', 'exit_backoff', 'carry'):
                         fresh[key] = work.get(key)
                     if summary['error'] is None:
                         fresh['last_error'] = None
@@ -731,6 +768,7 @@ class PaperAutomationService:
             scoped = dict(work, **state)
             # The day-start loss anchor and risk remain account-wide, independent of venue session boundaries.
             scoped['day'] = work.get('day')
+            scoped['carry'] = work.get('carry')
             scoped['_global_universe_active'] = any((value.get('universe') or {}).get('active_run_id')
                                                     for key, value in states.items() if key != universe)
             scoped['_peer_waiting'] = self._peer_waiting(policy, states, universe, now)
@@ -757,11 +795,14 @@ class PaperAutomationService:
                 state[key] = scoped.get(key)
             state['last_cycle'] = receipt
             work['day'] = scoped.get('day')
+            work['carry'] = scoped.get('carry')
             started = (scoped.get('universe') or {}).get('last_started_epoch')
             if started is not None:
                 work['last_universe_started_epoch'] = max(work.get('last_universe_started_epoch') or 0, started)
             summary['universes'][universe] = receipt
             summary['actions'].extend(receipt['actions'])
+            if receipt.get('close_retry_pending'):
+                summary['close_retry_pending'] = True
             eligible = (receipt.get('session') or {}).get('label') in item['sessions']
             summary['session_eligible'] |= eligible
             if eligible:
@@ -782,7 +823,14 @@ class PaperAutomationService:
         summary['session'] = session
         if summary['blockers']:
             return  # the account is not the one that was armed: nothing is evaluated and nothing is ordered
+        self._carry_rollover(work, session, now)
+        self.actions.overnight_review = lambda iid: self._review_context(iid, work, policy)
         if session['label'] not in policy['schedule']['sessions']:
+            after_close = session['label'] in ('AFTER_HOURS', 'POST_MARKET') or (
+                session['label'] == 'CLOSED' and session.get('trading_day')
+                and datetime.fromtimestamp(now, UTC).astimezone(ET).hour >= 16)
+            if after_close:
+                self._detect_unplanned_carry(work, session['session_date'])
             self._release_candidate_quotes(work.get('subscriptions') or [])
             work['subscriptions'] = []
             # Nothing is evaluated outside the session, so no data, risk or budget blocker can change. The blockers
@@ -817,17 +865,30 @@ class PaperAutomationService:
                 for fee in ledger.accrue_short_borrow_fees(accrual_date=previous_date, as_of_ns=int(now * 1e9)):
                     self._event('SHORT_BORROW_FEE_ACCRUED', **fee['payload'])
                 valuation = ledger.project_valuation()
-            work['day'] = dict(session_date=session['session_date'], start_equity_minor=valuation['equity_minor'], captured_at=_iso(now))
+            previous = work.get('day') or {}
+            holding = any(p.get('quantity') for p in ledger.project_positions())
+            anchor = previous.get('last_equity_minor') if holding and previous_date else valuation.get('equity_minor')
+            basis = 'PREVIOUS_SESSION_LAST_CURRENT' if holding and previous_date else 'SESSION_FIRST_VALUATION'
+            work['day'] = dict(session_date=session['session_date'], start_equity_minor=anchor,
+                               captured_at=_iso(now), basis=basis)
+            if anchor is None:
+                self._block(summary, 'RISK', 'DAY_START_EQUITY_UNAVAILABLE')
             self._event('SESSION_ACTIVATED', session_date=session['session_date'], session=session['label'],
-                        start_equity_minor=valuation['equity_minor'], valuation_quality=valuation['quality'])
-        elif work['day'].get('start_equity_minor') is None and valuation['equity_minor'] is not None:
+                        start_equity_minor=anchor, equity_basis=basis, valuation_quality=valuation['quality'])
+        elif work['day'].get('start_equity_minor') is None and valuation['equity_minor'] is not None and work['day'].get('basis') != 'PREVIOUS_SESSION_LAST_CURRENT':
             work['day'].update(start_equity_minor=valuation['equity_minor'], captured_at=_iso(now))
+        if valuation.get('quality') == 'CURRENT' and valuation.get('equity_minor') is not None:
+            work['day']['last_equity_minor'] = valuation['equity_minor']
+        self._close_carry_at_open(work, policy, summary, session, now)
+        self._eod_flatten(work, policy, summary, session, now)
+        self._maintenance_cover(work, policy, summary, session, now)
+        self._prepare_overnight_reviews(work, policy, session, now, health)
         gate = dict(spending_gate(policy, self.reevaluation.engine_state()), kind='BUDGET')
         if not gate['allowed']:
             self._block(summary, 'BUDGET', gate['reason'])
         unhealthy = bool(health.get('reasons'))
         if unhealthy:
-            # No usable provider: no model is paid to read evidence that is not current, and nothing is ordered.
+            # Unhealthy input withholds inference and AI orders; deterministic closes still use canonical price gates.
             # The deterministic part of the cycle still runs so held positions keep their stop monitor.
             gate = dict(allowed=False, reason=str(health['reasons'][0]), kind='DATA')
         self._universe(work, policy, summary, now, session, gate)
@@ -848,8 +909,6 @@ class PaperAutomationService:
         if unhealthy:
             summary['execution'] = 'WITHHELD_PROVIDER_UNHEALTHY'
             return
-        self._eod_flatten(work, policy, summary, session, now)
-        self._maintenance_cover(work, policy, summary, session, now)
         self._execute_pending(work, policy, summary, session)
 
     # --- full-universe AI evaluation -----------------------------------------------------------
@@ -1302,7 +1361,8 @@ class PaperAutomationService:
         if state == 'ENTER':
             blockers = entry_risk_blockers(policy, positions=positions, valuation=ledger.project_valuation(),
                                            day_start_equity_minor=(work.get('day') or {}).get('start_equity_minor'),
-                                           pending_orders=pending, minutes_to_close=session.get('minutes_to_close'), session_label=session.get('label'))
+                                           pending_orders=pending, minutes_to_close=session.get('minutes_to_close'), session_label=session.get('label'),
+                                           carry_pending=bool((work.get('carry') or {}).get('pending')), close_guard_minutes=EOD_FLATTEN_MINUTES)
             if blockers:
                 return finish(IntentState.BLOCKED, blockers)
         backoff = work.get('exit_backoff') or {}
@@ -1321,6 +1381,12 @@ class PaperAutomationService:
                 self.reevaluation.request_redecision(decision['instrument_id'], code)
             return finish(IntentState.DEFERRED, [code])
         quantity, sizing = quantity_number(draft['quantity']), None
+        if state == 'EXIT':
+            owned = _automation_quantities(ledger).get(decision['instrument_id'], 0)
+            signed = quantity_number((decision.get('position') or {}).get('quantity') or 0)
+            if not owned or owned * signed <= 0:
+                return finish(IntentState.BLOCKED, ['AUTOMATION_POSITION_NOT_OWNED'])
+            quantity = min(quantity, abs(owned))
         instrument = paper_projections._admit_focus_instrument(self.store, draft['instrumentId'])
         if state == 'ENTER':
             from ..numeric import decimal_to_minor_units
@@ -1411,33 +1477,279 @@ class PaperAutomationService:
         from . import paper_projections
         return paper_projections.submit_paper_order(self.store, body)['submission']
 
-    def _eod_flatten(self, work, policy, summary, session, now):
-        """Owner policy 2026-10-23: open equity positions close in the last minutes of the regular session.
+    def _owned_positions(self):
+        quantities = _automation_quantities(self.store.paper_ledger)
+        rows = []
+        for position in self.store.paper_ledger.project_positions():
+            iid = str(position['instrument_id'])
+            held = quantity_number(position.get('quantity') or 0)
+            if position.get('side') == 'SHORT':
+                held = -abs(held)
+            own = quantities.get(iid, 0)
+            if not own or held * own <= 0:
+                continue
+            from . import paper_projections
+            try:
+                instrument = paper_projections._admit_focus_instrument(self.store, iid)
+            except ValueError:
+                # Retain unknown owned exposure as blocked carry; canonical preview
+                # will refuse its close without aborting other instruments.
+                rows.append(dict(position, quantity=quantity_wire(min(abs(own), abs(held)) * (1 if held > 0 else -1)),
+                                 instrument_admission_unavailable=True))
+                continue
+            if instrument.get('instrument_kind') != 'TRADABLE_SECURITY' or instrument.get('asset_class') not in ('EQUITY', 'ETF'):
+                continue
+            rows.append(dict(position, quantity=quantity_wire(min(abs(own), abs(held)) * (1 if held > 0 else -1))))
+        return rows
 
-        One MARKET close per instrument per session date through the canonical preview and submit, idempotent on
-        the ledger. Crypto is never flattened. A remainder left working is cancelled by the next reconciliation.
-        """
+    def _detect_unplanned_carry(self, work, closing_date):
+        carry = work['carry']
+        owned = {p['instrument_id']: p for p in self._owned_positions()}
+        for iid in list(carry['pending']):
+            if iid not in owned:
+                carry['pending'].pop(iid, None)
+        for iid, p in owned.items():
+            approved = carry['approved'].get(iid) or {}
+            if (approved.get('session_date') == closing_date and approved.get('quantity') == p['quantity']
+                    and approved.get('entry_ns') == p.get('first_entry_time_ns')):
+                continue
+            # A position opened today before the bell is not yesterday's carry.
+            entry = p.get('first_entry_time_ns')
+            if entry and datetime.fromtimestamp(entry / 1e9, UTC).astimezone(ET).date().isoformat() > closing_date:
+                continue
+            if iid not in carry['pending']:
+                carry['pending'][iid] = dict(quantity=p['quantity'], entry_ns=entry, session_date=closing_date)
+                self._event('PAPER_UNPLANNED_CARRY', instrument_id=iid, **carry['pending'][iid])
+
+    def _carry_rollover(self, work, session, now):
+        # Carry is for US equities/ETFs. A continuous crypto scope cannot advance
+        # its trading calendar or erase a Friday approval over the weekend.
+        if session.get('label') == 'CONTINUOUS':
+            session = self.session(now)
+        day = session['session_date']
+        first_cycle = not work.get('carry')
+        carry = work.get('carry') or dict(session_date=(work.get('day') or {}).get('session_date', day),
+                                          approved={}, reviewed={}, pending={}, closing=[], blocked=[])
+        work['carry'] = carry
+        if first_cycle or carry['session_date'] != day or not session.get('trading_day'):
+            from datetime import date, timedelta
+            from ..intelligence.forward_qualification.evidence01.continuity import is_trading_day
+            previous = date.fromisoformat(day) - timedelta(days=1)
+            while not is_trading_day(previous):
+                previous -= timedelta(days=1)
+            self._detect_unplanned_carry(work, previous.isoformat())
+            # A holiday/weekend detects missed closes but never erases a valid
+            # approval from the most recent completed equity session.
+            if session.get('trading_day'):
+                carry.update(session_date=day, approved={}, reviewed={}, closing=[], blocked=[])
+
+    def _hold_sessions(self, position, session):
+        from ..intelligence.forward_qualification.evidence01.continuity import is_trading_day, _DEFAULT_HOLIDAYS
+        entry = position.get('first_entry_time_ns')
+        if not entry:
+            return 999  # unknown position age cannot authorize an overnight hold
+        entry_date = datetime.fromtimestamp(entry / 1e9, UTC).astimezone(ET).date().isoformat()
+        if entry_date > session['session_date']:
+            return 999
+        years = {int(day[:4]) for day in _DEFAULT_HOLIDAYS}
+        if any(year not in years for year in range(int(entry_date[:4]), int(session['session_date'][:4]) + 1)):
+            return 999
+        return sessions_held(entry_date, session['session_date'], is_trading_day)
+
+    def _review_context(self, iid, work, policy):
+        session = self.session(self.clock())
         minutes = session.get('minutes_to_close')
-        if session.get('label') != 'REGULAR' or minutes is None or minutes > EOD_FLATTEN_MINUTES:
+        carry = work.get('carry') or {}
+        review = (carry.get('reviewed') or {}).get(iid)
+        if (not review or session.get('label') != 'REGULAR' or minutes is None
+                or not 0 <= minutes <= OVERNIGHT_REVIEW_MINUTES or session['session_date'] != review['session_date']):
+            return None
+        p = next((p for p in self._owned_positions() if p['instrument_id'] == iid), None)
+        if not p or p['quantity'] != review['automation_quantity'] or p.get('first_entry_time_ns') != review['entry_ns']:
+            return None
+        return review
+
+    def _prepare_overnight_reviews(self, work, policy, session, now, health):
+        limits = overnight_limits(policy)
+        minutes = session.get('minutes_to_close')
+        if (not limits or session['label'] != 'REGULAR' or minutes is None
+                or not EOD_FLATTEN_MINUTES < minutes <= OVERNIGHT_REVIEW_MINUTES or health.get('reasons')):
             return
-        from . import paper_projections
+        carry = work['carry']
+        rows = sorted(self._owned_positions(), key=lambda p: (-self._return_bps(p), p['instrument_id']))
+        for p in rows:
+            iid = p['instrument_id']
+            if len(carry['reviewed']) >= 10:
+                break
+            if iid in carry['reviewed'] or iid in carry['pending'] or self._hold_sessions(p, session) >= limits['max_hold_sessions']:
+                continue
+            risk = self.actions._risk_facts(iid) or {}
+            if risk.get('status') == 'BREACHED':
+                continue
+            carry['reviewed'][iid] = dict(review_id='POR-' + input_hash_from_dict(dict(account=self._account(), iid=iid,
+                day=session['session_date'], entry=p.get('first_entry_time_ns')))[:32],
+                session_date=session['session_date'], requested_at=now, sessions_held=self._hold_sessions(p, session),
+                max_hold_sessions=limits['max_hold_sessions'], automation_quantity=p['quantity'], entry_ns=p.get('first_entry_time_ns'))
+            self.reevaluation.request_redecision(iid, 'OVERNIGHT_REVIEW')
+
+    @staticmethod
+    def _return_bps(position):
+        basis = abs(quantity_number(position['quantity'])) * int(position.get('average_fill_minor') or 0)
+        # Net-book P&L percentage is the same for each owner's pro-rata shares.
+        mark, avg = position.get('mark_minor'), position.get('average_fill_minor')
+        if not basis or not mark or not avg:
+            return -10**12
+        return int((mark - avg) * (1 if quantity_number(position['quantity']) > 0 else -1) * 10000 / avg)
+
+    def _carry_candidate(self, position, work, policy, session, now):
+        iid = position['instrument_id']
+        limits = overnight_limits(policy)
+        review = work['carry']['reviewed'].get(iid)
+        if position.get('instrument_admission_unavailable') or not limits or not review or iid in work['carry']['closing'] or iid in work['carry']['pending']:
+            return None
+        valuation = self.store.paper_ledger.project_valuation()
+        day = work.get('day') or {}
+        health = self.provider_health(policy['scope'])
+        if (health.get('reasons') or valuation.get('quality') != 'CURRENT'
+                or day.get('start_equity_minor') is None or valuation.get('equity_minor') is None
+                or day['start_equity_minor'] - valuation['equity_minor'] >= policy['risk']['max_daily_loss_minor']
+                or self.store.paper_ledger.short_margin_status().get('maintenance_breached')
+                or self._hold_sessions(position, session) >= limits['max_hold_sessions']):
+            return None
+        history = self.actions.history(iid)
+        d = history[0] if history else {}
+        reasoned = d.get('model_reasoning_wire') or {}
+        context = (d.get('evidence_snapshot') or {}).get('context') or {}
+        if (d.get('action_state') != 'HOLD' or not (d.get('overnight_carry') or {}).get('qualified')
+                or (reasoned.get('rationale') or {}).get('assessment') != 'EVIDENCE_SUFFICIENT'
+                or (context.get('overnight_review') or {}).get('review_id') != review['review_id']
+                or review['session_date'] != session['session_date']
+                or _epoch(d.get('decision_time'), 0) < review['requested_at']
+                or _epoch(d.get('decision_time'), now + 1) > now
+                or _epoch(d.get('valid_until'), 0) <= now
+                or quantity_number((d.get('position') or {}).get('quantity') or 0) != quantity_number(position['quantity'])
+                or review['automation_quantity'] != position['quantity'] or review['entry_ns'] != position.get('first_entry_time_ns')
+                or d.get('conflicting_refs') or d.get('weak_refs') or d.get('missing_capabilities')
+                or d.get('server_exit') or any(c.get('condition_id') == 'SMA_TRAILING_STOP_BREACHED' and c.get('status') == 'MET'
+                                             for c in d.get('conditions') or [])):
+            return None
+        evidence = (d.get('evidence_snapshot') or {}).get('evidence') or {}
+        from ..intelligence.inference.action_decision import _current
+        current_evidence = [*evidence.get('current_market_evidence', []), *evidence.get('reference_evidence', [])]
+        quote = next((e for e in current_evidence if e.get('capability') == 'QUOTE' and _current(e, _iso(now))), None)
+        if not quote:
+            return None
+        quote_lifetime = _epoch(quote.get('valid_until'), 0) - _epoch(quote.get('as_of'), 0)
+        mark_age = now - float(position.get('mark_as_of_ns') or 0) / 1e9
+        if not -1 <= mark_age < quote_lifetime:
+            return None
+        refs = [e['evidence_id'] for e in current_evidence
+                if e.get('capability') != 'QUOTE' and (reasoned.get('evidence_stance') or {}).get(e['evidence_id']) == 'SUPPORTING'
+                and e['evidence_id'] in d.get('supporting_refs', []) and not e.get('weak_reasons')
+                and e.get('decision_admissibility') == 'ADMISSIBLE' and _current(e, _iso(now))]
+        # Refresh the existing deterministic monitor before deciding to carry.
+        # It advances completed bars and uses its own current-quote provider.
+        self.actions._risk_facts(iid)  # initialize the shared risk-control service if needed
+        stops = getattr(self.actions, 'risk_control', None)
+        if stops is not None:
+            stops.evaluate(iid)
+        risk = self.actions._risk_facts(iid) or {}
+        if not refs or risk.get('status') == 'BREACHED':
+            return None
+        exposure = exposure_minor([position])
+        if exposure is None:
+            return None
+        return dict(instrument_id=iid, quantity=position['quantity'], entry_ns=position.get('first_entry_time_ns'),
+                    exposure_minor=exposure, return_bps=self._return_bps(position), decision_id=d['decision_id'],
+                    evidence_refs=refs, sessions_held=self._hold_sessions(position, session), session_date=session['session_date'])
+
+    def _close_retry(self, work, policy, summary, session, now, position, opening=False):
         ledger = self.store.paper_ledger
+        iid = position['instrument_id']
+        prefix = ('PAI-OPEN-' if opening else 'PAI-EOD-') + input_hash_from_dict(dict(account=self._account(),
+            iid=iid, day=session['session_date']))[:24] + '-'
+        attempts = [o for o in ledger.project_orders() if str(o.get('client_order_id') or '').startswith(prefix)]
+        latest = max((float((o.get('decision_source_snapshot') or {}).get('source_time') or o.get('created_time') or 0) / 1e9 for o in attempts), default=0)
+        retry_after = work['carry'].setdefault('retry_after', {})
+        if now < max(float(retry_after.get(prefix) or 0), latest + 60 if attempts else 0):
+            summary['close_retry_pending'] = True
+            return
+        if len(attempts) >= EOD_MAX_ATTEMPTS:
+            tag = prefix + 'EXHAUSTED'
+            if tag not in work['carry']['blocked']:
+                work['carry']['blocked'].append(tag)
+                self._event('PAPER_CLOSE_ATTEMPTS_EXHAUSTED', instrument_id=iid, session_date=session['session_date'])
+            return
+        if any(o.get('instrument_id') == iid and str(o.get('state')) in _WORKING for o in ledger.project_orders()):
+            return
+        retry_after[prefix] = now + 60
+        action = 'OPEN_CLOSE' if opening else 'EOD_FLATTEN'
+        outcome = self._close_position(work, policy, summary, now, iid=iid, held=quantity_number(position['quantity']),
+            key=prefix + str(len(attempts) + 1), action=action, event='PAPER_' + action,
+            headline='Unplanned carry: close at open' if opening else 'End-of-day flatten (owner policy)',
+            reason=dict(code='PAPER_AUTOMATION_' + action, label=session['session_date']))
+        summary['close_retry_pending'] = True
+        if outcome.get('outcome') == 'BLOCKED':
+            tag = prefix + '|'.join(outcome.get('reason_codes') or [])
+            if tag not in work['carry']['blocked']:
+                work['carry']['blocked'].append(tag)
+                self._event('PAPER_EOD_FLATTEN_BLOCKED', **outcome)
+
+    def _close_carry_at_open(self, work, policy, summary, session, now):
+        if session['label'] != 'REGULAR':
+            return
+        owned = {p['instrument_id']: p for p in self._owned_positions()}
+        for iid in list(work['carry']['pending']):
+            p = owned.get(iid)
+            if p is None:
+                work['carry']['pending'].pop(iid, None)
+                continue
+            try:
+                self._close_retry(work, policy, summary, session, now, p, opening=True)
+            except Exception as exc:  # a bad symbol never prevents the other closes
+                self._block(summary, 'DATA', 'PAPER_CLOSE_' + _code(exc))
+        remaining = {p['instrument_id'] for p in self._owned_positions()}
+        work['carry']['pending'] = {k: v for k, v in work['carry']['pending'].items() if k in remaining}
+        if work['carry']['pending']:
+            self._block(summary, 'RISK', 'UNPLANNED_CARRY_PENDING')
+
+    def _eod_flatten(self, work, policy, summary, session, now):
+        minutes = session.get('minutes_to_close')
+        if session['label'] != 'REGULAR' or minutes is None or not 0 <= minutes <= EOD_FLATTEN_MINUTES:
+            return
         if not self.actions._authority():
             return
-        working = {str(o.get('instrument_id')) for o in ledger.project_orders() if str(o.get('state')) in _WORKING}
-        for position in ledger.project_positions():
-            iid, held = str(position.get('instrument_id')), quantity_number(position.get('quantity') or 0)
-            if held == 0 or iid in working:
+        positions = self._owned_positions()
+        candidates = []
+        for p in positions:
+            try:
+                candidate = self._carry_candidate(p, work, policy, session, now)
+                if candidate:
+                    candidates.append(candidate)
+            except (ValueError, TypeError, KeyError):
+                pass  # an invalid review cannot authorize carrying risk
+        limits = overnight_limits(policy)
+        kept, _ = select_overnight_carry(candidates, limits) if limits else ([], [])
+        selected = {p['instrument_id']: p for p in kept}
+        carry = work['carry']
+        for iid in list(carry['approved']):
+            if iid not in selected:
+                carry['approved'].pop(iid, None)
+        for iid, candidate in selected.items():
+            if carry['approved'].get(iid) != candidate:
+                self._event('PAPER_OVERNIGHT_HOLD', **candidate)
+                carry['approved'][iid] = candidate
+        for p in positions:
+            iid = p['instrument_id']
+            if iid in selected or iid in carry['pending']:
                 continue
-            instrument = paper_projections._admit_focus_instrument(self.store, iid)
-            if instrument.get('instrument_kind') == 'CRYPTO_PAIR':
-                continue
-            key = 'PAI-EOD-' + input_hash_from_dict(dict(account=ledger.paper_account_id, instrument=iid, day=session['session_date']))[:32]
-            if ledger.lookup_idempotent_order(key):
-                continue
-            self._close_position(work, policy, summary, now, iid=iid, held=held, key=key, action='EOD_FLATTEN',
-                                 event='PAPER_EOD_FLATTEN', headline='End-of-day flatten (owner policy)',
-                                 reason=dict(code='PAPER_AUTOMATION_EOD_FLATTEN', label=session['session_date']))
+            if iid not in carry['closing']:
+                carry['closing'].append(iid)
+            try:
+                self._close_retry(work, policy, summary, session, now, p)
+            except Exception as exc:
+                self._block(summary, 'DATA', 'PAPER_CLOSE_' + _code(exc))
+
 
     def _maintenance_cover(self, work, policy, summary, session, now):
         """Rebuild step 6: a short book under its maintenance margin buys back its largest-loss short.
@@ -1483,7 +1795,7 @@ class PaperAutomationService:
                                                   reasons=[reason,
                                                            dict(code='PAPER_AUTOMATION_POLICY', label=policy['policy_id']),
                                                            dict(code='PAPER_AUTOMATION_ARMING', label=work['arming']['arming_id'])]))
-        outcome = dict(instrument_id=iid, action=action, side=side, quantity=quantity_wire(quantity), client_order_id=key)
+        outcome = dict(decision_id=None, instrument_id=iid, action=action, side=side, quantity=quantity_wire(quantity), client_order_id=key)
         try:
             preview = paper_projections.preview_paper_order(self.store, body)['preview']
             if preview.get('risk_status') != 'PASS':
@@ -1494,13 +1806,17 @@ class PaperAutomationService:
                         outcome.update(outcome='NOT_ATTEMPTED', reason_codes=['AUTOMATION_HALTED_BY_OPERATOR'])
                     else:
                         submission = self._submit(dict(body, preview_id=preview['preview_id']))
-                        order = submission.get('order') or {}
+                        order = self.store.paper_ledger.lookup_order(str(submission.get('order_id'))) or submission.get('order') or {}
                         outcome.update(outcome='SUBMITTED', order_id=submission.get('order_id'), order_state=order.get('state'),
-                                       reason_codes=['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION'])
+                                       reason_codes=['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION'],
+                                       filled_quantity=quantity_wire(order.get('cumulative_filled_quantity') or 0))
+                        if str(order.get('state')) in _WORKING:
+                            self._cancel_order(str(submission.get('order_id')), 'UNFILLED_REMAINDER')
         except ValueError as exc:
             outcome.update(outcome='BLOCKED', reason_codes=[_code(exc)])
         self._event(event, **outcome)
         summary['actions'].append(outcome)
+        return outcome
 
     def _cancel_order(self, order_id, reason):
         from . import paper_projections
@@ -1595,6 +1911,7 @@ class PaperAutomationService:
         valuation = ledger.project_valuation() if ledger.is_portfolio_scoped() else {}
         return dict(
             schema_version=STATUS_SCHEMA, status=str(status), status_label=labels[status], blockers=blockers,
+            carry=copy.deepcopy(controller.get('carry') or {}),
             account_id=controller['account_id'], experiment_id=controller.get('experiment_id'), policy=policy,
             armed=bool(controller.get('arming')), arming=controller.get('arming'), emergency=controller.get('emergency'),
             desired_state=controller['desired_state'], run=controller.get('run'), session=session, session_eligible=eligible,
@@ -1769,6 +2086,7 @@ class AutomationWorker:
                 if not self._heartbeat():
                     self.exit_reason = 'AUTOMATION_LEASE_LOST'
                     return
+                summary = {}
                 try:
                     summary = service.run_cycle(scheduled=self.slot, missed=self.missed)
                     self.missed = 0
@@ -1787,9 +2105,10 @@ class AutomationWorker:
                     self.missed += 1
                 done += 1
                 finished = service.clock()
-                steps = max(1, -int(-(finished - self.slot) // self.cadence))  # first slot at or after the finish
+                interval = min(self.cadence, 60) if summary.get('close_retry_pending') else self.cadence
+                steps = max(1, -int(-(finished - self.slot) // interval))  # first slot at or after the finish
                 self.missed += steps - 1
-                self.slot += steps * self.cadence
+                self.slot += steps * interval
         except Exception as exc:  # the worker died: say so in liveness instead of looking merely idle
             _record_worker_fault(service, exc, phase='WORKER_EXIT', transient=False, consecutive=self.transient_failures, slot=self.slot)
             self.exit_reason = 'WORKER_' + type(exc).__name__

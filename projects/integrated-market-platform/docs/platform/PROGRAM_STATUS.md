@@ -144,6 +144,16 @@ decisions kept Qwen3-4B as the local model and preselected Claude Haiku 5.5 as t
 paid one ([benchmark](../reports/AI_ENGINE_BENCHMARK_20261024.md)); the paid test
 cost $0.38. It is on `claude/switchable-ai-20261024`, **not deployed**.
 
+**Rebuild step 7 (2026-10-25).** Selective overnight holds and close-out fixes
+are implemented on `claude/overnight-holds-20261025`, based on `a550c22c`.
+The owner's caps are 5 positions / $25,000 / 5 trading sessions, including
+shorts; omitted settings disable overnight holds. Close-out preserves manual
+ownership, runs despite unhealthy provider input through the canonical price
+gates, retries unfilled orders, and closes unplanned carry before new entries.
+The daily loss anchor preserves overnight gaps. Software validation and
+limitations are recorded in the step 7 work-log entry and external evidence.
+Not deployed; operational services and scheduled tasks remain off by instruction.
+
 **Rebuild step 6 (2026-10-25).** A new Paper account can be created with short
 selling allowed (off by default, fixed for the life of the account). A short
 sets aside its sale proceeds plus 50% of its value, must stay above 30%

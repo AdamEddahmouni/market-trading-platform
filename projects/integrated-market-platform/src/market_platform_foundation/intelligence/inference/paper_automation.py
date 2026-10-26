@@ -73,6 +73,9 @@ INTENT_TERMINAL = frozenset({IntentState.SUBMITTED})
 # floor, and this only names it.
 _SCHEDULE_OPTIONAL = dict(universe_max_age_seconds=int, universe_material_change_trigger=bool,
                           universe_max_runs_per_day=int)
+# Selective overnight holds (owner decision 6, rebuild step 7) are optional and additive in the same way: a body
+# without them keeps its exact policy id and carries nothing over the close. The three are supplied together.
+_RISK_OPTIONAL = dict(max_overnight_positions=int, max_overnight_exposure_minor=int, max_hold_sessions=int)
 _SECTIONS = dict(
     schedule=dict(sessions=list, cadence_seconds=int, universe_evaluation_interval_seconds=int,
                   no_new_entries_minutes_before_close=int),
@@ -88,7 +91,9 @@ _SECTIONS = dict(
 # Every allowed key per section, required and optional. Unknown keys are still rejected, never ignored.
 _ALLOWED = {section: set(fields) for section, fields in _SECTIONS.items()}
 _ALLOWED['schedule'] = set(_SECTIONS['schedule']) | set(_SCHEDULE_OPTIONAL)
+_ALLOWED['risk'] = set(_SECTIONS['risk']) | set(_RISK_OPTIONAL)
 _INT_BOUNDS = dict(
+    max_overnight_positions=(0, 5), max_overnight_exposure_minor=(0, 2_500_000), max_hold_sessions=(1, 5),
     cadence_seconds=(60, 3600), universe_evaluation_interval_seconds=(300, 86400),
     no_new_entries_minutes_before_close=(0, REGULAR_SESSION_MINUTES),
     universe_max_age_seconds=(300, 86400), universe_max_runs_per_day=(1, 100),
@@ -104,8 +109,9 @@ def required_fields():
 
 
 def optional_fields():
-    """Owner decisions that enable adaptive scheduling. Omitting one is a choice, never a default."""
-    return ['scopes', *sorted(f'schedule.{field}' for field in _SCHEDULE_OPTIONAL)]
+    """Owner decisions that enable adaptive scheduling or overnight holds. Omitting one is a choice, never a default."""
+    return ['scopes', *sorted(f'schedule.{field}' for field in _SCHEDULE_OPTIONAL),
+            *sorted(f'risk.{field}' for field in _RISK_OPTIONAL)]
 
 
 def universe_scopes(policy):
@@ -153,7 +159,21 @@ def build_policy(body, *, account_id, experiment_id, initial_capital_minor, ledg
         if field in _INT_BOUNDS and not _INT_BOUNDS[field][0] <= value <= _INT_BOUNDS[field][1]:
             raise ValueError('AUTOMATION_POLICY_FIELD_OUT_OF_RANGE:' + f'schedule.{field}')
         policy['schedule'][field] = value
+    overnight = [field for field in _RISK_OPTIONAL if field in body['risk']]
+    if overnight and len(overnight) != len(_RISK_OPTIONAL):
+        raise ValueError('AUTOMATION_POLICY_INCOMPLETE:' + ','.join(f'risk.{field}' for field in _RISK_OPTIONAL
+                                                                    if field not in body['risk']))
+    for field in overnight:
+        value = body['risk'][field]
+        if type(value) is not int:
+            raise ValueError('AUTOMATION_POLICY_FIELD_INVALID:' + f'risk.{field}')
+        if not _INT_BOUNDS[field][0] <= value <= _INT_BOUNDS[field][1]:
+            raise ValueError('AUTOMATION_POLICY_FIELD_OUT_OF_RANGE:' + f'risk.{field}')
+        policy['risk'][field] = value
     schedule, risk, ai = policy['schedule'], policy['risk'], policy['ai']
+    if overnight and (risk['max_overnight_positions'] > risk['max_open_positions']
+                      or risk['max_overnight_exposure_minor'] > risk['max_aggregate_exposure_minor']):
+        raise ValueError('AUTOMATION_OVERNIGHT_LIMIT_EXCEEDS_PORTFOLIO_LIMIT')
     for field, allowed, code in (('sessions', SUPPORTED_SESSIONS, 'AUTOMATION_SESSION_UNSUPPORTED'),):
         if not schedule[field] or len(set(schedule[field])) != len(schedule[field]) or set(schedule[field]) - set(allowed):
             raise ValueError(code)
@@ -264,8 +284,13 @@ def exposure_minor(positions):
 
 
 def entry_risk_blockers(policy, *, positions, valuation, day_start_equity_minor, pending_orders, minutes_to_close,
-                        session_label='REGULAR'):
-    """Portfolio-level reasons a new entry may not be attempted now. Exits are never gated here."""
+                        session_label='REGULAR', carry_pending=False, close_guard_minutes=0):
+    """Portfolio-level reasons a new entry may not be attempted now. Exits are never gated here.
+
+    ``carry_pending``: an automation position was left open over a close it was not approved to carry; nothing is
+    added until it is closed. ``close_guard_minutes``: the controller's own end-of-day close-out window, so an entry
+    can never land where it would be closed again minutes later, whatever the owner's entry cutoff.
+    """
     risk, blockers = policy['risk'], []
     if not risk['allow_entries']:
         blockers.append('AUTOMATION_ENTRIES_DISABLED')
@@ -286,9 +311,53 @@ def entry_risk_blockers(policy, *, positions, valuation, day_start_equity_minor,
         blockers.append('SHORT_MAINTENANCE_MARGIN_BREACH')  # nothing is added while shorts are under-margined
     if pending_orders:
         blockers.append('WORKING_ORDERS_PRESENT')
-    if session_label not in ('CONTINUOUS', 'TRADING') and (minutes_to_close is None or minutes_to_close <= policy['schedule']['no_new_entries_minutes_before_close']):
+    if carry_pending:
+        blockers.append('UNPLANNED_CARRY_PENDING')
+    cutoff = max(policy['schedule']['no_new_entries_minutes_before_close'], int(close_guard_minutes))
+    if session_label not in ('CONTINUOUS', 'TRADING') and (minutes_to_close is None or minutes_to_close <= cutoff):
         blockers.append('ENTRY_WINDOW_CLOSED')
     return blockers
+
+
+def overnight_limits(policy):
+    """The owner's overnight-hold limits, or None when this policy carries nothing over the close."""
+    risk = policy['risk']
+    if not risk.get('max_overnight_positions'):
+        return None
+    return dict(max_positions=int(risk['max_overnight_positions']),
+                max_exposure_minor=int(risk['max_overnight_exposure_minor']),
+                max_hold_sessions=int(risk['max_hold_sessions']))
+
+
+def sessions_held(entry_date, session_date, is_trading_day):
+    """Trading sessions a position has been open in, the entry session counted as 1 (ISO dates, ET)."""
+    from datetime import date, timedelta
+    start, end = date.fromisoformat(entry_date), date.fromisoformat(session_date)
+    if end < start:
+        return 1
+    count, day = 0, start
+    while day <= end:
+        count += 1 if is_trading_day(day) else 0
+        day += timedelta(days=1)
+    return max(count, 1)
+
+
+def select_overnight_carry(candidates, limits):
+    """Deterministic choice of what is carried: best unrealized return first, inside both owner caps.
+
+    ``candidates`` are dicts with ``instrument_id``, ``exposure_minor`` and ``return_bps``. A candidate that does not
+    fit the remaining position count or exposure is refused with its reason and the next one is tried.
+    """
+    kept, refused, exposure = [], [], 0
+    for candidate in sorted(candidates, key=lambda c: (-int(c['return_bps']), str(c['instrument_id']))):
+        if len(kept) >= limits['max_positions']:
+            refused.append(dict(candidate, reason='OVERNIGHT_POSITION_LIMIT_REACHED'))
+        elif exposure + int(candidate['exposure_minor']) > limits['max_exposure_minor']:
+            refused.append(dict(candidate, reason='OVERNIGHT_EXPOSURE_LIMIT_REACHED'))
+        else:
+            kept.append(candidate)
+            exposure += int(candidate['exposure_minor'])
+    return kept, refused
 
 
 def size_entry(policy, *, price_minor, positions, buying_power_minor, ledger_policy, instrument=None):

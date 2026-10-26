@@ -57,3 +57,7 @@ by recording it here.
 | Date | Question | Owner's answer | What it changes |
 |---|---|---|---|
 | 2026-10-25 | How much cash does a Paper short set aside while it is open? | 50%, like a real broker. | A short holds back its sale proceeds plus 50% of its value from buying power (a $5,000 short lowers buying power by $2,500). Buys stay cash-only. See [Paper short selling](../architecture/PAPER_DECISION_LIFECYCLE.md#paper-short-selling). |
+| 2026-10-25 | How much may carry overnight? | At most 5 positions and $25,000 total. | Both caps apply together across automation scopes; disabled until configured at release. |
+| 2026-10-25 | Maximum multi-day holding period? | 5 trading days. | Entry is day 1; mandatory close-out on day 5; a fresh evidence-backed reason is required each day. |
+| 2026-10-25 | Feed down at the close? | Keep trying, then sell at the next open. | Use valid prices and canonical Paper gates; record unresolved carry and block new entries until closed. |
+| 2026-10-25 | May shorts carry overnight? | Yes, under the same limits. | Long and short positions share the 5-position/$25,000 caps; simulated borrow fees continue. |

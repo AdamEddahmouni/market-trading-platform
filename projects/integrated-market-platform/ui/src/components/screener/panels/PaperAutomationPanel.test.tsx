@@ -278,4 +278,26 @@ describe("Paper automation controls", () => {
       vi.useRealTimers();
     }
   });
+  it("requires all overnight settings and sends the dollar amount in minor units", async () => {
+    api.status.mockResolvedValueOnce(bare).mockResolvedValue(disarmed); api.configure.mockResolvedValue(disarmed);
+    api.history.mockResolvedValue({ events: [] }); api.report.mockResolvedValue(report);
+    render(<PaperAutomationPanel scope={scope} />); open(); await screen.findByRole("status");
+    for (const [label, value] of numbers) fill(label, value);
+    for (const [label, value] of choices) fill(label, value);
+    fill(/Maximum overnight positions/, "5");
+    expect(screen.getByRole("button", { name: "Save policy" })).toBeDisabled();
+    fill(/Maximum overnight exposure/, "25000"); fill(/Maximum holding period/, "5");
+    fireEvent.click(screen.getByRole("button", { name: "Save policy" }));
+    await waitFor(() => expect(api.configure).toHaveBeenCalled());
+    expect(api.configure.mock.calls[0][1].risk).toMatchObject({ max_overnight_positions: 5,
+      max_overnight_exposure_minor: 2500000, max_hold_sessions: 5 });
+  });
+  it("shows approved holds and positions waiting for the next open", async () => {
+    api.status.mockResolvedValue({ ...running, carry: { approved: { AAPL: {} }, pending: { NVDA: {} } } });
+    api.history.mockResolvedValue({ events: [] }); api.report.mockResolvedValue(report);
+    render(<PaperAutomationPanel scope={scope} />); open();
+    expect(await screen.findByText("Approved to hold: AAPL.")).toBeInTheDocument();
+    expect(screen.getByText("Awaiting closure after an unplanned carry: NVDA.")).toBeInTheDocument();
+  });
+
 });

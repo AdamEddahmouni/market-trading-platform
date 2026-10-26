@@ -332,3 +332,61 @@ See [DATA_CONTRACTS.md](DATA_CONTRACTS.md) for timestamp and ID rules.
 | Cockpit | `ui/src/components/paper-workspace/` |
 | Backend intent | `src/market_platform_foundation/paper/` |
 | Projections | `ui_api/projections.py`, `paper_projections.py` |
+
+
+## Overnight holds and end-of-day close-out
+
+Owner-approved rebuild step 7 (2026-10-25), internal Paper simulation only.
+Overnight holds are disabled when the three optional risk settings are omitted.
+When supplied, all three are required: `max_overnight_positions` (0–5),
+`max_overnight_exposure_minor` (0–2,500,000 cents), and `max_hold_sessions`
+(1–5 trading sessions). The entry session counts as day 1; day 5 closes at
+the usual ten-minute close-out window. These limits also cannot exceed the
+portfolio limits. Legacy policies retain their exact identity when fields
+are absent. The release settings remain an owner action.
+
+Review starts 45 minutes before the regular close, with at most ten distinct
+positions reviewed per trading day, ordered by unrealized percentage return
+then instrument ID. The controller adds server-owned review context to the
+hashed Action Decision input. Prompt v5 retains the existing proposal wire
+format. `OVERNIGHT_THESIS_SUPPORTED` can qualify a HOLD only when the server
+supplies the review and the thesis continues before the holding-period cap.
+
+The final carry gate requires a current, same-day review for the unchanged
+position, an explicit overnight HOLD, an `EVIDENCE_SUFFICIENT` assessment,
+and supporting admissible non-quote evidence. It also requires current
+valuation, healthy feed, no stop breach, no maintenance-margin breach and no
+daily loss stop. Qualifying positions compete within both overnight caps;
+one that does not fit is skipped so a smaller qualifying position can fit.
+A position selected for closure cannot become a hold later that day.
+Each approval records its decision, evidence, quantity, entry identity,
+session age, exposure and percentage return. Each new trading day needs a
+new reason. Weekends and holidays do not count as holding sessions.
+
+Automation ownership is reconstructed from immutable fills whose order IDs
+begin `PAI-`. Manual and automation buckets share the net position; reducing
+fills consume their own owner's bucket first, then the other bucket, and a
+reversal remainder belongs to the fill's owner. Automatic AI exits and
+end-of-day/morning closes are limited to the automation's remaining shares.
+Manual HTTP preview and submit routes reserve both `PAI-` client order IDs
+and idempotency keys. Internal automation still uses the canonical Paper
+preview and submit functions, with all authority and price gates intact.
+
+Deterministic close-out runs before provider-health withholding. No price is
+fabricated: a refused preview is reported once per instrument/reason/day and
+retried; submitted closes use distinct keys for at most six attempts per
+instrument and session. Working remainders are cancelled. Pending close-out
+shortens the next worker tick to at most 60 seconds. One bad symbol does not
+abort other closes. Anything unapproved that remains after the bell, or is
+discovered at the next session after downtime, is recorded as unplanned carry.
+It is closed first during the next regular session; new entries are blocked
+account-wide until it is resolved. There are no fabricated after-hours fills.
+
+Carry/review state persists across restarts and is shared across instrument
+scopes. With any open position, the next session's loss anchor is the previous
+session's last saved CURRENT equity, including manual holdings because the
+daily loss stop is account-wide. Missing prior equity keeps entries blocked;
+it is not silently replaced with post-gap equity. Short borrow fees retain
+step 6's idempotent rollover accrual. These rules are software-tested, not
+live-session evidence. No service, scheduled task, paid engine or deployment
+is activated by this change.

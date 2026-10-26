@@ -166,6 +166,9 @@ class ScreenerActionService:
                        authority=authority, allow_short=ledger.allows_short(),
                        ai_direct=ai_direct_enabled(ledger),
                        portfolio_revision=portfolio_state_revision(ledger), risk_policy=copy.deepcopy(ledger.policy))
+        review = getattr(self, 'overnight_review', lambda iid: None)(body['instrument_id'])
+        if review:
+            context['overnight_review'] = copy.deepcopy(review)
         risk = self._risk_facts(body['instrument_id'])
         if risk: context['risk_control'] = risk
         provider = self._provider()
@@ -368,8 +371,18 @@ class ScreenerActionService:
         draft=self.handoff(dict(decision_id=ids[0]))
         if draft['instrumentId']!=instrument or draft['side']!=parsed['side']:
             raise ValueError('ACTION_ORDER_IDENTITY_MISMATCH')
-        if record['action_state']=='EXIT' and quantity_number(draft['quantity'])!=quantity_number(parsed['quantity']):
-            raise ValueError('ACTION_EXIT_QUANTITY_CHANGED')
+        if record['action_state']=='EXIT':
+            expected = quantity_number(draft['quantity'])
+            from ..intelligence.inference.paper_automation import intent_identity
+            if parsed.get('client_order_id') == intent_identity(self.store.paper_ledger.paper_account_id, record['decision_id']):
+                # Only the internal automation intent can close its own slice of
+                # a mixed position. Manual HTTP routes reserve these IDs.
+                from .paper_automation import _automation_quantities
+                owned = _automation_quantities(self.store.paper_ledger).get(instrument, 0)
+                signed = quantity_number(record['position']['quantity'])
+                expected = min(expected, abs(owned)) if owned * signed > 0 else 0
+            if not expected or expected != quantity_number(parsed['quantity']):
+                raise ValueError('ACTION_EXIT_QUANTITY_CHANGED')
         return record
 
     def assess_entry_risk(self, record, parsed):

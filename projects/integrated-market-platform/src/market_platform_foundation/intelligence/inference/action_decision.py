@@ -14,8 +14,11 @@ from ...market_data.freshness_contract import timestamp
 from .hashing import input_hash_from_dict
 from .screener_synthesis import unsupported_certainty
 
-PROMPT_ID = 'screener.action_decision.v4'
-POLICY_ID = 'action-decision-policy/1.0.0'
+PROMPT_ID = 'screener.action_decision.v5'
+# 1.1.0 (rebuild step 7): hold conditions compare as a set, and an overnight review may add one server condition.
+POLICY_ID = 'action-decision-policy/1.1.0'
+# Owner decision 6: a position is carried over the close only on an evidence-backed hold made in the review window.
+OVERNIGHT_CONDITION = 'OVERNIGHT_THESIS_SUPPORTED'
 # OCT1-08: a deterministic risk fact. The server establishes it; a model can neither select nor veto it.
 STOP_BREACH_CONDITION = 'SMA_TRAILING_STOP_BREACHED'
 RISK_CONTROL_SOURCE = 'SERVER_RISK_CONTROL'
@@ -111,6 +114,16 @@ def build_conditions(candidate, context, now):
                                stop_state_id=risk.get('stop_state_id'), trigger_price=risk.get('trigger_price')),
                      source=RISK_CONTROL_SOURCE)]
 
+    def overnight_conditions():
+        # Present only inside the controller's overnight review, so every other decision is unchanged.
+        review = context.get('overnight_review')
+        if not review or position == 'FLAT':
+            return []
+        held, limit = int(review.get('sessions_held') or 0), int(review.get('max_hold_sessions') or 0)
+        return [condition(OVERNIGHT_CONDITION, observed == position and 0 < held < limit,
+                          [basis['evidence_id']] if basis else [], field=field, direction=observed,
+                          sessions_held=held, max_hold_sessions=limit)]
+
     return [condition('CURRENT_QUOTE', bool(quote), [quote['evidence_id']] if quote else [],
                       field='price', source_value=quote['facts']['price'] if quote else None,
                       as_of=quote.get('as_of') if quote else None, entry_method='MARKET_NOW_IF_GATES_PASS'),
@@ -121,7 +134,7 @@ def build_conditions(candidate, context, now):
             condition('THESIS_REVERSED', position != 'FLAT' and observed is not None and observed != position,
                       [basis['evidence_id']] if basis else [], field=field, direction=observed),
             condition('DECISION_EXPIRED', bool(timestamp(end) and timestamp(now) >= timestamp(end)),
-                      field='valid_until', source_value=end), *risk_conditions()]
+                      field='valid_until', source_value=end), *overnight_conditions(), *risk_conditions()]
 
 
 def server_exit_condition(conditions):
@@ -132,7 +145,7 @@ def server_exit_condition(conditions):
 
 # The condition ids each list may name. ``parse_proposal`` enforces exactly these; the schema states them too.
 ALLOWED_CONDITIONS = {'entry_conditions': frozenset({'CURRENT_QUOTE', 'DIRECTION_SUPPORTED'}),
-                      'hold_conditions': frozenset({'THESIS_CONTINUES'}),
+                      'hold_conditions': frozenset({'THESIS_CONTINUES', OVERNIGHT_CONDITION}),
                       'exit_conditions': frozenset({'THESIS_REVERSED', 'DECISION_EXPIRED'})}
 
 
@@ -385,7 +398,10 @@ def gate_proposal(proposal, candidate, context, *, now):
             blockers.append('ENTRY_PLAN_UNAVAILABLE'); state = 'CONSIDER_ENTRY'
         if not proposal['exit_conditions']:
             blockers.append('EXIT_PLAN_UNAVAILABLE'); state = 'CONSIDER_ENTRY'
-    if state == 'HOLD' and (proposal['hold_conditions'] != ['THESIS_CONTINUES'] or by_id['THESIS_CONTINUES']['status'] != 'MET' or not proposal['exit_conditions']):
+    review = context.get('overnight_review') if position['state'] in ('LONG', 'SHORT') else None
+    holds = set(proposal['hold_conditions']) if proposal else set()
+    hold_basis = holds == {'THESIS_CONTINUES'} or bool(review and holds == {'THESIS_CONTINUES', OVERNIGHT_CONDITION})
+    if state == 'HOLD' and (not hold_basis or by_id['THESIS_CONTINUES']['status'] != 'MET' or not proposal['exit_conditions']):
         blockers.append('HOLD_BASIS_UNAVAILABLE'); state = 'REVALIDATION_REQUIRED'
     if server_exit:
         # The breach stands whatever else is degraded: blockers gate the Paper preview, not the risk state.
@@ -400,6 +416,23 @@ def gate_proposal(proposal, candidate, context, *, now):
     if proposal and proposal['direction']=='SHORT' and state=='ENTER' and not context.get('allow_short'):
         blockers.append('SHORT_NOT_ALLOWED')
     readiness = 'PREVIEW_ALLOWED' if state in ('ENTER','EXIT') and not blockers else 'BLOCKED' if blockers else 'NOT_PREVIEWED'
-    return dict(action_state=state, execution_readiness=readiness, blocker_codes=blockers,
+    extra = {}
+    if review:
+        # Whether this decision may carry the position over the close. A plain hold stays a hold; it is only
+        # never carried. The controller's own carry gate decides afterwards, inside the owner's limits.
+        refs = {e['evidence_id']:e for e in (*candidate['current_market_evidence'], *candidate['reference_evidence'])}
+        reasons = []
+        if state != 'HOLD' or blockers:
+            reasons.append('OVERNIGHT_NOT_A_GATED_HOLD')
+        if OVERNIGHT_CONDITION not in holds:
+            reasons.append('OVERNIGHT_HOLD_NOT_PROPOSED')
+        elif (by_id.get(OVERNIGHT_CONDITION) or {}).get('status') != 'MET':
+            reasons.append('OVERNIGHT_CONDITION_NOT_MET')
+        if not proposal or not any(r in refs and _current(refs[r], now) and refs[r]['capability'] != 'QUOTE'
+                                   for r in proposal['supporting_refs']):
+            reasons.append('OVERNIGHT_SUPPORT_UNAVAILABLE')
+        extra['overnight_carry'] = dict(qualified=not reasons, reason_codes=reasons, review_id=review.get('review_id'),
+                                        sessions_held=review.get('sessions_held'))
+    return dict(action_state=state, execution_readiness=readiness, blocker_codes=blockers, **extra,
                 conditions=conditions, policy_id=POLICY_ID,
                 reason_codes=[*([STOP_BREACH_CONDITION, 'SERVER_RISK_EXIT'] if server_exit else []), *blockers] or ['BOUNDED_PROPOSAL_ACCEPTED'], input_hash=input_hash_from_dict(dict(candidate=candidate,context=context,policy=POLICY_ID)))

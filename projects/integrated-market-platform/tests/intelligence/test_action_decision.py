@@ -259,7 +259,7 @@ class ActionServiceTests(unittest.TestCase):
         packet = self.provider.infer.call_args.args[0]
         self.assertIn('evidence_stance', packet.output_schema['properties'])
         self.assertIn('evidence_stance', self.provider.infer.call_args.kwargs['rendered_prompt'])
-        self.assertEqual(d['model']['prompt_id'], 'screener.action_decision.v4')
+        self.assertEqual(d['model']['prompt_id'], 'screener.action_decision.v5')
         self.assertEqual((d['action_state'], d['supporting_refs']), ('ENTER', ['q', 't']))
 
     def test_structured_model_reasoning_is_preserved_beside_the_canonical_proposal(self):
@@ -271,7 +271,7 @@ class ActionServiceTests(unittest.TestCase):
         d = self.service.run(self.body)
         self.assertEqual(d['model_reasoning_wire'], answer)
         self.assertEqual(d['model_proposal']['proposal_state'], 'ENTER')
-        self.assertEqual(d['evidence_snapshot']['model']['prompt_id'], 'screener.action_decision.v4')
+        self.assertEqual(d['evidence_snapshot']['model']['prompt_id'], 'screener.action_decision.v5')
 
     def test_idempotency_and_position_change_new_transition(self):
         first=self.service.run(self.body); second=self.service.run(self.body)
@@ -466,3 +466,22 @@ class ActionServiceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'ACTION_DECISION_EXPIRED'):
                 _submit_paper_order(self.store,body)
             submit.assert_not_called()
+
+
+class OvernightGateTests(unittest.TestCase):
+    def test_overnight_condition_is_server_only_and_hold_order_is_irrelevant(self):
+        for direction, quantity, change in [('LONG', 4, 2), ('SHORT', -4, -2)]:
+            c = candidate()
+            c['current_market_evidence'][1]['facts']['change_pct'] = change
+            context = dict(position=dict(state=direction, quantity=quantity, snapshot_at=NOW, pending=False),
+                candidate_valid_until=END, opportunity=None, authority=True, allow_short=True)
+            p = proposal('HOLD', direction)
+            p['hold_conditions'] = ['OVERNIGHT_THESIS_SUPPORTED', 'THESIS_CONTINUES']
+            self.assertFalse(any(x['condition_id'] == 'OVERNIGHT_THESIS_SUPPORTED' for x in build_conditions(c, context, NOW)))
+            self.assertNotEqual(gate_proposal(p, c, context, now=NOW)['action_state'], 'HOLD')
+            context['overnight_review'] = dict(review_id='r', sessions_held=1, max_hold_sessions=5)
+            result = gate_proposal(p, c, context, now=NOW)
+            self.assertEqual(result['action_state'], 'HOLD')
+            self.assertTrue(result['overnight_carry']['qualified'])
+            context['overnight_review']['sessions_held'] = 5
+            self.assertFalse(gate_proposal(p, c, context, now=NOW)['overnight_carry']['qualified'])
