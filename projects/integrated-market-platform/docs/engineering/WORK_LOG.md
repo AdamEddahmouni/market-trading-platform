@@ -1,5 +1,12 @@
 # IMP Work Log
 
+## 2026-10-26 — Owner-requested AI input freshness and broad coverage repair
+
+The owner requested all available opportunities, news and sentiment reach the AI as frequently as feasible. Autonomous reviews now refresh shared news and bounded watched-instrument news through existing provider gates/TTLs, score available headlines and acquire fresh market snapshots before the evidence cutoff. Manual cache-only reviews retain their existing contract. Rolling coverage retains compact immutable-outcome-derived turn indexes across recent-run pruning and restarts, supporting the existing full-universe mode without repeating early rows indefinitely.
+
+Three regressions reproduced the stale-input, missing instrument-news and lost-turn conditions before their repairs. The focused validation passed 125 tests; the mandatory fast gate passed 23 tests. These are software checks; runtime application, provider delivery and achieved cadence require separate operational receipts. No strategy, risk, order route, Paper account, paid provider or Live execution setting changed in these source repairs.
+
+
 ## 2026-10-26 — Step 10 Phase C deployed; autonomous internal Paper running
 
 Owner authorized deployment of frozen source

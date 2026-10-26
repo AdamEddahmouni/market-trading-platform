@@ -199,8 +199,7 @@ blockers together; the state label alone is not a complete readiness answer.
   turn go first, then the least recent turn (see
   [coverage](SCREENER_AI_FULL_UNIVERSE_COVERAGE.md#rolling-slices-local-engine-automation-only)).
   Each scope keeps a **coverage epoch** in its controller state: the ids of its
-  last 16 finished runs (each row's last evaluation and last turn are read from
-  those runs' immutable ledger rows, so the controller record stays small), the
+  last 16 finished runs plus compact per-instrument last-evaluation and last-turn indexes derived from immutable ledger outcomes. Those indexes survive pruning and process restart, so full-universe sweeps cannot forget early turns and starve later names. The state also keeps the
   epoch number, its start and the count of completed epochs. A row has had its
   **turn** when the model answered it (`AI_EVALUATED` or `AI_REJECTED`) or it
   could not be sent alone (`UNPROCESSED:BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED`); a

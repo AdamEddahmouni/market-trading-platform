@@ -222,6 +222,15 @@ class ScreenerAiService:
         news_reader = getattr(self._news_service(), 'candidate_evidence', None)
         return news_reader(universe=universe, rows=raw_rows, refresh=refresh) if news_reader else {}
 
+    def refresh_instrument_news(self, *, universe: str, instrument_ids: list[str]) -> None:
+        """Warm registered per-instrument sources for at most three watched names per review.
+
+        Uses S11's provider gates, TTLs and quota guards. No synthesis request.
+        """
+        news = self._news_service()
+        for instrument_id in list(dict.fromkeys(instrument_ids))[:3]:
+            news.instrument(universe=universe, instrument_id=instrument_id, compact=True)
+
     def _market(self, universe: str, raw_rows: list[dict[str, Any]], *, acquire: bool) -> tuple[Any | None, str | None]:
         """The bounded vendor snapshot for exactly these rows, or the reason there is none. ``acquire`` takes a
         new one; otherwise only a retained snapshot of the same rows is read."""

@@ -125,7 +125,7 @@ Triggers are a closed enum: `MANUAL`, `SCHEDULED_CADENCE`, `SESSION_START`,
 Per cycle:
 
 1. **Evidence check tick.** One deterministic read of the configured Screener
-   scope (cache-only News; already-owned flow state; no provider refresh), plus
+   scope (manual reviews read cached News; autonomous reviews refresh gated, TTL-cached News and market snapshots; flow reads already-owned state), plus
    one targeted read per held instrument outside the bounded intake (≤3).
 2. **Material-change gate** per instrument, against the fingerprint stored at its
    last evaluation.
@@ -254,8 +254,7 @@ cycle.
   request is sent, the baseline is not advanced so the work is retried.
 - No configured engine ⇒ `MODEL_UNAVAILABLE`. The loop never switches provider.
 - Deterministic fail-safe revalidation needs no model and is never blocked.
-- The loop never refreshes shared News providers (`refresh_news=False`); it
-  observes material changes in the shared News state.
+- Manual loops read shared News without refreshing it. A Paper-automation-driven review refreshes shared News, scores available headline sentiment, and acquires a fresh market snapshot before its cutoff. Before that read it warms S11 instrument sources for at most three watched/held names, rotating the least recently refreshed names first. Existing provider opt-ins, cache TTLs, daily quotas, source clocks and evidence gates still apply. The cycle reports the targeted refresh attempt; a provider being enabled does not establish successful delivery.
 - Evidence reads per cycle are constant in the number of candidates.
 
 ### Cycle receipt `reevaluation-cycle/1.0.0`

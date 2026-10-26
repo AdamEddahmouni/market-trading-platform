@@ -111,6 +111,23 @@ class LiveEvidenceReevaluationTests(unittest.TestCase):
     def hold(self, symbol='NVDA'):
         self.ledger.project_positions = Mock(return_value=[dict(instrument_id=symbol, symbol=symbol, quantity=10)])
 
+    def test_autonomous_review_acquires_fresh_evidence_after_cached_quote_expires(self):
+        self.configure()
+        self.service.attach_driver('PAPER_AUTOMATION', scope=dict(universe='US_EQUITIES'),
+                                   requested_cadence_seconds=60)
+        self.now += 61  # All retained quotes are now too old to admit.
+        def snapshot(rows, **kwargs):
+            return SimpleNamespace(catalog_as_of=kwargs['catalog_as_of'], as_of=iso(self.now),
+                row_as_of={row['instrument']['instrument_id']: iso(self.now) for row in rows},
+                values={row['instrument']['instrument_id']: dict(price=241.0, volume=3000, change_pct=1.0)
+                        for row in rows}), None
+        self.ai._market_snapshots = SimpleNamespace(current=snapshot, latest=lambda: None)
+        receipt = self.service.driven_cycle('SCHEDULED_CADENCE', self.now)
+        quotes = [state for state in receipt['provider_states'] if state['capability'] == 'QUOTE'
+                  and state['state'] == 'CURRENT']
+        self.assertTrue(quotes, receipt)
+        self.assertEqual(quotes[0]['as_of'], iso(self.now))
+
     def test_first_cycle_reaches_a_decision_from_live_cached_quotes(self):
         self.configure()
         receipt = self.service.run_once()

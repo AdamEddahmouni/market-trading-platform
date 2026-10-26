@@ -545,8 +545,22 @@ class ReevaluationService:
             keep_portfolio_marks_current(self.store)
         except Exception:
             subscribed = False
+        news_refresh = None
+        refresh = getattr(self.ai, 'refresh_instrument_news', None)
+        if self.external_driver and callable(refresh):
+            wanted = list(dict.fromkeys([*held, *loop['selected'],
+                *((loop.get('pending_selection') or {}).get('chosen') or [])]))
+            seen_news = loop.setdefault('news_refreshed', {})
+            loop['news_refreshed'] = seen_news = {key: value for key, value in seen_news.items() if key in wanted}
+            targets = sorted(wanted, key=lambda key: seen_news.get(key, 0))[:3]
+            try:
+                refresh(universe=scope['universe'], instrument_ids=targets)
+                seen_news.update(dict.fromkeys(targets, self.clock()))
+                news_refresh = dict(state='ATTEMPTED', instruments=targets)
+            except Exception as exc:
+                news_refresh = dict(state='FAILED', instruments=targets, reason=type(exc).__name__)
         try:
-            _, candidates, now, _ = self.ai._packet(scope, include_flow=True)
+            _, candidates, now, _ = self.ai._packet(scope, refresh_news=bool(self.external_driver), include_flow=True)
         except Exception as exc:
             return self._blind_cycle(loop, trigger, scheduled, started, held, exc)
         by_id = {c['instrument']['instrument_id']: c for c in candidates}
@@ -560,7 +574,7 @@ class ReevaluationService:
             # A held instrument outside the bounded intake gets one targeted read, not a universe sweep.
             if position.get('symbol'):
                 try:
-                    _, extra, _, _ = self.ai._packet(dict(scope, search=str(position['symbol'])[:120], filters=[], result_set=None), include_flow=True)
+                    _, extra, _, _ = self.ai._packet(dict(scope, search=str(position['symbol'])[:120], filters=[], result_set=None), refresh_news=bool(self.external_driver), include_flow=True)
                 except Exception:
                     continue  # recorded below as HELD_INSTRUMENT_EVIDENCE_UNAVAILABLE; the stop is still evaluated
                 by_id.update({c['instrument']['instrument_id']: c for c in extra if c['instrument']['instrument_id'] == position['instrument_id']})
@@ -572,7 +586,7 @@ class ReevaluationService:
             targets = [*loop['selected'], *((pending_selection or {}).get('chosen') or [])]
             for iid in [i for i in dict.fromkeys(targets) if i not in by_id and wanted.get(i)][:10]:
                 try:
-                    _, extra, _, _ = self.ai._packet(dict(scope, search=str(wanted[iid])[:120], filters=[], result_set=None), include_flow=True)
+                    _, extra, _, _ = self.ai._packet(dict(scope, search=str(wanted[iid])[:120], filters=[], result_set=None), refresh_news=bool(self.external_driver), include_flow=True)
                 except Exception:
                     continue  # no evidence: the candidate is simply not evaluated this cycle
                 by_id.update({c['instrument']['instrument_id']: c for c in extra if c['instrument']['instrument_id'] == iid})
@@ -589,6 +603,8 @@ class ReevaluationService:
                      model_calls=0, action_calls=0, material=0, unchanged=0)
         receipt = self._receipt(loop, trigger=trigger, scheduled=scheduled, started=started,
                                 status=CycleStatus.NO_MATERIAL_CHANGE, evidence_cutoff=now)
+        if news_refresh is not None:
+            receipt['news_refresh'] = news_refresh
         counters, transitions, reasons = receipt['counters'], receipt['transitions'], receipt['reason_codes']
         if len(held) > len(watched):
             reasons.append('HELD_POSITION_CAP_EXCEEDED')

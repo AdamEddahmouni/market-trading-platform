@@ -29,6 +29,30 @@ def grounded(identifier='EQ:AAPL', change=1.2, now=NEWS_ISO):
 
 
 class NewsCandidateEvidenceTests(unittest.TestCase):
+    def test_targeted_autonomous_refresh_delivers_instrument_news_and_scored_sentiment(self):
+        from market_platform_foundation.ui_api.screener_ai import ScreenerAiService
+        class CompanyWire:
+            def fetch_news(self, query):
+                return dict(success=True, received_at=NEWS_ISO, items=[dict(
+                    headline='Apple announces record earnings', url='https://wire.test/apple-earnings',
+                    tickers=['AAPL'], published_time='2026-09-28T13:59:00Z', publisher_source='Controlled wire')])
+        with tempfile.TemporaryDirectory() as folder:
+            model = FinbertSentiment(model_path=folder, loader=loader({'Apple': 'positive'}))
+            news = service(sentiment=model, finviz=dict(success=True, items=[]),
+                           finnhub=lambda: CompanyWire(),
+                           env={'IMP_FINNHUB_LIVE': '1', 'FINNHUB_API_KEY': 'controlled-no-network'})
+            before = project_news(news, universe='US_EQUITIES', rows=ROWS['US_EQUITIES'], refresh=True)
+            self.assertEqual(before['EQ:AAPL']['stories'], [])
+            ai = ScreenerAiService(news=news, clock=lambda: NEWS_NOW)
+            ai.refresh_instrument_news(universe='US_EQUITIES', instrument_ids=['EQ:AAPL'])
+            projected = project_news(news, universe='US_EQUITIES', rows=ROWS['US_EQUITIES'], refresh=True)
+            value = projected['EQ:AAPL']
+            self.assertEqual(value['stories'][0]['headline'], 'Apple announces record earnings')
+            self.assertEqual((value['sentiment']['scored'], value['sentiment']['counts']['positive']), (1, 1))
+            row = grounded()
+            attach_news(row, value, now=NEWS_ISO)
+            self.assertEqual({e['capability'] for e in row['reference_evidence']}, {'NEWS', 'SENTIMENT'})
+
     def test_alignment_matrix(self):
         for tone, direction, result in [('POSITIVE','POSITIVE','CONFIRMING'), ('NEGATIVE','NEGATIVE','CONFIRMING'),
                 ('NEGATIVE','POSITIVE','CONFLICTING'), ('POSITIVE','NEGATIVE','CONFLICTING'),

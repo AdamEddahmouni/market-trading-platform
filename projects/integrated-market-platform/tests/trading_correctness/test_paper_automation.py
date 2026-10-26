@@ -480,6 +480,26 @@ class RollingSliceControllerTests(AutoBase):
     def controller(self):
         return self.auto.service._controller()
 
+    def test_coverage_turns_survive_recent_run_retention_and_process_roundtrip(self):
+        from unittest.mock import patch
+        a = self.auto
+        names = ['AAPL', 'NVDA', 'MSFT', 'AMD']
+        universe = dict(epoch=dict(number=1, started_epoch=0, completed=0, runs=[]))
+        with patch.object(controller_module, 'EPOCH_RUNS_KEPT', 2):
+            for index, name in enumerate(names):
+                run_id = 'rotation-' + str(index)
+                a.runs.rows[run_id] = {iid: ('AI_EVALUATED' if iid == name else 'UNPROCESSED')
+                                      for iid in names}
+                universe['last_started_epoch'] = 100 + index
+                result = a.service._advance_epoch(universe, dict(run_id=run_id), 200 + index)
+                universe = json.loads(json.dumps(universe))  # persisted controller, then a new process view
+                if index == 2:
+                    self.assertEqual(set(a.service._last_evaluated(universe['epoch'], turns=True)),
+                                     {'AAPL', 'NVDA', 'MSFT'})
+            self.assertTrue(result.get('epoch_completed'), result)
+            self.assertEqual((result['evaluated_in_epoch'], result['turns_in_epoch']), (4, 4))
+            self.assertLessEqual(len(universe['epoch']['runs']), 2)
+
     def test_a_local_universe_run_is_a_time_boxed_slice(self):
         a = self.start_run()
         plan = a.runs.started[0]['slice_plan']

@@ -1089,11 +1089,13 @@ class PaperAutomationService:
     def _last_evaluated(self, epoch, *, turns=False):
         """Instrument id -> when its most recent kept run evaluated it (or, with ``turns``, gave it its turn), from
         those runs' immutable ledger rows."""
-        last = {}
+        # Compact per-instrument receipts outlive the bounded list of recent run IDs.
+        # Otherwise a broad sweep repeats its earliest rows once that list fills.
+        last = dict(epoch.get('prior_turns' if turns else 'prior_evaluated') or {})
         for item in epoch.get('runs') or []:
             for key, (name, reasons) in self._row_records(item['run_id']).items():
                 if name == 'AI_EVALUATED' or turns and self._had_turn(name, reasons):
-                    last[key] = float(item['evaluated_epoch'])
+                    last[key] = max(last.get(key, float('-inf')), float(item['evaluated_epoch']))
         return last
 
     def _advance_epoch(self, universe, record, now):
@@ -1106,6 +1108,14 @@ class PaperAutomationService:
             return None
         # A row this run evaluated was evaluated no earlier than the run started, on this controller's clock.
         evaluated_at = float(universe.get('last_started_epoch') or now)
+        # Fold immutable row outcomes into the compact index before pruning recent run IDs.
+        epoch['prior_evaluated'] = self._last_evaluated(epoch)
+        epoch['prior_turns'] = self._last_evaluated(epoch, turns=True)
+        for key, (name, reasons) in self._row_records(record['run_id']).items():
+            if name == 'AI_EVALUATED':
+                epoch['prior_evaluated'][key] = evaluated_at
+            if self._had_turn(name, reasons):
+                epoch['prior_turns'][key] = evaluated_at
         epoch['runs'] = [*(epoch.get('runs') or []), dict(run_id=record['run_id'], evaluated_epoch=evaluated_at)][-EPOCH_RUNS_KEPT:]
         rows = self._row_records(record['run_id'])
         eligible = [key for key, (name, _) in rows.items() if name in ('AI_EVALUATED', 'AI_REJECTED', 'UNPROCESSED', 'ELIGIBLE')]
