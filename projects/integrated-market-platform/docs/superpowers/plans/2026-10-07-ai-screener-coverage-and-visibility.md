@@ -77,6 +77,7 @@ AI  ○ Idle · last pass 09:58 · 0 of 20 selected · next automatic pass in 2:
 
 - A badge on each Screener row the model selected (rank), plus a marker for "in the current shortlist".
 - An **AI** tab beside Quick Preview in the right rail replaces the bottom panel as the home for results, decisions and reevaluation controls. The bottom-dock entry stays as a shortcut to it.
+  *Built 2026-10-22:* `ui/src/components/screener/RightRail.tsx` and `ai/AiScreenerWorkspace.tsx`. The dock's AI Screener panel shows the latest pass and a Show in right rail button, and the controls are mounted only in the rail.
 - "Nothing selected" is shown as short reason chips (no news, technicals blocked, stale quote on LABT) with the model's full text behind a disclosure, instead of one long paragraph.
 - Run history: time, engine, state, selected count, tokens, latency; and what was added or removed since the previous run.
 

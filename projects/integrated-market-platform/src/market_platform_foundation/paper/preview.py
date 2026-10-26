@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from ..canonical import canonical_bytes, sha256_bytes
+from .contracts import quantity_number, quantity_wire
 
 PREVIEW_TTL_SECONDS = 60
 PREVIEW_SCHEMA_VERSION = 1
@@ -66,7 +67,7 @@ class PreviewRecord:
     instrument_id: str
     intent_digest: str
     side: str
-    quantity: int
+    quantity: int | str
     order_type: str
     risk_policy_revision: str
     portfolio_revision: str
@@ -109,7 +110,7 @@ class PreviewRecord:
             instrument_id=str(payload["instrument_id"]),
             intent_digest=str(payload["intent_digest"]),
             side=str(payload["side"]),
-            quantity=int(payload["quantity"]),
+            quantity=quantity_wire(payload["quantity"]),
             order_type=str(payload["order_type"]),
             risk_policy_revision=str(payload["risk_policy_revision"]),
             portfolio_revision=str(payload["portfolio_revision"]),
@@ -146,7 +147,7 @@ class PreviewStore:
         instrument_id: str,
         intent_digest: str,
         side: str,
-        quantity: int,
+        quantity: int | str,
         order_type: str,
         risk_policy_revision: str,
         portfolio_revision: str,
@@ -169,7 +170,7 @@ class PreviewStore:
             "observation_time": observation_time,
             "order_type": order_type.upper(),
             "portfolio_revision": portfolio_revision,
-            "quantity": int(quantity),
+            "quantity": quantity_wire(quantity),
             "risk_policy_revision": risk_policy_revision,
             "side": side.upper(),
         }
@@ -185,7 +186,7 @@ class PreviewStore:
             instrument_id=instrument_id.upper(),
             intent_digest=intent_digest,
             side=side.upper(),
-            quantity=int(quantity),
+            quantity=quantity_wire(quantity),
             order_type=order_type.upper(),
             risk_policy_revision=risk_policy_revision,
             portfolio_revision=portfolio_revision,
@@ -247,17 +248,17 @@ def portfolio_state_revision(ledger: Any) -> str:
         if state in {"ACTIVATED", "WORKING", "PARTIALLY_FILLED", "REPLACE_PENDING", "REPLACED"}:
             working_remaining = order.get("working_remaining")
             if working_remaining is not None:
-                remaining = int(working_remaining)
+                remaining = quantity_number(working_remaining)
             else:
-                remaining = int(order.get("remaining_quantity", order.get("desired_quantity", 0)))
-            working.append((str(order.get("order_id", "")), max(0, remaining)))
+                remaining = quantity_number(order.get("remaining_quantity", order.get("desired_quantity", 0)))
+            working.append((str(order.get("order_id", "")), quantity_wire(max(0, remaining))))
     body = {
         "account_id": str(ledger.paper_account_id),
         "cash_minor": int(account.get("cash_minor", 0)),
         "event_count": len(ledger.events),
         "execution_mode": str(ledger.execution_mode),
         "position_shares": [
-            (str(row.get("instrument_id", "")), int(row.get("quantity", 0)))
+            (str(row.get("instrument_id", "")), quantity_wire(row.get("quantity", 0)))
             for row in positions
         ],
         "working": sorted(working),
@@ -274,7 +275,7 @@ def verify_preview_submit(
     intent_digest: str,
     instrument_id: str,
     side: str,
-    quantity: int,
+    quantity: int | str,
     order_type: str,
     limit_price_minor: int | None,
     portfolio_revision: str,
@@ -310,7 +311,7 @@ def verify_preview_submit(
         raise PreviewError(PreviewErrorCode.PREVIEW_INTENT_MISMATCH, "submitted instrument differs from preview")
     if record.side != str(side).upper():
         raise PreviewError(PreviewErrorCode.PREVIEW_INTENT_MISMATCH, "submitted side differs from preview")
-    if int(record.quantity) != int(quantity):
+    if quantity_number(record.quantity) != quantity_number(quantity):
         raise PreviewError(PreviewErrorCode.PREVIEW_INTENT_MISMATCH, "submitted quantity differs from preview")
     if record.order_type != str(order_type).upper():
         raise PreviewError(PreviewErrorCode.PREVIEW_INTENT_MISMATCH, "submitted order type differs from preview")

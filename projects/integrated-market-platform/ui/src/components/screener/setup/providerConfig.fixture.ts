@@ -29,7 +29,16 @@ export function secEntry(configured = false): ProviderSetup {
   });
 }
 
-export function providerConfigPayload(overrides: { sec?: ProviderSetup; finnhub?: ProviderSetup } = {}): ProviderConfig {
+/** A keyless public source with one Setup switch (PR D). `source` ENVIRONMENT makes it read-only. */
+export function keylessEntry(provider: string, label: string, gate: string, on = false, source = on ? "PRIVATE_FILE" : "NONE"): ProviderSetup {
+  return providerEntry(provider, {
+    label, group: "MARKET_DATA", access: "FREE", configurable: false, state: on ? "ON" : "OFF", switchable: true,
+    unlocks: [`${label} in the Screener`], live_gates: [{ name: gate, enabled: on, source }],
+    switch: { name: gate, on, source, editable: source !== "ENVIRONMENT" },
+  });
+}
+
+export function providerConfigPayload(overrides: { sec?: ProviderSetup; finnhub?: ProviderSetup; kraken?: ProviderSetup } = {}): ProviderConfig {
   return {
     schema_version: "operator-config/1.1",
     secrets_included: false,
@@ -45,6 +54,7 @@ export function providerConfigPayload(overrides: { sec?: ProviderSetup; finnhub?
       providerEntry("finviz", { label: "Finviz Elite", group: "MARKET_DATA", access: "SUBSCRIPTION", applies: "RESTART",
         applies_note: "Finviz reads its token when the API starts.", fields: [field("FINVIZ_API_KEY", { label: "Elite API token", kind: "TOKEN" })] }),
       providerEntry("openai", { label: "OpenAI", group: "AI", access: "PAID_API", fields: [field("OPENAI_API_KEY")] }),
+      overrides.kraken ?? keylessEntry("kraken", "Kraken public market data", "IMP_CRYPTO_LIVE"),
       providerEntry("opend", { label: "moomoo OpenD", group: "LOCAL", access: "FREE", configurable: false, state: "EXTERNAL",
         external_setup: "No API key. Start OpenD from the Setup checklist and log in inside OpenD." }),
     ],

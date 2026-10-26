@@ -55,6 +55,8 @@ def _default_get(
 
 
 def _network_error(exc: BaseException) -> str:
+    if isinstance(exc, urllib.error.HTTPError):
+        return f"HTTP_{exc.code}"
     if isinstance(exc, (urllib.error.URLError, http.client.HTTPException, OSError)):
         return "NETWORK_ERROR"
     return "PROVIDER_ERROR"
@@ -188,6 +190,8 @@ class NewsApiClient(_NewsClientBase):
             params={
                 "apiKey": self._api_key,
                 "q": f'"{ticker}"',
+                # A name only in the article body (a spec list, a deals page) is not company news.
+                "searchIn": "title,description",
                 "from": start,
                 "to": end,
                 "language": "en",

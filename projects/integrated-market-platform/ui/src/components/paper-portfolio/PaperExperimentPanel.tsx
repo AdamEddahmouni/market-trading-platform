@@ -43,6 +43,7 @@ function errorText(error: unknown): string {
 /** Shown when no experiment is active: the $100,000 account is created only on an explicit action. */
 export function PaperExperimentCreate() {
   const create = useCreatePaperExperimentMutation();
+  const [allowShort, setAllowShort] = useState(false);
   return (
     <section className="panel experiment-panel" aria-labelledby="experiment-none-heading" data-testid="experiment-none">
       <h2 id="experiment-none-heading">No active Paper experiment</h2>
@@ -51,7 +52,15 @@ export function PaperExperimentCreate() {
         every instrument. It is created only when you ask for it, is never topped up or reset on restart, and never
         uses live capital.
       </p>
-      <button type="button" onClick={() => create.mutate()} disabled={create.isPending}>
+      <label>
+        <input type="checkbox" checked={allowShort} onChange={(event) => setAllowShort(event.target.checked)} />{" "}
+        Allow short selling (Paper only)
+      </label>
+      <p className="muted">
+        Fixed for the life of the account. A short sets aside its sale proceeds plus 50% of its value, must stay above
+        30% maintenance, and pays a simulated borrow fee when held overnight. Shares are assumed borrowable.
+      </p>
+      <button type="button" onClick={() => create.mutate(allowShort)} disabled={create.isPending}>
         Create $100,000 Paper experiment
       </button>
       <p className="muted">
@@ -146,6 +155,14 @@ export function PaperExperimentPanel({ data, canAct, onViewTrace }: Props) {
     { label: "Total Paper P&L", value: formatSignedMoney(valuation.total_pnl_minor, currency), lead: true },
     { label: "Paper experiment return", value: formatReturn(valuation.return_bps) },
   ];
+  const shorts = valuation.short_margin_reserved_minor !== undefined;
+  if (shorts) {
+    summary.splice(4, 0,
+      { label: "Short value", value: formatMoney(valuation.short_market_value_minor ?? null, currency) },
+      { label: "Held for shorts", value: formatMoney(valuation.short_margin_reserved_minor ?? null, currency) },
+      { label: "Borrow fees", value: formatMoney(valuation.total_borrow_fees_minor ?? 0, currency) },
+    );
+  }
 
   return (
     <section className="panel experiment-panel" aria-labelledby="experiment-heading" data-testid="experiment-panel">
@@ -192,8 +209,16 @@ export function PaperExperimentPanel({ data, canAct, onViewTrace }: Props) {
       <p className="experiment-quality" data-testid="experiment-quality" data-quality={quality.label}>
         <strong>Valuation quality: {quality.label}</strong> — {quality.detail}
         {valuation.newest_mark_as_of_ns ? ` Marks as of ${formatNs(valuation.oldest_mark_as_of_ns)} to ${formatNs(valuation.newest_mark_as_of_ns)}.` : ""}
-        {` Buying power is cash less working-order reservations; no leverage.`}
+        {shorts
+          ? ` Buying power is cash less working-order reservations and the money held for open shorts (sale proceeds plus 50% margin). Shares are assumed borrowable (${valuation.borrow_basis ?? "simulated"}).`
+          : ` Buying power is cash less working-order reservations; no leverage.`}
       </p>
+      {valuation.maintenance_breached ? (
+        <p role="alert" data-testid="experiment-maintenance-breach">
+          Short maintenance margin breached: equity is below 30% of open short value. Automation buys back the
+          largest-loss short and adds nothing new until it clears.
+        </p>
+      ) : null}
 
       <h3 id="experiment-positions-heading">Positions in this account</h3>
       {data.positions.length === 0 ? (

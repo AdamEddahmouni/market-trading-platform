@@ -57,6 +57,23 @@ it("discloses a historical detail gap even when the current capture is continuou
   expect(screen.getByText(/Partial capture; missing history/)).toBeInTheDocument();
   client.clear();
 });
+it("says nothing was captured instead of printing an empty span of dashes", async () => {
+  vi.useFakeTimers();
+  m.fetch.mockImplementation(async (instrument: string, _universe: string, range: string) => ({
+    instrument_id: instrument, range, resolution_seconds: 1, state: "CURRENT", reason: null,
+    coverage: { requested_start_ms: 100000, requested_end_ms: 120000, actual_start_ms: null, actual_end_ms: null,
+      anchor_at: null, complete: false, truncated: false, dropped_late_trades: 0, gaps: [], persistence: "RUNTIME_LOCAL" },
+    points: [], latest: null,
+  }));
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const { container } = render(<QueryClientProvider client={client}><FlowHistory instrument="NVDA" universe="US_EQUITIES" visible mode="cvd" /></QueryClientProvider>);
+  await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+  // Sprint 3 item 32: "available capture —–—" read as a glyph, not a fact.
+  expect(screen.getByText(/nothing captured in this range yet/)).toBeInTheDocument();
+  expect(screen.getByText(/Visible no capture/)).toBeInTheDocument();
+  expect(container.textContent).not.toMatch(/—–—|available capture —/);
+  client.clear();
+});
 it("hides cached historical detail when the current authority gate blocks history", async () => {
   vi.useFakeTimers();
   let blocked = false;

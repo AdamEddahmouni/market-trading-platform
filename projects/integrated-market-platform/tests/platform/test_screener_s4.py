@@ -21,7 +21,7 @@ from market_platform_foundation.market_data.live_runtime import LiveObservationa
 from market_platform_foundation.market_data.provider_lifecycle import ProviderConnectionState  # noqa: E402
 from market_platform_foundation.platform.security.route_policy import policy_for_route  # noqa: E402
 from market_platform_foundation.ui_api.screener_config import (  # noqa: E402
-    DEFAULT_PANEL_LAYOUT, LAST_KEY, PANEL_BY_UNIVERSE_KEY, PANEL_KEY, ScreenerConfigRepository, validate_panel_layout,
+    DEFAULT_PANEL_LAYOUT, LAST_KEY, PANEL_BY_UNIVERSE_KEY, PANEL_IDS, PANEL_KEY, ScreenerConfigRepository, validate_panel_layout,
     validate_screen,
 )
 from market_platform_foundation.ui_api.screener_universes import universe_spec  # noqa: E402
@@ -720,6 +720,16 @@ class PanelLayoutTests(unittest.TestCase):
     def test_valid_layout_round_trips(self):
         self.assertEqual(validate_panel_layout(self.valid())["open_panels"], ["cvd", "level2"])
         self.assertIsNone(validate_panel_layout(self.valid(open_panels=[], active_panel=None, dockview_layout=None))["dockview_layout"])
+
+    def test_every_panel_the_ui_can_open_is_accepted(self):
+        # The UI's list is the set a saved layout can name; a panel missing here was silently never saved
+        # (the AI Screener dock entry, until 2026-10-22).
+        source = (ROOT / "ui" / "src" / "api" / "screener.ts").read_text(encoding="utf-8")
+        block = source.split("export const PANEL_IDS = [", 1)[1].split("]", 1)[0]
+        ui_ids = [item.strip().strip('"') for item in block.split(",") if item.strip()]
+        self.assertEqual(set(ui_ids), set(PANEL_IDS))
+        layout = validate_panel_layout(self.valid(open_panels=["cvd", "ai_screener"], active_panel="ai_screener", dockview_layout=None))
+        self.assertEqual(layout["open_panels"], ["cvd", "ai_screener"])
 
     def test_market_data_and_unknown_panels_are_rejected(self):
         with_params = self.valid()

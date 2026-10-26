@@ -44,12 +44,16 @@ EVIDENCE_CONTROLLED = "SOFTWARE_CONTROLLED"
 EVIDENCE_REPLAY = "HISTORICAL_REPLAY"
 
 
-def build_experiment_policy() -> dict[str, Any]:
-    """The experiment's frozen risk policy: canonical limits, $100,000 cash."""
+def build_experiment_policy(*, allow_short: bool = False) -> dict[str, Any]:
+    """The experiment's frozen risk policy: canonical limits, $100,000 cash.
+
+    ``allow_short`` is chosen once, at creation, and never edited under a running account.
+    """
 
     return build_risk_policy(
         initial_cash_minor=EXPERIMENT_INITIAL_CAPITAL_MINOR,
         currency=EXPERIMENT_CURRENCY,
+        allow_short=allow_short,
     )
 
 

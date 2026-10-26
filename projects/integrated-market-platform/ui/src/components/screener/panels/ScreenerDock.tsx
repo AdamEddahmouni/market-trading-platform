@@ -71,7 +71,7 @@ const COMPONENTS: Record<PanelId, FunctionComponent<IDockviewPanelProps>> = {
   setup: contained("setup", SetupPanel),
 };
 
-export type DockHandle = { openOrFocus: (id: PanelId) => void; reset: () => void };
+export type DockHandle = { openOrFocus: (id: PanelId) => void; close: (id: PanelId) => void; reset: () => void };
 type Props = {
   /** Read once when the dock mounts. */
   layout: PanelLayout;
@@ -81,6 +81,7 @@ type Props = {
   screenerScope?: AiScreenerScope;
   openInstrument?: (instrumentId: string) => void;
   openNews?: (instrumentId: string, identity: Record<string, string>) => void;
+  openAiRail?: () => void;
   universe?: ScreenerUniverse;
   supportedPanels?: ReadonlySet<PanelId>;
   clientId: string;
@@ -94,7 +95,9 @@ type Props = {
 };
 
 const ordered = (ids: Iterable<string>) => ORDER.filter((id) => [...ids].includes(id));
-const maxColumns = (width: number) => width >= 1700 ? 5 : width >= 1300 ? 4 : width >= 900 ? 3 : 2;
+/** Columns never narrower than this: a further panel becomes a tab, never a column too narrow to read its own tab title. */
+export const MIN_COLUMN_WIDTH = 480;
+export const maxColumns = (width: number) => Math.max(1, Math.floor(width / MIN_COLUMN_WIDTH));
 
 /** Presentation fields only: a panel entry never carries params or nested data. */
 export function serializeLayout(api: DockviewApi): Record<string, unknown> | null {
@@ -149,7 +152,7 @@ function usePanelDemand(clientId: string, instrumentId: string | null, livePanel
   return demand;
 }
 
-export default function ScreenerDock({ layout, row, quote, filters = [], screenerScope, openInstrument = () => undefined, openNews, universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "ai_screener"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
+export default function ScreenerDock({ layout, row, quote, filters = [], screenerScope, openInstrument = () => undefined, openNews, openAiRail, universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "ai_screener"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
   const apiRef = useRef<DockviewApi | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState<PanelId[]>([]);
@@ -172,7 +175,7 @@ export default function ScreenerDock({ layout, row, quote, filters = [], screene
     window.requestAnimationFrame(() => document.getElementById(`screener-panel-${id}`)?.focus());
   }, []);
   const addPanel = useCallback((api: DockviewApi, id: PanelId) => {
-    const width = hostRef.current?.clientWidth ?? 1200;
+    const width = hostRef.current?.clientWidth || 1200; // 0 before the host is measured
     const reference = api.activeGroup ?? api.groups[api.groups.length - 1];
     const base = { id, component: id, title: PANEL_TITLES[id] };
     if (!reference) api.addPanel(base);
@@ -180,7 +183,7 @@ export default function ScreenerDock({ layout, row, quote, filters = [], screene
   }, []);
   const arrange = useCallback((api: DockviewApi, ids: PanelId[]) => {
     api.clear();
-    const width = hostRef.current?.clientWidth ?? 1200;
+    const width = hostRef.current?.clientWidth || 1200; // 0 before the host is measured
     for (const id of ordered(ids)) {
       const last = api.groups[api.groups.length - 1];
       const base = { id, component: id, title: PANEL_TITLES[id], inactive: true };
@@ -195,6 +198,8 @@ export default function ScreenerDock({ layout, row, quote, filters = [], screene
     if (existing) existing.api.setActive(); else addPanel(api, id);
     focusPanel(id);
   }, [addPanel, focusPanel]);
+  // Removing a panel fires onDidRemovePanel, which reports the open set and saves the layout.
+  const close = useCallback((id: PanelId) => { apiRef.current?.getPanel(id)?.api.close(); }, []);
   const reset = useCallback(() => {
     const api = apiRef.current;
     if (!api) return;
@@ -203,9 +208,9 @@ export default function ScreenerDock({ layout, row, quote, filters = [], screene
     if (active) api.getPanel(active)?.api.setActive();
   }, [arrange]);
   useEffect(() => {
-    handleRef.current = { openOrFocus, reset };
+    handleRef.current = { openOrFocus, close, reset };
     return () => { handleRef.current = null; };
-  }, [handleRef, openOrFocus, reset]);
+  }, [handleRef, openOrFocus, close, reset]);
 
   const onReady = useCallback((event: DockviewReadyEvent) => {
     const api = event.api;
@@ -256,8 +261,8 @@ export default function ScreenerDock({ layout, row, quote, filters = [], screene
     open: openOrFocus,
   }), [focusPanel, openOrFocus]);
   const selection = useMemo<SpecialistSelection>(() => ({ row, universe, supportedPanels, settledId, quote, filters,
-    screenerScope: screenerScope ?? { universe, search: "", sort: "", descending: true, filters }, openInstrument, openNews, demand, actions }),
-  [row, universe, supportedPanels, settledId, quote, filters, screenerScope, openInstrument, openNews, demand, actions]);
+    screenerScope: screenerScope ?? { universe, search: "", sort: "", descending: true, filters }, openInstrument, openNews, demand, actions, openAiRail }),
+  [row, universe, supportedPanels, settledId, quote, filters, screenerScope, openInstrument, openNews, demand, actions, openAiRail]);
 
   return <SpecialistContext.Provider value={selection}>
     <div className="screener-dock-host" ref={hostRef}>

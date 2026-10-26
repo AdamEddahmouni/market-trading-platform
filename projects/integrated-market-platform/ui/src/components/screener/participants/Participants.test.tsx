@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ScreenerPage } from "../ScreenerPage";
 import { PreviewParticipants } from "./PreviewParticipants";
+import { Section, SharedReasonContext, sharedSourceReason, StateNote } from "./sections";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), last: vi.fn(), preview: vi.fn(), layout: vi.fn(),
@@ -287,7 +288,7 @@ describe("S12 intelligence views", () => {
     expect(first).toHaveTextContent("2026-08-10");
     expect(first).toHaveTextContent("2026-09-02");
     expect(first).toHaveTextContent("23d");
-    expect(within(first).getByText("2026-09-02")).toHaveAttribute("title", expect.stringContaining("Available 2026-09-03 00:00 UTC"));
+    expect(within(first).getByText("2026-09-02")).toHaveAttribute("title", expect.stringContaining("Available Sep 2 20:00 ET"));
     // An undisclosed transaction date and lag stay unknown, never zero.
     expect(within(second).getAllByText("—")).toHaveLength(2);
     expect(within(first).getByRole("link", { name: "PTR" })).toHaveAttribute("rel", "noopener noreferrer");
@@ -352,7 +353,7 @@ describe("S12 intelligence views", () => {
       providers: [provider("house_ptr", "House Clerk PTR", "CONGRESSIONAL", "LIVE_DISABLED", "IMP_PUBLIC_RECORDS_LIVE_NOT_SET")] }));
     mount("/screener?intel=congress");
     const view = await screen.findByRole("region", { name: "Congressional disclosures · US Equities" });
-    const notice = await within(view).findByText(/Official public-record access is off \(IMP_PUBLIC_RECORDS_LIVE\)/);
+    const notice = await within(view).findByText(/Official public-record access is switched off/);
     expect(notice.closest("[role=status]")).toHaveTextContent("This is a source state, not an absence of disclosures.");
     expect(within(view).queryByText("No disclosed transactions match this universe and these filters.")).toBeNull();
   });
@@ -404,7 +405,7 @@ describe("S12 intelligence views", () => {
     mount("/screener?universe=FUTURES&intel=positioning");
     const view = await screen.findByRole("region", { name: "CFTC positioning · Futures" });
     const group = await within(view).findByRole("region", { name: "Traders in Financial Futures" });
-    expect(within(group).getByText(/ES · E-MINI S&P 500 · as of 2026-09-22 · published 2026-09-25 19:30 UTC · OI 2,000,000/)).toBeInTheDocument();
+    expect(within(group).getByText(/ES · E-MINI S&P 500 · as of 2026-09-22 · published Sep 25 15:30 ET · OI 2,000,000/)).toBeInTheDocument();
     const table = within(group).getByRole("table", { name: "Traders in Financial Futures categories for ES" });
     const [, assetMgr, levMoney] = within(table).getAllByRole("row");
     expect(assetMgr).toHaveTextContent("+600");
@@ -413,6 +414,31 @@ describe("S12 intelligence views", () => {
     expect(within(view).getByText("No CFTC market mapped for: XYZ.")).toBeInTheDocument();
     expect(view).toHaveTextContent("it is not a prediction");
     expect(screen.getByText(/Some roots have no CFTC market/)).toBeInTheDocument();
+  });
+});
+
+describe("Sprint 3 shared source reason", () => {
+  const off = { state: "LIVE_DISABLED", reason: "IMP_EDGAR_LIVE_NOT_SET" } as const;
+  const sections = (shared: string | null) => <SharedReasonContext.Provider value={shared}>
+    <Section title="Beneficial owners" state={off.state} reason={off.reason}><StateNote section={off as never} empty="No filings." /></Section>
+    <Section title="Insiders" state={off.state} reason={off.reason}><StateNote section={off as never} empty="No filings." /></Section>
+  </SharedReasonContext.Provider>;
+
+  it("names the reason two or more sections share, and nothing else", () => {
+    expect(sharedSourceReason({ a: off as never, b: off as never, c: { state: "CURRENT_AS_FILED", reason: null } as never })).toBe("IMP_EDGAR_LIVE_NOT_SET");
+    expect(sharedSourceReason({ a: off as never, c: { state: "CURRENT_AS_FILED", reason: null } as never })).toBeNull();
+  });
+
+  it("says a shared source reason once at the panel, not under every section", () => {
+    const { container, unmount } = render(sections("IMP_EDGAR_LIVE_NOT_SET"));
+    // Item 32: the EDGAR sentence and the "Live data off" chip appeared under every section.
+    expect(container.textContent).not.toMatch(/SEC EDGAR is switched off/);
+    expect(container.querySelectorAll("h3 > *")).toHaveLength(0);
+    expect(screen.getAllByText("Not loaded: see the source note above.")).toHaveLength(2);
+    unmount();
+    // Without a shared reason each section still explains itself.
+    render(sections(null));
+    expect(screen.getAllByText(/SEC EDGAR is switched off/)).toHaveLength(2);
   });
 });
 
@@ -427,7 +453,7 @@ describe("S12 dock panels", () => {
     // The header badge speaks plain language, never the raw state code.
     expect(panel.querySelector(".screener-panel-state")).toHaveTextContent("Current as filed");
     expect(panel.querySelector(".screener-panel-header")).not.toHaveTextContent("CURRENT_AS_FILED");
-    expect(within(beneficial).getByText("Holder Fund LP").closest("tr")).toHaveTextContent("SCHEDULE 13G2026-09-24 21:05 UTC2026-09-15Holder Fund LP8.1%1,200,000Filing");
+    expect(within(beneficial).getByText("Holder Fund LP").closest("tr")).toHaveTextContent("SCHEDULE 13GSep 24 17:05 ET2026-09-15Holder Fund LP8.1%1,200,000Filing");
     const insiders = within(panel).getByRole("region", { name: "Insiders · Form 4" });
     expect(insiders).toHaveTextContent("Insider One (Chief Executive Officer)");
     expect(insiders).toHaveTextContent("10b5-1 plan");

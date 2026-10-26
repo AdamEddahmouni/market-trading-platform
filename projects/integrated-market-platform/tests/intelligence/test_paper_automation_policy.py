@@ -385,6 +385,45 @@ class ReevaluationDriverTests(unittest.TestCase):
         self.assertEqual([t['classification'] for t in receipt['transitions']], ['CANDIDATE_REMOVED'])
         self.assertEqual(receipt['candidate_count'], 0)
 
+    def test_a_completed_slice_is_adopted_for_what_it_selected_only(self):
+        self.attach()
+        sliced = dict(status='SLICE_SELECTION_COMPLETE', coverage_complete=False, selection_complete=False, slice_complete=True)
+        for refused in (dict(complete('CU-s0', ['US:NVDA'], **dict(sliced, slice_complete=False))),
+                        dict(complete('CU-s1', ['US:NVDA'], **sliced), state='EXPIRED'),
+                        complete('CU-s2', [], **dict(sliced, status='SLICE_COMPLETE_NO_SELECTION'))):
+            with self.assertRaisesRegex(ValueError, 'SELECTION_COVERAGE_INCOMPLETE'):
+                self.h.service.adopt_selection(refused)
+        self.h.service.adopt_selection(complete('CU-s3', ['US:NVDA'], **sliced), ttl_seconds=3600)
+        receipt = self.cycle()
+        self.assertEqual(receipt['candidate_count'], 1)
+        loop = self.h.service._loop()
+        self.assertEqual(loop['selection_provenance']['status'], 'SLICE_SELECTION_COMPLETE')
+        self.assertEqual(loop['selection_provenance']['run_id'], 'CU-s3')
+        self.assertIsNotNone(loop['selection_valid_until_epoch'])
+
+    def test_an_adopted_selection_is_dropped_when_its_lifetime_ends(self):
+        self.attach()
+        self.h.service.adopt_selection(complete('CU-1', ['US:NVDA']), ttl_seconds=600)
+        self.assertEqual(self.cycle()['candidate_count'], 1)
+        self.h.clock.value += 601
+        receipt = self.cycle()
+        removed = [t for t in receipt['transitions'] if t['classification'] == 'CANDIDATE_REMOVED']
+        self.assertEqual((removed[0]['instrument_id'], removed[0]['reason_codes']),
+                         ('US:NVDA', ['SELECTION_HYPOTHESIS_EXPIRED', 'FULL_UNIVERSE_SELECTION']))
+        self.assertEqual(receipt['candidate_count'], 0)
+
+    def test_a_selection_whose_evidence_names_no_symbol_is_read_by_its_pair_label(self):
+        # Crypto candidates carry the pair only as ``company``; without it the selection was never decided.
+        self.attach()
+        self.h.ai.off_intake.add('US:NVDA')
+        run = complete('CU-1', ['US:NVDA'])
+        run['evidence'] = [dict(instrument=dict(instrument_id='US:NVDA', company='NVDA'))]
+        self.h.service.adopt_selection(run)
+        receipt = self.cycle()
+        self.assertEqual(self.h.service._loop()['symbols'], {'US:NVDA': 'NVDA'})
+        self.assertEqual(self.h.history()[0]['instrument_id'], 'US:NVDA')
+        self.assertEqual(receipt['model_call_count'], 1)
+
     def test_a_selected_candidate_outside_the_intake_gets_a_targeted_read(self):
         self.attach()
         self.h.ai.off_intake.add('US:NVDA')

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ...paper.contracts import quantity_number, quantity_wire
+
 from typing import Any
 
 from ..contracts.common import INTELLIGENCE_SCHEMA_VERSION, contract_reference_from_dict, contract_reference_to_dict
@@ -118,7 +120,7 @@ def paper_portfolio_snapshot_v1_to_dict(snapshot: PaperPortfolioSnapshotV1) -> d
             {
                 "instrument_id": pos.instrument_id,
                 "symbol": pos.symbol,
-                "quantity": pos.quantity,
+                "quantity": quantity_wire(pos.quantity),
                 "market_value_minor": pos.market_value_minor,
             }
             for pos in snapshot.positions
@@ -128,7 +130,7 @@ def paper_portfolio_snapshot_v1_to_dict(snapshot: PaperPortfolioSnapshotV1) -> d
                 "order_id": order.order_id,
                 "instrument_id": order.instrument_id,
                 "side": order.side,
-                "quantity": order.quantity,
+                "quantity": quantity_wire(order.quantity),
                 "opportunity_id": order.opportunity_id,
             }
             for order in snapshot.open_orders
@@ -150,7 +152,7 @@ def paper_portfolio_snapshot_v1_from_dict(payload: dict[str, Any]) -> PaperPortf
         PaperPositionSnapshot(
             instrument_id=str(item["instrument_id"]),
             symbol=str(item.get("symbol", "UNKNOWN")),
-            quantity=int(item["quantity"]),
+            quantity=quantity_number(item["quantity"]),
             market_value_minor=int(item["market_value_minor"]),
         )
         for item in payload.get("positions", ())
@@ -160,7 +162,7 @@ def paper_portfolio_snapshot_v1_from_dict(payload: dict[str, Any]) -> PaperPortf
             order_id=str(item["order_id"]),
             instrument_id=str(item["instrument_id"]),
             side=str(item["side"]),
-            quantity=int(item["quantity"]),
+            quantity=quantity_number(item["quantity"]),
             opportunity_id=item.get("opportunity_id"),
         )
         for item in payload.get("open_orders", ())
@@ -196,9 +198,9 @@ def risk_decision_v1_to_dict(decision: RiskDecisionV1) -> dict[str, Any]:
         "execution_policy_id": decision.execution_policy_id,
         "portfolio_snapshot_id": decision.portfolio_snapshot_id,
         "decision_time_ns": decision.decision_time_ns,
-        "requested_quantity": decision.requested_quantity,
+        "requested_quantity": quantity_wire(decision.requested_quantity),
         "requested_notional_minor": decision.requested_notional_minor,
-        "approved_quantity": decision.approved_quantity,
+        "approved_quantity": quantity_wire(decision.approved_quantity),
         "approved_notional_minor": decision.approved_notional_minor,
         "decision": decision.decision.value,
         "reason_codes": [code.value for code in decision.reason_codes],
@@ -218,9 +220,9 @@ def risk_decision_v1_from_dict(payload: dict[str, Any]) -> RiskDecisionV1:
         execution_policy_id=str(payload["execution_policy_id"]),
         portfolio_snapshot_id=str(payload["portfolio_snapshot_id"]),
         decision_time_ns=int(payload["decision_time_ns"]),
-        requested_quantity=int(payload["requested_quantity"]),
+        requested_quantity=quantity_number(payload["requested_quantity"]),
         requested_notional_minor=int(payload["requested_notional_minor"]),
-        approved_quantity=int(payload["approved_quantity"]),
+        approved_quantity=quantity_number(payload["approved_quantity"]),
         approved_notional_minor=int(payload["approved_notional_minor"]),
         decision=RiskDecisionKind(str(payload["decision"])),
         reason_codes=tuple(RiskReasonCode(str(v)) for v in payload.get("reason_codes", ())),
@@ -245,7 +247,7 @@ def order_ready_v1_to_dict(record: OrderReadyV1) -> dict[str, Any]:
         "decision_time_ns": record.decision_time_ns,
         "instrument_id": record.instrument_id,
         "symbol": record.symbol,
-        "approved_quantity": record.approved_quantity,
+        "approved_quantity": quantity_wire(record.approved_quantity),
         "approved_notional_minor": record.approved_notional_minor,
         "status": record.status.value,
         "execution_authority": record.execution_authority,
@@ -269,7 +271,7 @@ def order_ready_v1_from_dict(payload: dict[str, Any]) -> OrderReadyV1:
         decision_time_ns=int(payload["decision_time_ns"]),
         instrument_id=str(payload["instrument_id"]),
         symbol=str(payload["symbol"]),
-        approved_quantity=int(payload["approved_quantity"]),
+        approved_quantity=quantity_number(payload["approved_quantity"]),
         approved_notional_minor=int(payload["approved_notional_minor"]),
         status=OrderReadyStatus(str(payload["status"])),
         execution_authority=str(payload["execution_authority"]),

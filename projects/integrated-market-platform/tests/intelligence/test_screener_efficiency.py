@@ -12,6 +12,10 @@ from market_platform_foundation.local_state.screener_inference_cache import Infe
 from tests.intelligence.test_ai_screener import candidate, NOW, Stub
 from market_platform_foundation.intelligence.inference.anthropic_synthesis import DailyBudget, BudgetedProvider
 from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
+from tests.support.coverage_universe import full_tournament
+
+# The adaptive split is measured over every eligible row, so these tests pin the full tournament.
+setUpModule, tearDownModule = full_tournament()
 
 
 class CompactionTests(unittest.TestCase):

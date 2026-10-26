@@ -1,5 +1,8 @@
+import { codeWords, distinctJoin, exchangeText, fieldDigits, filterText, fixedText, msIso, priceText, sessionHint, sessionText, stampText } from "./screenerText";
 import { useAvailableFilters, useScreenSnapshot } from "./screenerRenderMemo";
-import { currentFreshness, useDecisionNow } from "./DecisionFreshness";
+import { currentFreshness, deliveryText, freshnessText, useDecisionNow } from "./DecisionFreshness";
+import { ConfigureButton, ProviderConfigDialog } from "./setup/ProviderConfig";
+import { ENV_SWITCHES, HowToTurnOn, SETUP_SWITCHES } from "./setup/Remedy";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
@@ -11,10 +14,13 @@ import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, type ScreenerPageParam, persistLastScreenerConfig, persistScreenerPanelLayout, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type PanelId, type PanelLayout, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen, type ScreenerUniverse } from "../../api/screener";
 import type { AiScreenerScope } from "../../api/screenerAi";
 import { QuickPreview } from "./QuickPreview";
+import RightRail, { RAIL_AI_PANEL_ID, readRailTab, writeRailTab, type RailTab } from "./RightRail";
 import AiStatusStrip from "./ai/AiStatusStrip";
+import { AiRowBadge, useAiRowMarks } from "./ai/aiRowMarks";
+import { useAiScreenerRuns } from "./ai/useAiScreenerRuns";
 import { PanelLauncher } from "./panels/PanelLauncher";
 import { Age, marketPrice, reloadableLazy, ScreenerErrorBoundary } from "./panels/shared";
-import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT, lastScreenFor, panelLayoutFor } from "./panels/registry";
+import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT, DOCK_SLIM_HEIGHT, lastScreenFor, panelLayoutFor, WORKSTATION_PANELS } from "./panels/registry";
 import { NewsBadge } from "./news/NewsBadge";
 import type { NewsActivityRow } from "../../api/screenerNews";
 import type { DockHandle } from "./panels/ScreenerDock";
@@ -23,6 +29,7 @@ import { readLastSeen } from "./news/newsSeen";
 import { exitIntelUpdates, INTEL_LABELS, intelView, resetIntelUpdates, type IntelView } from "./participants/participantParams";
 import { ExitPlatformButton } from "../shared/ExitPlatformButton";
 import { csvFileName, csvText, downloadCsv } from "./screenerCsv";
+import { useDismiss } from "../../lib/useDismiss";
 import "./screener.css";
 
 // Dockview and the specialist panels load only when a panel is first opened.
@@ -33,7 +40,13 @@ const NewsView = reloadableLazy(() => import("./news/NewsView"));
 // S12: the intelligence views (Institutional, Congress, Positioning) load only when first entered.
 const IntelligenceView = reloadableLazy(() => import("./participants/IntelligenceView"));
 const UNIVERSE_LABELS: Record<ScreenerUniverse, string> = { US_EQUITIES: "US Equities", FUTURES: "Futures", US_ETFS: "ETFs", BONDS: "Bonds", CRYPTO: "Crypto" };
+/** Catalog source ids as the operator knows them; an unlisted id is shown as words, never as a raw code. */
+const SOURCE_LABELS: Record<string, string> = { FINVIZ_ELITE: "Finviz Elite", MOOMOO_OPEND_CONTRACT_CATALOG: "moomoo OpenD contract catalog",
+  MOOMOO_OPEND_ETF_CATALOG: "moomoo OpenD ETF catalog", US_TREASURY_FISCAL_DATA: "U.S. Treasury Fiscal Data", KRAKEN_SPOT_PUBLIC: "Kraken public spot" };
+const sourceLabel = (id: string | undefined) => id ? SOURCE_LABELS[id] ?? id.replace(/_/g, " ").toLowerCase() : "Finviz Elite";
 const DOCK_TABLE_RESERVE = 420;
+const NOT_SORTABLE_HINT = "Not sortable";
+const LIVE_WINDOW_HINT = "Current quotes for visible rows only; not sortable across the universe";
 /** Best-effort layout write: never throws, even if the client call does not return a promise. */
 const flushPanelLayout = (layout: PanelLayout, universe: ScreenerUniverse) => { void Promise.resolve().then(() => persistScreenerPanelLayout(layout, universe)).catch(() => undefined); };
 /** One news-activity request per grid page: its row ids are stable while the page is loaded. */
@@ -67,14 +80,14 @@ type ColumnKey = "symbol" | "company" | "sector" | "industry" | "country" | "pri
 type SortKey = ColumnKey;
 type ColumnDefinition = { key: ColumnKey; label: string; width: number; format: "text" | "price" | "percent" | "compact" | "decimal" | "fixed2" | "rate" | "billions" | "millions" | "per100" | "bp"; title?: string };
 const definitions: ColumnDefinition[] = [
-  { key: "symbol", label: "Symbol", width: 190, format: "text" },
+  { key: "symbol", label: "Symbol", width: 170, format: "text" },
   { key: "company", label: "Company", width: 180, format: "text" },
   { key: "sector", label: "Sector", width: 140, format: "text" },
   { key: "industry", label: "Industry", width: 170, format: "text" },
   { key: "country", label: "Country", width: 90, format: "text" },
-  { key: "price", label: "Price", width: 92, format: "price" },
+  { key: "price", label: "Price", width: 84, format: "price" },
   { key: "change_pct", label: "Chg %", width: 86, format: "percent" },
-  { key: "volume", label: "Volume", width: 103, format: "compact" },
+  { key: "volume", label: "Volume", width: 94, format: "compact" },
   { key: "avg_volume", label: "Avg Volume", width: 108, format: "compact" },
   { key: "rel_volume", label: "RVOL", width: 76, format: "decimal" },
   { key: "float_shares", label: "Float", width: 93, format: "compact" },
@@ -82,10 +95,10 @@ const definitions: ColumnDefinition[] = [
   { key: "market_cap", label: "Mkt Cap", width: 95, format: "compact" },
   { key: "short_float_pct", label: "Short Float", width: 94, format: "percent" },
   { key: "short_ratio", label: "Short Ratio", width: 100, format: "decimal" },
-  { key: "bid", label: "Bid", width: 90, format: "price" },
-  { key: "ask", label: "Ask", width: 90, format: "price" },
+  { key: "bid", label: "Bid", width: 82, format: "price" },
+  { key: "ask", label: "Ask", width: 82, format: "price" },
   // Liquid names quote spreads of a few thousandths of a percent; two decimals would show 0.00%.
-  { key: "spread_pct", label: "Spread %", width: 97, format: "rate" },
+  { key: "spread_pct", label: "Spread %", width: 86, format: "rate" },
   { key: "rsi_14", label: "RSI (14)", width: 84, format: "decimal" },
   { key: "eps_ttm", label: "EPS TTM", width: 90, format: "price" },
   { key: "pe", label: "P/E", width: 72, format: "decimal" },
@@ -179,9 +192,8 @@ const quoteKeys = new Set(["price", "volume", "bid", "ask", "spread_pct", "base_
 // Load the next server page this many rows before the loaded end is scrolled into view.
 const PREFETCH_ROWS = 60;
 const resultSetChanged = (error: unknown) => (error as { code?: string } | null)?.code === "SCREENER_RESULT_SET_CHANGED";
-// Crypto reads venue UTC everywhere (panels, preview); US universes keep the local wall clock.
-const clock = (value: string, universe?: ScreenerUniverse) => universe === "CRYPTO"
-  ? `${new Date(value).toISOString().slice(11, 19)} UTC` : new Date(value).toLocaleTimeString();
+// The Screener's one time format (ET); the universe argument stays for callers.
+const clock = (value: string, _universe?: ScreenerUniverse) => stampText(value);
 const COVERAGE_ORDER = ["TREASURY", "CORPORATE", "AGENCY", "MUNICIPAL", "SECURITIZED"];
 const coverageRank = (category: string) => (COVERAGE_ORDER.indexOf(category) + 1) || COVERAGE_ORDER.length + 1;
 export function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
@@ -195,17 +207,27 @@ function FreshnessDot({ quote, row }: { quote?: ScreenerQuote; row: ScreenerRow 
   const evidence = quote?.decision_inputs?.[0] ?? row.decision_inputs?.find((item) => (item.covered_fields as string[] | undefined)?.includes("price")) ?? row.decision_inputs?.[0];
   const now = useDecisionNow(quote?.decision_inputs ?? row.decision_inputs);
   if (evidence) {
-    const label = `${evidence.delivery_mode.replace(/_/g, " ")} · ${currentFreshness(evidence, now).replace(/_/g, " ")}`;
-    return <span className="screener-row-freshness" aria-label={label} title={`${label} · ${evidence.source ?? "source unavailable"} · ${evidence.basis} · as of ${evidence.as_of ?? "unknown"} · ${evidence.decision_admissibility} · ${evidence.reason_codes.join(" · ")}`}>{label}</span>;
+    const state = currentFreshness(evidence, now);
+    const freshness = freshnessText(state);
+    const label = `${deliveryText(evidence.delivery_mode)} · ${freshness}`;
+    const title = distinctJoin([label, evidence.source ?? "source unavailable", codeWords(evidence.basis).toLowerCase(),
+      `as of ${stampText(evidence.as_of ?? null)}`, codeWords(evidence.decision_admissibility).toLowerCase()]);
+    // The words above, then every raw code so it can still be searched.
+    const codes = [evidence.delivery_mode, state, evidence.basis, evidence.decision_admissibility, ...evidence.reason_codes];
+    return <span className="screener-row-freshness" aria-label={label} title={`${title}\nCodes: ${codes.join(", ")}`}>{freshness}</span>;
   }
   if (!quote) return null;
   const label = FRESHNESS[quote.state] ?? "Quote unavailable";
   const detail = [label, quote.reason?.replace(/_/g, " ").toLowerCase(), quote.age_ms != null ? `${Math.round(quote.age_ms / 1000)}s old` : null].filter(Boolean).join(" · ");
   return <i className={`screener-fresh ${FRESHNESS[quote.state] ? quote.state.toLowerCase() : "unavailable"}`} role="img" aria-label={label} title={detail} />;
 }
-function valueText(field: ScreenerField | undefined, format: (typeof definitions)[number]["format"], signed = false) {
+function valueText(field: ScreenerField | undefined, format: (typeof definitions)[number]["format"], signed = false, key?: ColumnKey) {
   if (!field || field.value === null) return "—";
-  if (format === "price") return field.value.toFixed(2);
+  // Quote prices keep four decimals below $1, as Quick Preview does; EPS is an accounting figure and keeps two.
+  if (format === "price") return key === "eps_ttm" ? field.value.toFixed(2) : priceText(field.value);
+  // A column of ratios lines up: RSI 21.4 / 35.4, RVOL 2.30 / 72.17, Short Ratio 0.40 (never "0").
+  const digits = key ? fieldDigits(key) : undefined;
+  if (digits !== undefined) return fixedText(field.value, digits);
   if (format === "percent") return `${signed && field.value > 0 ? "+" : ""}${field.value.toFixed(2)}%`;
   if (format === "rate") return `${field.value.toFixed(3)}%`;
   if (format === "fixed2") return field.value.toFixed(2);
@@ -253,7 +275,11 @@ export function ScreenerPage() {
   const [configError, setConfigError] = useState("");
   const [filterNotice, setFilterNotice] = useState("");
   const [restored, setRestored] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+  // Coming back from an opened instrument (browser Back) returns to the row it was opened from.
+  const [selected, setSelected] = useState<string | null>(() => {
+    const returned = (location.state as { screenerSelected?: unknown } | null)?.screenerSelected;
+    return typeof returned === "string" ? returned : null;
+  });
   // The selected row survives page boundaries: Preview and panels never depend on page presence.
   const [selectedCache, setSelectedCache] = useState<ScreenerRow | null>(null);
   const aiNewsSelection = useRef<string | null>(null);
@@ -262,6 +288,8 @@ export function ScreenerPage() {
   const [quotes, setQuotes] = useState<Record<string, ScreenerQuote>>({});
   const [quoteError, setQuoteError] = useState(false);
   const [windowSession, setWindowSession] = useState<string | null>(null);
+  // A keyless source's Setup switch opened from the source-error message.
+  const [setupProvider, setSetupProvider] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const clientId = useRef(crypto.randomUUID().replace(/-/g, ""));
@@ -269,6 +297,7 @@ export function ScreenerPage() {
   const previousUniverse = useRef(universe);
   const forceNextRefresh = useRef(false);
   const transientTrigger = useRef<HTMLElement | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
   const loadedScreen = useRef<string | null>(null);
   const config = useQuery({ queryKey: ["main-screener-config"], queryFn: fetchScreenerConfig, staleTime: 60_000 });
@@ -327,13 +356,21 @@ export function ScreenerPage() {
   const narrow = useNarrow();
   const [previewOpen, setPreviewOpen] = useState(true);
   const [previewWidth, setPreviewWidth] = useState(400);
+  const [railTab, setRailTabState] = useState<RailTab>(readRailTab);
+  const setRailTab = useCallback((tab: RailTab) => { setRailTabState(tab); writeRailTab(tab); }, []);
+  // An overlay rail shows only with a selected row, unless the AI tab was asked for explicitly.
+  const [aiRequested, setAiRequested] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const previewRef = useRef<HTMLElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const layoutRestored = useRef(false);
   const layoutTimer = useRef<number | undefined>(undefined);
   // Specialist panel dock. Arrangement changes are written to a ref and persisted
   // without React state, so moving or resizing panels never re-renders the table.
   const [openPanels, setOpenPanels] = useState<PanelId[]>([]);
+  // With no selection, panels that need an instrument have nothing to show, so the dock shrinks to its tab strip until
+  // it is used or a row is selected. A cleared selection shrinks it again.
+  const [dockUsed, setDockUsed] = useState(false);
+  useEffect(() => { if (!selected) setDockUsed(false); }, [selected]);
   const [pendingPanel, setPendingPanel] = useState<PanelId | null>(null);
   const [dockHeight, setDockHeight] = useState(DOCK_HEIGHT_DEFAULT);
   const dockHeightRef = useRef(DOCK_HEIGHT_DEFAULT);
@@ -405,15 +442,23 @@ export function ScreenerPage() {
     if (!ids.length) { panelLayout.current = { ...panelLayout.current, open_panels: [], active_panel: null, dockview_layout: null }; persistPanels(); }
   }, [persistPanels]);
   const launchPanel = useCallback((id: PanelId) => {
+    setDockUsed(true);
     if (dockHandle.current) { dockHandle.current.openOrFocus(id); return; }
     setPendingPanel(id);
     setOpenPanels((current) => current.includes(id) ? current : [...current, id]);
   }, []);
+  // The Open Panels row only: its buttons show pressed while open, so a second press closes. Links elsewhere
+  // (preview tabs, news, AI) keep open-or-focus through launchPanel.
+  const togglePanel = useCallback((id: PanelId) => {
+    if (!openPanels.includes(id)) { launchPanel(id); return; }
+    if (dockHandle.current) { dockHandle.current.close(id); return; }
+    setPendingPanel((current) => current === id ? null : current);
+    setOpenPanels((current) => current.filter((item) => item !== id));
+  }, [openPanels, launchPanel]);
   const openOptionsPanel = useCallback(() => launchPanel("options"), [launchPanel]);
   const openSqueezePanel = useCallback(() => launchPanel("short_squeeze"), [launchPanel]);
   const openRatesPanel = useCallback(() => launchPanel("rates_curve"), [launchPanel]);
   const openNewsPanel = useCallback(() => launchPanel("news"), [launchPanel]);
-  const openAiPanel = useCallback(() => launchPanel("ai_screener"), [launchPanel]);
   const openNewsFor = useCallback((instrumentId: string) => { setSelected(instrumentId); launchPanel("news"); }, [launchPanel]);
   const openParticipantPanel = useCallback((lens: "institutional" | "congress_gov") => launchPanel(lens), [launchPanel]);
   const resetPanels = useCallback(() => {
@@ -451,6 +496,7 @@ export function ScreenerPage() {
     commitDockHeight(event.key === "Home" ? 1200 : event.key === "End" ? 0 : dockHeightRef.current + steps[event.key]);
   };
   const dockVisible = (openPanels.length > 0 || pendingPanel !== null) && dockUniverse === universe;
+  const dockSlim = dockVisible && !selected && !dockUsed && pendingPanel === null && openPanels.every((id) => !WORKSTATION_PANELS.has(id));
   useEffect(() => {
     const layout = config.data?.preview_layout;
     if (!layout || layoutRestored.current) return;
@@ -630,27 +676,42 @@ export function ScreenerPage() {
     // The query results array is new each render; its data identities are what matter.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityQueries.map((item) => item.dataUpdatedAt).join(","), activityBuckets, universe]);
+  // The name under the symbol is dropped when its own column is already on screen.
+  // The name under a symbol is dropped when its own column shows it. Crypto has one venue for every pair and the pair is its own name.
+  const inlineName = universe !== "CRYPTO" && columnVisibility.company !== true;
+  const aiScreenerScope = useMemo<AiScreenerScope>(() => ({
+    universe, search, sort: effectiveSort, descending, filters, result_set: firstPage?.result_set_id ?? null,
+    view, screen: selectedScreenId, settled: query.isSuccess && !query.isFetching && !firstPage?.source_error,
+  }), [universe, search, effectiveSort, descending, filters, firstPage?.result_set_id, view, selectedScreenId, query.isSuccess, query.isFetching, firstPage?.source_error]);
+  // Results where the rows are: the same status read the strip uses marks the rows of the latest pass for this query.
+  const aiRuns = useAiScreenerRuns(supportedPanels.has("ai_screener")).runs;
+  const aiMarks = useAiRowMarks(aiRuns.data?.latest, aiScreenerScope);
   const columns = useMemo(() => definitions.map((definition) => helper.display({
     id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.key === "symbol" && universe === "CRYPTO" ? "Pair" : definition.key === "change_pct" && universe === "CRYPTO" ? "UTC day %" : definition.label, size: definition.width,
     cell: ({ row }) => {
       const item = row.original;
       if (definition.key === "symbol") return <span className="screener-symbol"><FreshnessDot quote={quotes[item.instrument.instrument_id]} row={item} /><strong>{item.symbol}</strong>
         {newsBadges && <NewsBadge row={newsActivity.rows[item.instrument.instrument_id]} pending={newsActivity.pending.has(item.instrument.instrument_id)}
-          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}<small>{universe === "CRYPTO" ? item.venue : item.company}</small></span>;
+          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}<AiRowBadge marks={aiMarks} instrumentId={item.instrument.instrument_id} />{universe === "FUTURES" && item.lead && <span className="screener-front-badge" title="Front (lead) contract for its root">Front</span>}{inlineName && <small>{item.company}</small>}</span>;
       if (textColumns.has(definition.key)) {
-        const value = item[definition.key as TextKey] ?? null;
+        const raw = item[definition.key as TextKey] ?? null;
+        // Venue codes arrive market-prefixed ("US_NASDAQ"); the universe already says the market.
+        const value = definition.key === "exchange" ? exchangeText(raw) || null : raw;
         const reason = definition.key === "reference_tenor" && !value && item.reference_reason ? item.reference_reason.replace(/_/g, " ").toLowerCase() : null;
         return <span title={reason ?? definition.title ?? value ?? "Unavailable"}>{value || "—"}</span>;
       }
-      if (definition.key === "lead") return <span>{item.lead ? "Lead" : "—"}</span>;
+      if (definition.key === "lead") return <span title="Front (lead) contract for its root">{item.lead ? "Front" : "—"}</span>;
       const field = fieldFor(item, definition.key, quotes[item.instrument.instrument_id]);
       const tone = definition.key === "change_pct" && field?.value != null
         ? field.value > 0 ? "screener-positive" : field.value < 0 ? "screener-negative" : "" : "";
-      const detail = field ? [field.source, field.state, field.basis, field.provider_as_of || field.as_of ? `observed ${field.provider_as_of ?? field.as_of}` : "observation time unknown", field.received_ns ? `received ${new Date(field.received_ns / 1e6).toISOString()}` : null].filter(Boolean).join(" · ") : "Unavailable";
-      return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
-        ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct")}</span>;
+      const detail = field ? distinctJoin([field.source, field.state && codeWords(field.state).toLowerCase(), field.basis && codeWords(field.basis).toLowerCase(), field.provider_as_of || field.as_of ? `observed ${stampText(field.provider_as_of ?? field.as_of)}` : "observation time unknown", field.received_ns ? `received ${stampText(msIso(field.received_ns / 1e6))}` : null]) : "Unavailable";
+      // The words above, then the raw codes so they can still be searched.
+      const codes = field ? [field.state, field.basis].filter(Boolean).join(", ") : "";
+      const cellTitle = `${definition.title ? `${definition.title}\n` : ""}${detail}${codes ? `\nCodes: ${codes}` : ""}`;
+      return <span className={tone} title={cellTitle}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
+        ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct", definition.key)}</span>;
     },
-  })), [quotes, referenceOnly, universe, newsBadges, newsActivity]);
+  })), [quotes, referenceOnly, universe, newsBadges, newsActivity, inlineName, aiMarks]);
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel(), getRowId: (row) => row.instrument.instrument_id,
     state: { columnVisibility, columnOrder, columnSizing, columnPinning },
     onColumnVisibilityChange: setColumnVisibility, onColumnOrderChange: setColumnOrder,
@@ -770,8 +831,10 @@ export function ScreenerPage() {
       setSelected(row.instrument.instrument_id); setPreviewOpen(true);
       return;
     }
+    // Leave the selection on this history entry so Back lands on the same row and preview.
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: { screenerSelected: row.instrument.instrument_id } });
     navigate(workspacePathForInstrument(row.instrument.instrument_id, row.instrument.asset_class === "FUTURE" ? "futures" : ""));
-  }, [navigate, referenceOnly]);
+  }, [navigate, referenceOnly, location.pathname, location.search]);
   const openAiInstrument = useCallback((instrumentId: string) => {
     const row = rows.find((item) => item.instrument.instrument_id === instrumentId);
     if (row) { open(row); return; }
@@ -789,10 +852,25 @@ export function ScreenerPage() {
     openNewsFor(instrumentId);
   }, [rows, universe, openNewsFor]);
   useEffect(() => { aiNewsSelection.current = null; }, [universe, search, sort, descending, filters]);
+  const aiSupported = supportedPanels.has("ai_screener");
+  const aiRailTab: RailTab = aiSupported ? railTab : "preview";
   const closePreview = useCallback(() => {
-    setPreviewOpen(false); persistLayout(false, previewWidth);
+    setPreviewOpen(false); persistLayout(false, previewWidth); setAiRequested(false);
     scrollRef.current?.focus();
   }, [previewWidth, config.data?.persistence_available]);
+  // The AI Screener's home is the right rail's AI tab: open (or focus), never close, from the strip or the dock shortcut.
+  const openAiRail = useCallback(() => {
+    setRailTab("ai"); setAiRequested(true);
+    if (!previewOpen) { setPreviewOpen(true); persistLayout(true, previewWidth); }
+    window.requestAnimationFrame(() => document.getElementById(RAIL_AI_PANEL_ID)?.focus());
+  }, [setRailTab, previewOpen, previewWidth, config.data?.persistence_available]);
+  // The Open Panels row toggles the dock entry; opening the AI Screener's shortcut also shows the AI tab itself.
+  const onLauncher = useCallback((id: PanelId) => {
+    const opening = id === "ai_screener" && !openPanels.includes(id);
+    togglePanel(id);
+    // After the dock's own focus request, so focus lands on the AI tab rather than on the shortcut.
+    if (opening) openAiRail();
+  }, [openPanels, openAiRail, togglePanel]);
   const togglePreview = () => { const next = !previewOpen; setPreviewOpen(next); persistLayout(next, previewWidth); };
   const commitWidth = (width: number) => {
     const next = clampPreview(width, bodyRef.current?.clientWidth ?? 0);
@@ -843,7 +921,10 @@ export function ScreenerPage() {
     const definition = catalogEntry(field);
     if (!definition) return;
     setDraftField(field);
-    setDraftOperator(existing?.operator ?? definition.operators[0]);
+    // A number is screened by a threshold far more often than by an exact value ("Short Float at least 20").
+    // "At least" first: the server lists gt before gte, so taking the first match opened at "Greater than".
+    const threshold = definition.type === "number" ? ["gte", "gt"].find((operator) => definition.operators.includes(operator)) : undefined;
+    setDraftOperator(existing?.operator ?? threshold ?? definition.operators[0]);
     setDraftValue(existing ? String(Array.isArray(existing.value) ? existing.value[0] : existing.value) : "");
     setDraftSecond(existing && Array.isArray(existing.value) ? String(existing.value[1]) : "");
     setEditFilterId(existing?.id ?? null);
@@ -865,10 +946,18 @@ export function ScreenerPage() {
     setFilterOpen(false); setDraftField(""); setEditFilterId(null);
     transientTrigger.current?.focus();
   };
-  const closeTransient = () => {
+  const closeTransient = (restoreFocus = true) => {
     setFilterOpen(false); setColumnOpen(false); setScreenOpen(false); setSaveMode(null);
-    transientTrigger.current?.focus();
+    if (restoreFocus) transientTrigger.current?.focus();
   };
+  // Escape anywhere, or a press outside, closes the open popover (Screens, Columns, Add Filter).
+  useDismiss(filterOpen || columnOpen || screenOpen, popoverRef, transientTrigger, closeTransient);
+  // The Screens list has no search box to autofocus: focus its first available screen (else its close button).
+  useEffect(() => {
+    if (!screenOpen) return;
+    const popover = popoverRef.current;
+    (popover?.querySelector<HTMLElement>("h3 ~ button:not(:disabled)") ?? popover?.querySelector<HTMLElement>("button"))?.focus();
+  }, [screenOpen]);
   const modifyColumn = (key: ColumnKey, visible: boolean) => {
     if (key === "symbol" && !visible) return;
     setColumnVisibility((current) => ({ ...current, [key]: visible }));
@@ -922,24 +1011,25 @@ export function ScreenerPage() {
     try {
       const response = await deleteScreenerScreen(selectedSaved.id);
       queryClient.setQueryData(["main-screener-config"], (old: typeof config.data) => old ? { ...old, saved: response.saved } : old);
-      setSelectedScreenId(""); setSavedBase(""); setScreenOpen(false);
+      setSelectedScreenId(""); setSavedBase(""); closeTransient();
       loadedScreen.current = null;
       urlUpdate({ screen: null });
     } catch { setConfigError("Unable to delete this screen."); }
   };
-  const labelFilter = (rule: ScreenerFilter) => {
-    const definition = catalogEntry(rule.field);
-    const operator = { eq: "=", ne: "≠", gt: ">", gte: "≥", lt: "<", lte: "≤", between: "", in: "in", not_in: "not in", contains: "contains" }[rule.operator] ?? rule.operator;
-    const value = Array.isArray(rule.value) ? rule.value.join(rule.operator === "between" ? "–" : ", ") : String(rule.value);
-    return `${definition?.label ?? rule.field} ${operator} ${definition?.unit === "USD" ? "$" : ""}${value}${definition?.unit === "percent" ? "%" : ""}`.replace(/\s+/g, " ").trim();
-  };
-  const rawSession = universe === "FUTURES" ? windowSession ?? firstPage?.market_session : firstPage?.market_session;
-  const aiScreenerScope = useMemo<AiScreenerScope>(() => ({
-    universe, search, sort: effectiveSort, descending, filters, result_set: firstPage?.result_set_id ?? null,
-    view, screen: selectedScreenId, settled: query.isSuccess && !query.isFetching && !firstPage?.source_error,
-  }), [universe, search, effectiveSort, descending, filters, firstPage?.result_set_id, view, selectedScreenId, query.isSuccess, query.isFetching, firstPage?.source_error]);
-  // Crypto is continuous: "24/7", never an equity session label.
-  const session = rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ").toLowerCase() ?? "—";
+  const labelFilter = (rule: { field: string; operator: string; value: unknown }) => filterText(rule, catalogEntry(rule.field));
+  // Futures read one source only: the quote window's session, which the server derives from the visible contracts'
+  // own market states. The page's PROVIDER_SPECIFIC describes the universe, not the rows, so mixing the two flipped.
+  const rawSession = universe === "FUTURES" ? windowSession : firstPage?.market_session;
+  // One label everywhere (header badge, toolbar, footer). Futures report a session per contract: "Mixed sessions"
+  // names how many visible contracts are in each, instead of a badge that seems to flip on its own.
+  const session = sessionText(rawSession);
+  const sessionCounts = universe === "FUTURES" ? Object.values(quotes).reduce<Record<string, number>>((counts, quote) => {
+    if (quote.session_state) counts[quote.session_state] = (counts[quote.session_state] ?? 0) + 1;
+    return counts;
+  }, {}) : {};
+  const sessionTitle = rawSession === "MIXED" && Object.keys(sessionCounts).length
+    ? `${sessionHint(rawSession)} Visible contracts: ${Object.entries(sessionCounts).map(([state, count]) => `${count} ${sessionText(state).toLowerCase()}`).join(" · ")}.`
+    : sessionHint(rawSession);
   const quoteStates = Object.values(quotes).map((quote) => quote.state);
   const quoteReasons = Object.values(quotes).map((quote) => quote.reason);
   const quoteLabel = quoteError ? "unavailable" :
@@ -953,10 +1043,10 @@ export function ScreenerPage() {
       <label className="screener-search"><span className="sr-only">Search instruments</span>
         <input ref={searchRef} value={search} onChange={(event) => { setSearch(event.target.value); urlUpdate({ q: event.target.value || null }, true); }}
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
-          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : universe === "CRYPTO" ? "Search pair, base or quote  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{rawSession === "24_7" ? "24/7" : rawSession ?? "MARKET"}</span>
+          placeholder={universe === "FUTURES" ? "Search root, contract or description /" : universe === "CRYPTO" ? "Search pair, base or quote /" : referenceOnly ? "Search CUSIP, description, type or maturity /" : "Search symbol or name /"} /></label><span className="screener-market-badge" title={sessionTitle}>{session}</span>
       <ExitPlatformButton className="screener-control" /></header>
     {supportedPanels.has("ai_screener") && <ScreenerErrorBoundary label="AI status" resetKey={universe}>
-      <AiStatusStrip scope={aiScreenerScope} onOpen={openAiPanel} /></ScreenerErrorBoundary>}
+      <AiStatusStrip scope={aiScreenerScope} onOpen={openAiRail} /></ScreenerErrorBoundary>}
     <div className="screener-toolbar"><label>Universe <select aria-label="Screener universe" value={universe} onChange={(event) => {
       const next = event.target.value as ScreenerUniverse;
       setSelectedScreenId(""); loadedScreen.current = null; setSavedBase("");
@@ -968,7 +1058,7 @@ export function ScreenerPage() {
     }}>{(config.data?.universes ?? [
       { id: "US_EQUITIES", label: "US Equities" }, { id: "FUTURES", label: "Futures" }, { id: "US_ETFS", label: "ETFs" },
       { id: "CRYPTO", label: "Crypto" },
-    ]).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><span>Session <strong>{session}</strong></span>
+    ]).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><span title={sessionTitle}>Session <strong>{session}</strong></span>
       <div className="screener-toolbar-end"><button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setScreenOpen(!screenOpen); setColumnOpen(false); setFilterOpen(false); }} aria-expanded={screenOpen} aria-haspopup="dialog">{selectedName}{changed ? " *" : ""} ▾</button>
         <button type="button" className="screener-control screener-primary" disabled={!config.data?.persistence_available} onClick={(event) => { transientTrigger.current = event.currentTarget; setSaveName(selectedSaved?.name ?? ""); setSaveMode(selectedSaved ? "save" : "save-as"); }}>Save</button>
         <button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setColumnOpen(!columnOpen); setFilterOpen(false); setScreenOpen(false); }} aria-expanded={columnOpen} aria-haspopup="dialog">Columns</button>
@@ -987,8 +1077,8 @@ export function ScreenerPage() {
       <button type="button" className="screener-add" onClick={(event) => { transientTrigger.current = event.currentTarget; setFilterOpen(!filterOpen); setColumnOpen(false); setScreenOpen(false); setDraftField(""); setFilterSearch(""); }} aria-expanded={filterOpen} aria-haspopup="dialog">+ Add Filter</button>
       {filters.length > 0 && <button type="button" className="screener-clear" onClick={() => setFilters([])}>Clear All</button>}
     </div>
-    {filterOpen && <div className="screener-popover screener-filter-popover" role="dialog" aria-label={draftField ? "Edit filter" : "Add filter"} onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeTransient(); } }}>
-      <button type="button" className="screener-popover-close" onClick={closeTransient} aria-label="Close filter picker">×</button>
+    {filterOpen && <div ref={popoverRef} className="screener-popover screener-filter-popover" role="dialog" aria-label={draftField ? "Edit filter" : "Add filter"}>
+      <button type="button" className="screener-popover-close" onClick={() => closeTransient()} aria-label="Close filter picker">×</button>
       {!draftField ? <><input autoFocus aria-label="Search filters" placeholder="Search filters..." value={filterSearch} onChange={(event) => setFilterSearch(event.target.value)} />
         <div className="screener-picker-list">{[...new Set(availableFilters.map((item) => item.category))].map((category) => <div key={category}><h3>{category}</h3>{availableFilters.filter((item) => item.category === category && item.label.toLowerCase().includes(filterSearch.toLowerCase())).map((item) => <button key={item.field} type="button" onClick={() => beginFilter(item.field)}>{item.label}</button>)}</div>)}</div></> : <>
         <h3>{catalogEntry(draftField)?.label}</h3>
@@ -997,27 +1087,32 @@ export function ScreenerPage() {
         {draftOperator === "between" && <label>Maximum <input aria-label="Filter maximum" type="number" value={draftSecond} onChange={(event) => setDraftSecond(event.target.value)} /></label>}
         <div className="screener-popover-actions"><button type="button" onClick={() => setDraftField("")}>Back</button><button type="button" className="screener-primary" onClick={applyFilter} disabled={!draftValue.trim() || (draftOperator === "between" && !draftSecond.trim())}>Apply Filter</button></div></>}
     </div>}
-    {screenOpen && <div className="screener-popover screener-screen-popover" role="dialog" aria-label="Saved screens" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeTransient(); } }}>
-      <button type="button" className="screener-popover-close" onClick={closeTransient} aria-label="Close saved screens">×</button>
-      <h3>My Screens</h3>{config.data?.saved.length ? config.data.saved.map((item) => <button key={item.id} type="button" onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe, view: null, sort: null, dir: null }); setScreenOpen(false); }}>{item.name} · {config.data?.universes?.find((spec) => spec.id === item.universe)?.label ?? item.universe}</button>) : <span className="screener-popover-note">No personal screens</span>}
-      <h3>Built-in</h3>{config.data?.presets.map((item) => <button key={item.id} type="button" disabled={item.status !== "SUPPORTED"} title={item.reason ?? undefined} onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe ?? "US_EQUITIES", view: null, sort: null, dir: null }); setScreenOpen(false); }}>{item.name}{item.status !== "SUPPORTED" ? " · unavailable" : ""}</button>)}
+    {screenOpen && <div ref={popoverRef} className="screener-popover screener-screen-popover" role="dialog" aria-label="Saved screens">
+      <button type="button" className="screener-popover-close" onClick={() => closeTransient()} aria-label="Close saved screens">×</button>
+      <h3>My Screens</h3>{config.data?.saved.length ? config.data.saved.map((item) => <button key={item.id} type="button" onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe, view: null, sort: null, dir: null }); closeTransient(); }}>{item.name} · {config.data?.universes?.find((spec) => spec.id === item.universe)?.label ?? item.universe}</button>) : <span className="screener-popover-note">No personal screens</span>}
+      <h3>Built-in</h3>{config.data?.presets.filter((item) => item.status === "SUPPORTED").map((item) => <button key={item.id} type="button" onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe ?? "US_EQUITIES", view: null, sort: null, dir: null }); closeTransient(); }}>{item.name}</button>)}
+      {/* Screens that cannot run yet say why in the list itself, not only on hover; no setting turns them on. */}
+      {config.data?.presets.some((item) => item.status !== "SUPPORTED") && <><h3>Not available yet</h3>
+        {config.data.presets.filter((item) => item.status !== "SUPPORTED").map((item) => <div key={item.id} className="screener-preset-unavailable">
+          <button type="button" disabled aria-describedby={`screener-preset-reason-${item.id}`}>{item.name}</button>
+          <small id={`screener-preset-reason-${item.id}`}>{item.reason ?? "Its condition needs data the universe snapshot does not carry."}</small></div>)}</>}
       {selectedSaved && <div className="screener-popover-actions"><button type="button" onClick={() => { setSaveName(selectedSaved.name); setSaveMode("rename"); setScreenOpen(false); }}>Rename</button><button type="button" onClick={() => { void removeSaved(); }}>Delete</button></div>}
-      {selectedPreset && changed && <button type="button" onClick={() => { setFilters(selectedPreset.filters); setView("Overview"); setColumnVisibility(viewVisibility("Overview", activeViews)); setScreenOpen(false); }}>Reset preset</button>}
+      {selectedPreset && changed && <button type="button" onClick={() => { setFilters(selectedPreset.filters); setView("Overview"); setColumnVisibility(viewVisibility("Overview", activeViews)); closeTransient(); }}>Reset preset</button>}
     </div>}
-    {columnOpen && <div className="screener-popover screener-column-popover" role="dialog" aria-label="Configure columns" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeTransient(); } }}>
-      <button type="button" className="screener-popover-close" onClick={closeTransient} aria-label="Close columns">×</button>
+    {columnOpen && <div ref={popoverRef} className="screener-popover screener-column-popover" role="dialog" aria-label="Configure columns">
+      <button type="button" className="screener-popover-close" onClick={() => closeTransient()} aria-label="Close columns">×</button>
       <input autoFocus aria-label="Search columns" placeholder="Search columns..." value={columnSearch} onChange={(event) => setColumnSearch(event.target.value)} />
       <div className="screener-column-list">{columnOrder.filter((key) => availableKeys.includes(key as ColumnKey) && columnByKey[key as ColumnKey]?.label.toLowerCase().includes(columnSearch.toLowerCase())).map((key) => <div className="screener-column-item" key={key}>
         <label><input type="checkbox" checked={columnVisibility[key] !== false} disabled={key === "symbol"} onChange={(event) => modifyColumn(key as ColumnKey, event.target.checked)} />{columnByKey[key as ColumnKey].label}</label>
-        <button type="button" onClick={() => moveColumn(key as ColumnKey, -1)} aria-label={`Move ${columnByKey[key as ColumnKey].label} left`}>↑</button><button type="button" onClick={() => moveColumn(key as ColumnKey, 1)} aria-label={`Move ${columnByKey[key as ColumnKey].label} right`}>↓</button>
+        <button type="button" onClick={() => moveColumn(key as ColumnKey, -1)} aria-label={`Move ${columnByKey[key as ColumnKey].label} up`}>↑</button><button type="button" onClick={() => moveColumn(key as ColumnKey, 1)} aria-label={`Move ${columnByKey[key as ColumnKey].label} down`}>↓</button>
         <button type="button" onClick={() => { setColumnPinning((current) => ({ left: current.left?.includes(key) ? current.left.filter((item) => item !== key) : [...(current.left ?? []), key], right: [] })); setView("Custom"); }} aria-label={`${columnPinning.left?.includes(key) ? "Unpin" : "Pin"} ${columnByKey[key as ColumnKey].label}`}>{columnPinning.left?.includes(key) ? "●" : "○"}</button>
-      </div>)}</div><button type="button" onClick={() => { chooseView(view === "Custom" ? "Overview" : view); setColumnOpen(false); }}>Reset to view default</button>
+      </div>)}</div><button type="button" onClick={() => { chooseView(view === "Custom" ? "Overview" : view); closeTransient(); }}>Reset to view default</button>
     </div>}
     {saveMode && <div className="screener-modal-backdrop"><div className="screener-save-dialog" role="dialog" aria-modal="true" aria-label="Save screen" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeTransient(); } }}>
       <h2>{saveMode === "rename" ? "Rename Screen" : saveMode === "save-as" ? "Save As" : "Save Screen"}</h2>
       <label>Screen name <input autoFocus aria-label="Screen name" value={saveName} onChange={(event) => setSaveName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void saveCurrent(); }} /></label>
       {configError && <p role="alert">{configError}</p>}
-      <div className="screener-popover-actions"><button type="button" onClick={closeTransient}>Cancel</button><button type="button" className="screener-primary" disabled={!saveName.trim()} onClick={() => void saveCurrent()}>Save</button></div>
+      <div className="screener-popover-actions"><button type="button" onClick={() => closeTransient()}>Cancel</button><button type="button" className="screener-primary" disabled={!saveName.trim()} onClick={() => void saveCurrent()}>Save</button></div>
       {selectedSaved && saveMode === "save" && <button type="button" onClick={() => { setSaveName(""); setSaveMode("save-as"); }}>Save As</button>}
     </div></div>}
     <div className="screener-body" ref={bodyRef}>
@@ -1028,6 +1123,7 @@ export function ScreenerPage() {
     </Suspense></ScreenerErrorBoundary> :
     <div className="screener-grid" role="grid" aria-label={universe === "US_EQUITIES" ? "US equity screener" : `${activeSpec?.label ?? universe} screener`} aria-rowcount={(resultCount ?? rows.length) + 1} aria-busy={query.isFetching} tabIndex={0}
       onKeyDown={onGridKeyDown} ref={scrollRef}>
+      <span id="screener-hint-not-sortable" hidden>{NOT_SORTABLE_HINT}</span><span id="screener-hint-live-window" hidden>{LIVE_WINDOW_HINT}</span>
       <div className="screener-header" role="row" style={{ width: table.getTotalSize() }}>
         {table.getHeaderGroups()[0]?.headers.map((header) => {
           const key = header.id as ColumnKey;
@@ -1037,10 +1133,9 @@ export function ScreenerPage() {
             style={{ width: header.getSize(), ...(pinned ? { position: "sticky", left: header.column.getStart("left"), zIndex: 4, background: "#1b2530" } : {}) }}
             aria-sort={isSortable(key) ? effectiveSort === key ? descending ? "descending" : "ascending" : "none" : undefined}
             aria-disabled={isSortable(key) ? undefined : true}
-            title={isSortable(key) ? undefined : fieldCaps?.[key]?.execution === "LIVE_WINDOW"
-              ? "Current quotes for visible rows only; not sortable across the universe" : "Not sortable"}
+            aria-describedby={isSortable(key) ? undefined : fieldCaps?.[key]?.execution === "LIVE_WINDOW" ? "screener-hint-live-window" : "screener-hint-not-sortable"}
             onClick={() => { if (availableKeys.includes(key) && isSortable(key)) sortBy(key as SortKey); }}>
-            {flexRender(header.column.columnDef.header, header.getContext())}
+            <span title={isSortable(key) ? undefined : fieldCaps?.[key]?.execution === "LIVE_WINDOW" ? LIVE_WINDOW_HINT : NOT_SORTABLE_HINT}>{flexRender(header.column.columnDef.header, header.getContext())}</span>
             <span className="screener-sort">{effectiveSort === key ? descending ? "▼" : "▲" : ""}</span>
             <span className="screener-resize" role="separator" tabIndex={0} aria-orientation="vertical" aria-valuenow={header.getSize()} aria-label={`Resize ${typeof header.column.columnDef.header === "string" ? header.column.columnDef.header : columnByKey[key].label}`}
               onKeyDown={(event) => { if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); const width = Math.max(50, header.getSize() + (event.key === "ArrowRight" ? 10 : -10)); setColumnSizing((current) => ({ ...current, [key]: width })); setView("Custom"); } }}
@@ -1055,15 +1150,23 @@ export function ScreenerPage() {
           <span>{firstPage?.source_error === "NOT_CONFIGURED"
             ? "Finviz access is not configured for this workstation."
             : firstPage?.source_error === "TREASURY_NOT_CONFIGURED"
-              ? "U.S. Treasury Fiscal Data is not enabled for this workstation (set IMP_TREASURY_LIVE=1)."
+              ? "U.S. Treasury Fiscal Data is switched off on this workstation."
             : firstPage?.source_error === "CRYPTO_NOT_CONFIGURED"
-              ? "Kraken public market data is not enabled for this workstation (set IMP_CRYPTO_LIVE=1)."
+              ? "Kraken public market data is switched off on this workstation."
             : firstPage?.source_error === "CLASSIFICATION_UNAVAILABLE"
               ? "ETF membership cannot be verified: the Finviz classification that separates ETFs from REITs and closed-end funds is unavailable."
             : snapshotQuery && firstPage?.source_error
               ? `A complete ${activeSpec?.label ?? "universe"} market snapshot could not be taken, so market filters and sorts cannot be evaluated across the universe. Remove them to browse the catalog.`
               : `The current ${activeSpec?.label ?? "universe"} source could not be refreshed.`}</span>
-          <button onClick={() => { forceNextRefresh.current = true; void query.refetch(); }}>Retry source</button>
+          {/* A switched-off or unconfigured source is fixed by a setting, never by retrying; Retry is for failures only. */}
+          {firstPage?.source_error === "NOT_CONFIGURED" ? <ConfigureButton provider="finviz" label="Enter Finviz token" />
+            // The page owns this dialog: switching the source on replaces this message, and the dialog (with its
+            // result line) must stay open when it does.
+            : firstPage?.source_error && SETUP_SWITCHES[firstPage.source_error]
+              ? <button type="button" className="screener-control setup-connect-button" aria-haspopup="dialog"
+                onClick={() => setSetupProvider(SETUP_SWITCHES[firstPage.source_error!]!)}>Turn on in Setup</button>
+            : firstPage?.source_error && ENV_SWITCHES[firstPage.source_error] ? <HowToTurnOn reason={firstPage.source_error} />
+            : <button onClick={() => { forceNextRefresh.current = true; void query.refetch(); }}>Retry source</button>}
         </div> :
         rows.length === 0 ? <div className="screener-message">No instruments match {filters.length ? "these filters or this search" : "this search"}.</div> :
         <div className="screener-virtual" style={{ height: virtualizer.getTotalSize(), width: table.getTotalSize() }}>
@@ -1082,11 +1185,11 @@ export function ScreenerPage() {
               className={`screener-row${row.id === selected ? " selected" : ""}`}
               style={{ transform: `translateY(${virtual.start}px)`, width: table.getTotalSize() }}
               onClick={() => {
-                if (row.id === selected) { open(row.original); return; }
+                // A row click only selects and previews. Leaving the Screener takes a deliberate
+                // action (Enter, or Open Instrument in the preview), never a repeated click.
                 setSelected(row.id);
                 if (!previewOpen) { setPreviewOpen(true); persistLayout(true, previewWidth); }
-              }}
-              onDoubleClick={() => open(row.original)}>
+              }}>
               {row.getVisibleCells().map((cell) => <div role="gridcell" key={cell.id}
                 className={leftAligned.has(cell.column.id) ? "screener-cell screener-left" : "screener-cell"}
                 style={{ width: cell.column.getSize(), ...(cell.column.getIsPinned() === "left" ? { position: "sticky", left: cell.column.getStart("left"), zIndex: 1, background: row.id === selected ? "#1c3652" : "#111820" } : {}) }}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>)}
@@ -1097,42 +1200,52 @@ export function ScreenerPage() {
     {previewOpen && !narrow && <div className="screener-splitter" role="separator" aria-orientation="vertical" aria-label="Resize quick preview"
       aria-valuemin={PREVIEW_MIN} aria-valuemax={PREVIEW_MAX} aria-valuenow={previewWidth} tabIndex={0}
       onPointerDown={onSplitterPointerDown} onKeyDown={onSplitterKeyDown} />}
-    {previewOpen && (!narrow || selectedRow) && <QuickPreview row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe}
-      screenLabel={selectedScreenId ? `${selectedName}${changed ? " (modified)" : ""}` : null} overlay={narrow} width={previewWidth}
-      paneRef={previewRef} onClose={closePreview} onOpen={open}
-      optionsSupported={supportedPanels.has("options")} onOpenOptions={openOptionsPanel}
-      ratesSupported={supportedPanels.has("rates_curve")} onOpenRates={openRatesPanel}
-      squeezeSupported={universe === "US_EQUITIES" && supportedPanels.has("short_squeeze")} onOpenSqueeze={openSqueezePanel}
-      newsSupported={supportedPanels.has("news")} onOpenNews={openNewsPanel}
-      institutionalSupported={supportedPanels.has("institutional")} governmentSupported={supportedPanels.has("congress_gov")}
-      onOpenParticipants={openParticipantPanel} />}
+    {/* Too narrow for the grid and the rail side by side: the rail is a drawer, and pressing outside it closes it. */}
+    {narrow && previewOpen && (selectedRow || (aiRailTab === "ai" && aiRequested)) && <div className="screener-rail-backdrop" aria-hidden="true"
+      // preventDefault: the press must not move focus to the page after closing has returned it to the grid.
+      onPointerDown={(event) => { event.preventDefault(); closePreview(); }} />}
+    {previewOpen && (!narrow || selectedRow || (aiRailTab === "ai" && aiRequested)) && <RightRail tab={aiRailTab} onTab={setRailTab}
+      aiSupported={aiSupported} overlay={narrow} width={previewWidth} paneRef={previewRef} onClose={closePreview}
+      screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews} openPanel={launchPanel} describeFilter={labelFilter}
+      preview={(!narrow || selectedRow) && <QuickPreview row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe}
+        screenLabel={selectedScreenId ? `${selectedName}${changed ? " (modified)" : ""}` : null} overlay={false}
+        onClose={closePreview} onOpen={open}
+        optionsSupported={supportedPanels.has("options")} onOpenOptions={openOptionsPanel}
+        ratesSupported={supportedPanels.has("rates_curve")} onOpenRates={openRatesPanel}
+        squeezeSupported={universe === "US_EQUITIES" && supportedPanels.has("short_squeeze")} onOpenSqueeze={openSqueezePanel}
+        newsSupported={supportedPanels.has("news")} onOpenNews={openNewsPanel}
+        institutionalSupported={supportedPanels.has("institutional")} governmentSupported={supportedPanels.has("congress_gov")}
+        onOpenParticipants={openParticipantPanel} />} />}
     </div>
     {dockVisible && <>
-      <div className="screener-dock-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize specialist panels"
+      {!dockSlim && <div className="screener-dock-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize specialist panels"
         aria-valuemin={140} aria-valuemax={1200} aria-valuenow={dockHeight} tabIndex={0}
-        onPointerDown={onDockSplitterPointerDown} onKeyDown={onDockSplitterKeyDown} />
-      <section className="screener-dock" aria-label="Specialist panels" ref={dockRef} style={{ height: dockHeight }}>
+        onPointerDown={onDockSplitterPointerDown} onKeyDown={onDockSplitterKeyDown} />}
+      <section className={`screener-dock${dockSlim ? " slim" : ""}`} aria-label="Specialist panels" ref={dockRef} style={{ height: dockSlim ? DOCK_SLIM_HEIGHT : dockHeight }}
+        title={dockSlim ? "Select a row, or choose a panel tab, to show the panels" : undefined}
+        onPointerDown={() => { if (dockSlim) setDockUsed(true); }} onFocus={() => { if (dockSlim) setDockUsed(true); }}>
         {/* The dock as a whole is contained too: a failure outside any one panel (e.g. a saved arrangement
             the dock cannot restore) never blanks the table, and the layout can be reset from here. */}
         <ScreenerErrorBoundary label="Specialist panels" resetKey={`${universe}|${dockGeneration}`}
           actions={<> <button type="button" onClick={resetDockAfterError}>Reset layout</button></>}>
           <Suspense fallback={<div className="screener-dock-loading" role="status">Loading panels…</div>}>
-            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels} screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews}
+            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels} screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews} openAiRail={openAiRail}
               clientId={clientId.current} pending={pendingPanel} handleRef={dockHandle}
               onOpenChange={(ids) => { onOpenPanels(ids); if (pendingPanel) setPendingPanel(null); }} onLayout={onPanelLayout} />
           </Suspense>
         </ScreenerErrorBoundary>
       </section>
     </>}
-    <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={launchPanel} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
+    <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={onLauncher} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
+    {setupProvider && <ProviderConfigDialog provider={setupProvider} onClose={() => setSetupProvider(null)} />}
     <footer className="screener-footer"><span>{resultCount?.toLocaleString() ?? "—"}{filters.length && resultCount !== null && firstPage?.unfiltered_count !== undefined ? ` of ${firstPage.unfiltered_count.toLocaleString()}` : ""} results{resultCount !== null && rows.length < resultCount ? ` · ${rows.length.toLocaleString()} loaded` : ""}</span>
       {truncated && <span className="screener-truncated" role="status">{truncated}</span>}
       {firstPage?.snapshot && <span title={`${firstPage.snapshot.priced.toLocaleString()} priced · ${firstPage.snapshot.refused.toLocaleString()} without an entitled quote · filters and order use this snapshot; visible rows stream current quotes`}>Market snapshot {clock(firstPage.snapshot.as_of, universe)} (<Age iso={firstPage.snapshot.as_of} staleMs={300_000} /> ago) · {firstPage.snapshot.priced.toLocaleString()} of {firstPage.snapshot.total.toLocaleString()} priced</span>}
       {firstPage?.coverage && <span title="Categories without a permitted source are reported, never counted">{Object.entries(firstPage.coverage).sort(([a], [b]) => coverageRank(a) - coverageRank(b)).map(([category, item]) =>
         `${category.charAt(0) + category.slice(1).toLowerCase()} ${item.count != null ? item.count.toLocaleString() : "unavailable"}`).join(" · ")}</span>}
       <span>Quotes {!streamingQuotes ? "none · publication data" : universe === "FUTURES" && quoteLabel === "unavailable" && quoteReasons.includes("MOOMOO_QUOTE_NOT_ENTITLED") ? "unavailable · entitlement required" : quoteLabel}</span>
-      <span>Market {session}</span>
+      <span title={sessionTitle}>Session {session}</span>
       <span>Universe {firstPage?.universe_as_of ? <>as of {clock(firstPage.universe_as_of, universe)} (<Age iso={firstPage.universe_as_of} /> ago)</> : "unavailable"}</span>
-      <span>Source {firstPage?.provider_health[0]?.state.toLowerCase() ?? "checking"} · {activeSpec?.source ?? "Finviz"}</span></footer>
+      <span title={firstPage?.provider_health[0]?.state}>Source {firstPage?.provider_health[0] ? codeWords(firstPage.provider_health[0].state).toLowerCase() : "checking"} · {sourceLabel(activeSpec?.source)}</span></footer>
   </section>;
 }

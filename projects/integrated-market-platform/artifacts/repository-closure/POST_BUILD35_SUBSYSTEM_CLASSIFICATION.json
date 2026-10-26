@@ -570,6 +570,7 @@
         "tools/live_execution_safety",
         "tools/paper_execution_qualification",
         "tools/platform",
+        "tools/release_candidate",
         "tools/e2e",
         "tools/provider_readiness.py",
         "tools/ftep_campaign_status.py",
@@ -604,6 +605,7 @@
         "tools/research",
         "tools/state",
         "tools/state_path_diagnostic.py",
+        "tools/market_data_capacity.py",
         "tools/system_acceptance"
       ],
       "responsibility": "Qualification, deployment preparation, state administration, safety exercises, and acceptance publication around BUILD25 through BUILD35 authorities.",
@@ -628,6 +630,7 @@
         "tools/tracked_evidence.py",
         "tools/ai_screener_local_first_benchmark.py",
         "tools/local_runtime_benchmark.py",
+        "tools/ai_decision_benchmark.py",
         "tools/screener_ai_perf_profile.py",
         "tools/screener_ai_perf_compare.py"
       ],

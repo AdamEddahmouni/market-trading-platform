@@ -127,8 +127,8 @@ sets its `IMP_*_LIVE=1` opt-in. Restart the API afterwards.
 
 Selection (`select_synthesis_provider`): the engine picked in the Screener's
 **AI engine** dropdown wins (saved in `<IMP cache>/settings/synthesis-engine.json`),
-then `IMP_SYNTHESIS_PROVIDER` (`auto`/`local`/`anthropic`/`openai`/`gemini`). With
-`auto`, an Anthropic key selects the paid API. Otherwise `IMP_LOCAL_LLM_BASE_URL` + `IMP_LOCAL_LLM_MODEL` select an
+then `IMP_SYNTHESIS_PROVIDER` (`auto`/`local`/`anthropic`/`openai`/`gemini`). `auto` is
+always local: a paid key alone selects nothing (rebuild step 5). For local, `IMP_LOCAL_LLM_BASE_URL` + `IMP_LOCAL_LLM_MODEL` select an
 existing local server, and otherwise the setup manifest selects the managed server.
 With none of these, the reason is `NO_SYNTHESIS_PROVIDER_CONFIGURED`.
 
@@ -168,11 +168,11 @@ After the API stopped, no `llama-server` process remained.
 
 ## Paid synthesis: Claude, OpenAI, Gemini (optional, budgeted)
 
-The Screener's **AI engine** dropdown picks the free local model or a paid engine
-and model. With nothing picked and an Anthropic key configured,
-`IMP_SYNTHESIS_PROVIDER=auto` (the default) uses Claude, and the local model stays the
-fallback. Picking Local, or `IMP_SYNTHESIS_PROVIDER=local`, turns paid calls off
-entirely. Sentiment stays on
+Setup's **Which AI decides** card (and the Screener's **AI engine** dropdown) picks the
+free local model or a paid engine and model. Paid AI is off by default: with nothing
+picked, automatic is the local model even when a key is saved, and a paid engine can be
+picked only once both dollar caps (`IMP_PAID_AI_DAILY_USD`, `IMP_PAID_AI_MONTHLY_USD`) are
+above $0 ([AI_ENGINE_SWITCH.md](../operations/AI_ENGINE_SWITCH.md)). Sentiment stays on
 FinBERT: it runs per headline on every feed load, where a paid model would add cost
 and latency for no better label.
 
@@ -186,6 +186,8 @@ and latency for no better label.
 | `IMP_SYNTHESIS_GEMINI_MODEL` | — | Adds a model to the Gemini list as its default; the catalog offers `gemini-3.8-flash` (default), `gemini-3.5-flash-lite` (`reasoning_effort: low`; Gemini 3 cannot turn thinking off) |
 | `IMP_SYNTHESIS_DAILY_REQUESTS` | 30 | Hard per-UTC-day request limit, shared by every paid engine |
 | `IMP_SYNTHESIS_DAILY_TOKENS` | 200,000 | Hard per-UTC-day token limit (input + output), shared by every paid engine |
+| `IMP_PAID_AI_DAILY_USD` | 0 | Hard per-UTC-day dollar cap at list price, shared by every paid engine and the Assistant; 0 keeps paid AI off |
+| `IMP_PAID_AI_MONTHLY_USD` | 0 | Hard per-calendar-month (UTC) dollar cap; 0 keeps paid AI off |
 
 OpenAI and Gemini run through `intelligence/inference/hosted_synthesis.py` (Chat
 Completions, `response_format` json_schema from `output_json_schema`, no retries,
@@ -193,7 +195,13 @@ stable `OPENAI_*` / `GEMINI_*` reason codes). For reasoning models the output ca
 the budget reservation both add 2,048 tokens of thinking headroom, and the request
 carries no temperature.
 
-Safeguards (`intelligence/inference/anthropic_synthesis.py`):
+Safeguards (`intelligence/inference/anthropic_synthesis.py`, `paid_spend.py`):
+
+- **Hard dollar caps.** Before each call its worst case (input estimate plus the whole
+  output allowance, thinking included) is priced at the model's pinned list price
+  (`paid_prices.py`) and set aside; a call that could cross the daily or monthly cap is
+  refused before it is sent (`PAID_AI_DAILY_DOLLAR_CAP` / `PAID_AI_MONTHLY_DOLLAR_CAP`).
+  The reported usage then replaces the reservation. State in `<IMP cache>/quota/paid-ai-dollars.json`.
 
 - **Hard daily budget.** Before each call, the worst case (prompt estimate + tool
   schema + `max_tokens`) is reserved. A call that could cross either limit is refused

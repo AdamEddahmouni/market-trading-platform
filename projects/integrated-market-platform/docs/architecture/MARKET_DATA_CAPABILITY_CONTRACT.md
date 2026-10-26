@@ -79,3 +79,14 @@ Revalidate when any of these change materially:
 ## Campaign binding
 
 A frozen FTEP campaign manifest must reference the exact capability-contract version for every market/news/reference source that can affect candidate generation, eligibility, execution simulation, evaluation or claimed evidence quality.
+
+## PF-01B durable received-market observations
+
+The existing backend can opt into bounded SQLite capture for selected moomoo
+L1/trades/depth, completed current 1m bars, and Kraken selected-pair trades and
+checksum-valid books. This extends the existing local-state database rather than
+replacing provider adapters or capture/replay archives. Receipt is distinct from
+durable commit; revision keys and explicit gaps preserve point-in-time honesty.
+No subscription, entitlement, AI or execution authority follows from capture.
+The contract, bounds, schema-13 migration and recovery limitations are in
+[PF01B_MARKET_PERSISTENCE.md](../operations/PF01B_MARKET_PERSISTENCE.md).

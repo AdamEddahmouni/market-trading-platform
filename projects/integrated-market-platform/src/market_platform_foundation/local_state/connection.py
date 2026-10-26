@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import threading
 from pathlib import Path
@@ -15,20 +16,81 @@ class CorruptStateError(ValueError):
     """SQLite integrity_check failed; original file is preserved."""
 
 
+# SQLite primary result codes a bounded retry can outlast: BUSY, LOCKED, IOERR, CANTOPEN, PROTOCOL.
+_TRANSIENT_SQLITE_CODES = frozenset({5, 6, 10, 14, 15})
+_CONTENTION_SQLITE_CODES = frozenset({5, 6})  # BUSY, LOCKED
+
+
+def transient_storage_error(exc: BaseException) -> bool:
+    """True for contention or I/O conditions that a bounded retry may outlast.
+
+    Corruption, schema, constraint, identity and disk-full failures are never transient.
+    """
+    if isinstance(exc, sqlite3.OperationalError):
+        code = getattr(exc, "sqlite_errorcode", None)
+        if code == 0:
+            # "not an error": another thread used this shared connection before the failing call's
+            # code was read, so the real code is gone. Seen only under contention; retry is bounded.
+            return True
+        if code is not None:
+            return code & 0xFF in _TRANSIENT_SQLITE_CODES
+        text = str(exc).lower()
+        return any(token in text for token in ("locked", "busy", "disk i/o", "unable to open"))
+    return isinstance(exc, OSError)
+
+
+def lock_contention_error(exc: BaseException) -> bool:
+    """True when another connection held the write lock past this connection's busy timeout.
+
+    Contention means a busy neighbour or a slow disk, not a fault in the store (2026-10-21..23 stalls).
+    """
+    if not isinstance(exc, sqlite3.OperationalError):
+        return False
+    code = getattr(exc, "sqlite_errorcode", None)
+    if code is not None and code != 0:
+        return code & 0xFF in _CONTENTION_SQLITE_CODES
+    text = str(exc).lower()
+    return code == 0 or "locked" in text or "busy" in text
+
+
+def lock_retry_window_seconds(name: str) -> float:
+    """How long a worker keeps retrying lock contention before it reports that it gave up."""
+    return float(os.environ.get(name, "600"))
+
+
+def verified_by_supervisor() -> bool:
+    """A supervised collection child opens the store its supervisor's own connection verified moments earlier."""
+    return bool(os.environ.get("IMP_PF01_SUPERVISOR_OWNER"))
+
+
 class LocalStateConnection:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, require_existing: bool = False,
+                 expected_identity: tuple[int, int] | None = None, verify: bool | None = None) -> None:
+        # A full integrity_check reads the whole file: about 75 s per open for the 6.7 GB store on a hard drive,
+        # three times per collector child start. The first opener (API, supervisor, unsupervised run) still checks.
+        verify = not verified_by_supervisor() if verify is None else verify
         self.path = path
         self._lock = threading.RLock()
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if require_existing:
+            if not self.path.is_file():
+                raise FileNotFoundError("STATE_STORAGE_MISSING")
+        else:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(
-            str(self.path),
+            self.path.resolve().as_uri() + "?mode=rw" if require_existing else str(self.path),
+            uri=require_existing,
             check_same_thread=False,
             isolation_level=None,
         )
         self._conn.row_factory = sqlite3.Row
         try:
+            if expected_identity is not None:
+                stat = self.path.stat()
+                if (stat.st_dev, stat.st_ino) != expected_identity:
+                    raise FileNotFoundError('STATE_STORAGE_REPLACED')
             self._configure()
-            self._verify_or_raise()
+            if verify:
+                self._verify_or_raise()
             apply_migrations(self._conn)
         except Exception:
             self._conn.close()
@@ -49,6 +111,19 @@ class LocalStateConnection:
     def execute(self, sql: str, params: tuple[Any, ...] = ()) -> sqlite3.Cursor:
         with self._lock:
             return self._conn.execute(sql, params)
+
+    def fetchone(self, sql: str, params: tuple[Any, ...] = ()) -> Any:
+        """Read one row with the fetch inside the connection lock.
+
+        Fetching from the cursor ``execute`` returned steps the shared connection outside the lock,
+        which can replace the result code of another thread's failing statement.
+        """
+        with self._lock:
+            return self._conn.execute(sql, params).fetchone()
+
+    def fetchall(self, sql: str, params: tuple[Any, ...] = ()) -> list[Any]:
+        with self._lock:
+            return self._conn.execute(sql, params).fetchall()
 
     def executemany(self, sql: str, seq: list[tuple[Any, ...]]) -> sqlite3.Cursor:
         with self._lock:
@@ -101,13 +176,25 @@ class StateTransaction:
 
     def __enter__(self) -> LocalStateConnection:
         self.connection._lock.acquire()
-        self.connection._conn.execute("BEGIN IMMEDIATE")
+        try:
+            self.connection._conn.execute("BEGIN IMMEDIATE")
+            if not self.connection._conn.in_transaction:
+                # A refused BEGIN whose failure was lost must not let the body run in autocommit.
+                raise sqlite3.OperationalError("database is locked: transaction did not start")
+        except Exception:
+            self.connection._lock.release()
+            raise
         return self.connection
 
     def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
         try:
             if exc_type is None:
-                self.connection._conn.execute("COMMIT")
+                try:
+                    self.connection._conn.execute("COMMIT")
+                except Exception:
+                    if self.connection._conn.in_transaction:
+                        self.connection._conn.execute("ROLLBACK")
+                    raise
             else:
                 self.connection._conn.execute("ROLLBACK")
         finally:

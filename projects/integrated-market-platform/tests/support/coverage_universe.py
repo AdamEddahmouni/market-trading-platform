@@ -7,7 +7,9 @@ outcome; it is not a trading method and exists nowhere in ``src``.
 from __future__ import annotations
 
 import json
+import os
 import threading
+from unittest import mock
 
 from market_platform_foundation.intelligence.inference.contracts import ParsingStatus
 from market_platform_foundation.intelligence.inference.errors import InferenceErrorCode
@@ -23,12 +25,22 @@ def instrument_id(index: int) -> str:
     return f"EQ:S{index:05d}"
 
 
-def row(index: int, *, rsi: float = 50.0, price: float | None = 100.0, as_of: str = NOW_ISO, state: str = "LIVE") -> dict:
+def full_tournament():
+    """``setUpModule`` and ``tearDownModule`` pinning the pre-shortlist full tournament (``IMP_AI_SCREENER_SHORTLIST=0``)
+    for modules that test the tournament itself. The opportunity shortlist has its own tests."""
+    patcher = mock.patch.dict(os.environ, {"IMP_AI_SCREENER_SHORTLIST": "0"})
+    return patcher.start, patcher.stop
+
+
+def row(index: int, *, rsi: float = 50.0, price: float | None = 100.0, as_of: str = NOW_ISO, state: str = "LIVE",
+        change: float = 1.0, extra: dict[str, float] | None = None) -> dict:
     identifier = instrument_id(index)
-    fields = {"change_pct": {"value": 1.0, "source": "IMP_TEST", "state": state, "as_of": as_of},
+    fields = {"change_pct": {"value": change, "source": "IMP_TEST", "state": state, "as_of": as_of},
               "rsi_14": {"value": rsi, "source": "IMP_TEST", "state": state, "as_of": as_of}}
     if price is not None:
         fields["price"] = {"value": price, "source": "IMP_TEST", "state": state, "as_of": as_of}
+    for name, value in (extra or {}).items():
+        fields[name] = {"value": value, "source": "IMP_TEST", "state": state, "as_of": as_of}
     return {"instrument": {"instrument_id": identifier, "symbol": identifier.split(":")[-1], "universe": "US_EQUITIES",
                            "asset_class": "EQUITY"}, "symbol": identifier.split(":")[-1], "fields": fields}
 

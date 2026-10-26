@@ -54,17 +54,24 @@ class ResourceMonitor:
         self.samples=[]
         self.thread=None
         self.closed=False
+        # A GPU profile keeps its offloaded weights mapped and may hold MoE experts in RAM: its own ceiling.
+        self.process_limit=MAX_PROCESS_BYTES
+        manifest=getattr(server,'manifest',None)
+        if manifest is not None:
+            from .local_runtime import process_limit
+            try:self.process_limit=process_limit(manifest)
+            except (AttributeError,TypeError,ValueError):pass
     def check(self):
         sample=memory_sample(getattr(self.server,"_process",None))
         self.peak_bytes=max(self.peak_bytes,sample.get('process_peak_bytes') or sample["process_bytes"] or 0)
         self.last_sample=sample
         self.peak_commit_bytes=max(self.peak_commit_bytes,sample.get('process_peak_commit_bytes') or sample.get('process_commit_bytes') or 0)
         if len(self.samples)<32: self.samples.append(sample)
-        if sample["process_bytes"] is not None and sample["process_bytes"]>MAX_PROCESS_BYTES:
+        if sample["process_bytes"] is not None and sample["process_bytes"]>self.process_limit:
             self.failure="LOCAL_RESOURCE_MEMORY_LIMIT"
         elif sample["available_bytes"] is not None and sample["available_bytes"]<MIN_AVAILABLE_BYTES:
             self.failure="LOCAL_RESOURCE_INSUFFICIENT_MEMORY"
-        elif sample.get('process_commit_bytes') is not None and sample['process_commit_bytes']>MAX_PROCESS_BYTES:
+        elif sample.get('process_commit_bytes') is not None and sample['process_commit_bytes']>self.process_limit:
             self.failure='LOCAL_RESOURCE_COMMIT_LIMIT'
         elif sample.get('commit_available_bytes') is not None and sample['commit_available_bytes']<MIN_AVAILABLE_BYTES:
             self.failure='LOCAL_RESOURCE_COMMIT_HEADROOM'

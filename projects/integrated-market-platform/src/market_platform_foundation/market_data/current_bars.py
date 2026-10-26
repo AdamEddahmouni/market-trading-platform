@@ -325,8 +325,8 @@ class CurrentBarsService:
                 result: tuple[int, list[Bar], Bar | None, str | None] = (received, [], None, "OPEND_UNAVAILABLE")
             else:
                 transport = self.transport()
-                # Same US-equity provider code rule as the live runtime's L1 subscriptions.
-                code = f"US.{instrument_id.strip().upper()}"
+                # Share classes are written with a dash here (BRK-A) and a dot by OpenD (US.BRK.A).
+                code = f"US.{instrument_id.strip().upper().replace('-', '.')}"
                 payload = transport.fetch_current_kline_1m(code) if transport is not None else {
                     "reason_code": "MOOMOO_TRANSPORT_NOT_IMPLEMENTED", "rows": None}
                 received = self._now_ns()
@@ -336,6 +336,16 @@ class CurrentBarsService:
                     result = (received, [], None, str(reason or "MOOMOO_PROTOCOL_ERROR"))
                 else:
                     complete, forming, _rejected = normalize_vendor_1m(rows, as_of_ns=received)
+                    from .persistence import active_writer
+
+                    writer = active_writer()
+                    if writer is not None:
+                        symbol = instrument_id.strip().upper()
+                        writer.submit_bars(symbol, complete, received)
+                        if _rejected and writer.selects({'provider': 'MOOMOO_OPEND', 'instrument_id': symbol,
+                                                         'provider_symbol': code}):
+                            writer.gap('BAR_NORMALIZATION_REJECTED', stream=f'MOOMOO_OPEND:{symbol}:CURRENT_BAR_1M',
+                                       received_ns=received)
                     result = (received, complete, forming, None)
             self._cache[instrument_id] = (self._monotonic(), *result)
             return result

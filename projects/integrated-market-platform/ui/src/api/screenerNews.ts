@@ -128,6 +128,7 @@ const Engine = z.object({ id: z.string(), label: z.string(), runtime: z.enum(["L
     unsupported_capability: z.string().nullable().optional() }).passthrough()).nullable().optional(),
   state: z.enum(["AVAILABLE", "NOT_CONFIGURED"]), reason: z.string().nullable() }).passthrough();
 export type SynthesisEngine = z.infer<typeof Engine>;
+export const SynthesisEngineSchema = Engine;
 const AiStatus = z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),
   provider_id: z.string().nullable(), model_id: z.string().nullable(),
   runtime: z.enum(["LOCAL_MODEL", "PAID_API"]).nullable().optional(),

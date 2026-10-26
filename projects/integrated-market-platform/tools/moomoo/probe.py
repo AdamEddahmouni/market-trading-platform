@@ -115,6 +115,38 @@ def summarize_levels(book: dict[str, Any], side: str, limit: int = 10) -> dict[s
     return {"depth": len(raw), "levels_head": levels}
 
 
+# A slow or lost OpenD answers with these, not with a refusal. Recording them as "not entitled" kept Moomoo out of
+# collection for a whole session (2026-10-23): a probe that could not ask has learned nothing.
+TRANSPORT_FAILURE_TEXT = ("timeout", "connection closed", "not connected", "connection lost", "disconnect")
+INCONCLUSIVE_REASON = "PROBE_TRANSPORT_FAILURE"
+# The capabilities collection and Paper gate on; when any of them is unanswered the report is not published.
+CORE_CAPABILITIES = ("US_EQUITY_L1", "US_EQUITY_TICKS", "US_EQUITY_DEPTH", "US_EQUITY_SNAPSHOT")
+EXIT_INCONCLUSIVE = 75  # EX_TEMPFAIL: retry later; the previous report stands
+
+
+def transport_failure(ret: Any, data: Any, ft: Any) -> bool:
+    return ret != ft.RET_OK and any(text in str(data).lower() for text in TRANSPORT_FAILURE_TEXT)
+
+
+def entitlement(ret: Any, data: Any, ft: Any, *, ok: bool) -> bool | None:
+    """True when answered, False when refused, None when OpenD never answered."""
+    if ok:
+        return True
+    return None if transport_failure(ret, data, ft) else False
+
+
+def report_destination(report: dict[str, Any], output: Path) -> Path:
+    """Mark the report conclusive or not, and say where it may be written.
+
+    A report that could not ask about a core capability never replaces one that answered; it is kept
+    beside it as evidence."""
+    capabilities = report.get("capabilities") or {}
+    report["inconclusive_capabilities"] = sorted(
+        name for name, row in capabilities.items() if isinstance(row, dict) and row.get("account_entitled") is None)
+    report["conclusive"] = not set(report["inconclusive_capabilities"]) & set(CORE_CAPABILITIES)
+    return output if report["conclusive"] else output.with_name(output.stem + ".inconclusive.json")
+
+
 def capability_row(**kwargs: Any) -> dict[str, Any]:
     defaults = {
         "account_entitled": False,
@@ -253,6 +285,7 @@ def run_probe(*, host: str, port: int, output: Path, subscribe_seconds: float) -
             row.setdefault("subscribable", bool(row.get("account_entitled")))
             row.setdefault("receiving", bool(row.get("verified_receiving")))
             row.setdefault("last_verified", report.get("verified_at"))
+    output = report_destination(report, output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     summary_path = output.with_suffix(".summary.txt")
@@ -298,11 +331,12 @@ def _probe_snapshots(quote_ctx: Any, ft: Any, report: dict[str, Any]) -> list[di
     entitled = ret == ft.RET_OK and bool(records)
     report["capabilities"]["US_EQUITY_SNAPSHOT"] = capability_row(
         capability="US_EQUITY_SNAPSHOT",
-        account_entitled=entitled,
+        account_entitled=entitlement(ret, data, ft, ok=entitled),
         runtime_tested=True,
         data_currently_fresh=entitled,
         evidence_class="OBSERVED",
         notes="Snapshot inventory stored separately; raw rows not dumped.",
+        reason_code=INCONCLUSIVE_REASON if transport_failure(ret, data, ft) else None,
     )
     overnight_present = any(row.get("overnight_price") not in (None, 0, 0.0) or row.get("overnight_volume") for row in records)
     pre_present = any(row.get("pre_price") not in (None, 0, 0.0) or row.get("pre_volume") for row in records)
@@ -390,7 +424,7 @@ def _probe_streaming(quote_ctx: Any, ft: Any, report: dict[str, Any], subscribe_
 
     report["capabilities"]["US_EQUITY_L1"] = capability_row(
         capability="US_EQUITY_L1",
-        account_entitled=ret_q == ft.RET_OK,
+        account_entitled=entitlement(ret_q, quote_cache, ft, ok=ret_q == ft.RET_OK),
         runtime_tested=True,
         data_currently_fresh=bool(quote_rows),
         evidence_class="OBSERVED",
@@ -398,11 +432,11 @@ def _probe_streaming(quote_ctx: Any, ft: Any, report: dict[str, Any], subscribe_
         verified_receiving=len(quote_events) > 0,
         healthy=ret_q == ft.RET_OK and len(quote_events) > 0,
         notes=f"subscribe_ret={ret_sub} cache_ret={ret_q} push_count={len(quote_events)}",
-        reason_code=None if ret_q == ft.RET_OK else str(quote_cache),
+        reason_code=None if ret_q == ft.RET_OK else INCONCLUSIVE_REASON if transport_failure(ret_q, quote_cache, ft) else str(quote_cache),
     )
     report["capabilities"]["US_EQUITY_TICKS"] = capability_row(
         capability="US_EQUITY_TICKS",
-        account_entitled=ret_t == ft.RET_OK,
+        account_entitled=entitlement(ret_t, ticker_cache, ft, ok=ret_t == ft.RET_OK),
         runtime_tested=True,
         data_currently_fresh=bool(ticker_rows),
         evidence_class="OBSERVED",
@@ -410,14 +444,14 @@ def _probe_streaming(quote_ctx: Any, ft: Any, report: dict[str, Any], subscribe_
         verified_receiving=len(ticker_events) > 0,
         healthy=ret_t == ft.RET_OK and len(ticker_events) > 0,
         notes=f"cache_rows={len(ticker_rows) if isinstance(ticker_rows, list) else 0} push_count={len(ticker_events)}",
-        reason_code=None if ret_t == ft.RET_OK else str(ticker_cache),
+        reason_code=None if ret_t == ft.RET_OK else INCONCLUSIVE_REASON if transport_failure(ret_t, ticker_cache, ft) else str(ticker_cache),
     )
     depth = 0
     if isinstance(book, dict):
         depth = max(len(book.get("Bid") or []), len(book.get("Ask") or []))
     report["capabilities"]["US_EQUITY_DEPTH"] = capability_row(
         capability="US_EQUITY_DEPTH",
-        account_entitled=ret_b == ft.RET_OK and depth > 0,
+        account_entitled=entitlement(ret_b, book_cache, ft, ok=ret_b == ft.RET_OK and depth > 0),
         runtime_tested=True,
         data_currently_fresh=depth > 0,
         evidence_class="OBSERVED",
@@ -425,7 +459,7 @@ def _probe_streaming(quote_ctx: Any, ft: Any, report: dict[str, Any], subscribe_
         verified_receiving=len(book_events) > 0,
         healthy=ret_b == ft.RET_OK and depth > 0 and len(book_events) > 0,
         notes=f"depth={depth} push_count={len(book_events)} detailed_orderbook=not_requested",
-        reason_code=None if ret_b == ft.RET_OK else str(book_cache),
+        reason_code=None if ret_b == ft.RET_OK else INCONCLUSIVE_REASON if transport_failure(ret_b, book_cache, ft) else str(book_cache),
     )
     report["subscription_quota"]["after_stream"] = redact(quota) if ret_quota == ft.RET_OK else str(quota)
     report["schema_inventories"]["equity_quote"] = schema_inventory(quote_rows if isinstance(quote_rows, list) else [])
@@ -702,7 +736,10 @@ def main() -> int:
     )
     parser.add_argument("--subscribe-seconds", type=float, default=8.0)
     args = parser.parse_args()
-    run_probe(host=args.host, port=args.port, output=Path(args.output), subscribe_seconds=args.subscribe_seconds)
+    report = run_probe(host=args.host, port=args.port, output=Path(args.output), subscribe_seconds=args.subscribe_seconds)
+    if not report.get("conclusive", True):
+        print(f"inconclusive: {', '.join(report['inconclusive_capabilities'])}; {args.output} left unchanged")
+        return EXIT_INCONCLUSIVE
     print(f"wrote {args.output}")
     return 0
 

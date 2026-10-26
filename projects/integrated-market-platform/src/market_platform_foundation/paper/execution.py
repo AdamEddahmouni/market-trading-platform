@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Mapping
+from decimal import Decimal, ROUND_CEILING
 
 from ..execution.fill_model import LIVE_EXECUTION_FORBIDDEN, FillModelLiveForbidden
 from ..execution.simulator import SIMULATOR_VERSION, BarConservativeSimulator
@@ -20,6 +21,9 @@ from .contracts import (
     build_semantic_intent_digest,
     build_user_order_intent,
     normalize_execution_intent,
+    exact_quantity,
+    order_quantity,
+    serialized_quantity,
 )
 from .ledger import PaperExecutionLedger
 
@@ -35,7 +39,7 @@ def _market_price_reference_minor(ledger: PaperExecutionLedger, bars: list[dict[
     payload = bars[-1].get("bar_payload")
     if not isinstance(payload, dict):
         return None
-    for key in ("close", "high"):
+    for key in ("high", "close"):
         raw = payload.get(key)
         if raw is None:
             continue
@@ -70,14 +74,55 @@ def _enforce_pretrade_admission(
         else _market_price_reference_minor(ledger, bars)
     )
     instrument = intent.get("instrument") or {}
+    fractional = instrument.get("instrument_kind") == "CRYPTO_PAIR"
     account = ledger.project_account()
     projection = ledger._project_ledger(instrument_id=str(intent.get("instrument_id", "")))
     kind = str(instrument.get("instrument_kind", "TRADABLE_SECURITY")).upper()
     position_qty = int(projection.get("position_shares", 0))
-    if kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}:
+    if kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT", "CRYPTO_PAIR"}:
         canonical_pos = ledger.canonical_portfolio.get_position(str(intent.get("instrument_id", "")))
         if canonical_pos is not None:
-            position_qty = int(canonical_pos.quantity)
+            position_qty = canonical_pos.quantity if fractional else int(canonical_pos.quantity)
+    obligations = ledger.working_order_obligations_by_currency()
+    quantity = order_quantity(intent["desired_quantity"], instrument)
+    costs = (Decimal(str(quantity)) * Decimal(int(ledger.policy.get("commission_minor_per_share", 0)))
+             + Decimal(int(ledger.policy.get("fee_minor_per_order", 0))))
+    costs_minor = int(costs.to_integral_value(rounding=ROUND_CEILING))
+    if fractional:
+        currency = str(instrument["currency"]).upper()
+        if currency != "USD" or currency != str(ledger.policy["currency"]).upper():
+            raise ValueError("INSUFFICIENT_SETTLEMENT_CURRENCY")
+        if instrument.get("minimum_notional") is not None:
+            if not bars:
+                raise ValueError("REQUIRED_PRICE_MISSING")
+            payload = bars[-1].get("bar_payload") or {}
+            raw = payload.get("low" if side == "SELL" else "high") or payload.get("close")
+            if raw is None:
+                raise ValueError("REQUIRED_PRICE_MISSING")
+            if quantity * exact_quantity(str(raw)) < exact_quantity(instrument["minimum_notional"]):
+                raise ValueError("ORDER_NOTIONAL_MINIMUM_INVALID")
+        if side == "SELL":
+            reserved = ledger.reserved_sell_quantity(str(intent["instrument_id"]))
+            if quantity > max(Decimal(0), position_qty - reserved):
+                raise ValueError("INSUFFICIENT_POSITION")
+            return
+        reference = _market_price_reference_minor(ledger, bars)
+        # Instrument precision is independent of the account's settlement scale.
+        if order_type == "LIMIT":
+            raise ValueError("SIM_ORDER_TYPE_UNSUPPORTED")
+        if not bars:
+            raise ValueError("REQUIRED_PRICE_MISSING")
+        payload = bars[-1].get("bar_payload") or {}
+        raw = payload.get("high") or payload.get("close")
+        if raw is None:
+            raise ValueError("REQUIRED_PRICE_MISSING")
+        price = exact_quantity(str(raw))
+        needed = quantity * price * Decimal(str(instrument.get("contract_multiplier", "1"))) * Decimal(ledger.policy["price_scale"])
+        needed += costs_minor
+        available = Decimal(account["cash_minor"]) - obligations.get(currency, 0)
+        if needed > available:
+            raise ValueError("INSUFFICIENT_CASH")
+        return
     margin_facts = intent.get("margin_facts")
     margin_revision = ""
     if margin_facts is not None:
@@ -118,6 +163,7 @@ def _enforce_pretrade_admission(
             str(ledger.policy.get("currency", "USD")).upper(): int(account.get("cash_minor", 0))
         },
         position_quantity=position_qty,
+        working_obligations_by_currency=obligations,
         risk_policy_revision=str(ledger.policy.get("risk_policy_identity_hash", "")),
         margin_facts=(
             margin_facts
@@ -131,7 +177,22 @@ def _enforce_pretrade_admission(
         price_scale=int(ledger.policy.get("price_scale", 100)),
         source_time_ns=int(intent.get("created_time", 0)),
     )
-    if (
+    short_enabled = ledger.allows_short() and kind not in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}
+    if side == "SELL" and short_enabled:
+        from ..risk.financial import reserved_sell_quantity_for
+        from .short_gate import enforce_equity_sell
+
+        enforce_equity_sell(
+            ledger=ledger,
+            intent=intent,
+            kind=kind,
+            position_qty=position_qty,
+            reserved_sell=reserved_sell_quantity_for(ledger, str(intent.get("instrument_id", ""))),
+            price_minor=price_minor,
+            costs_minor=costs_minor,
+            buying_power_minor=int(account["buying_power_minor"]),
+        )
+    elif (
         side == "SELL"
         and kind not in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}
         and ledger.is_portfolio_scoped()
@@ -145,12 +206,23 @@ def _enforce_pretrade_admission(
         owned = max(0, position_qty)
         reserved_sell = reserved_sell_quantity_for(ledger, str(intent.get("instrument_id", "")))
         available_to_sell = max(0, owned - reserved_sell)
-        if int(intent.get("desired_quantity", 0)) > available_to_sell:
+        # Exact read: int() truncation would let fractional overcommit orders
+        # pass this gate (e.g. selling 0.2 with no owned fractional position).
+        if exact_quantity(intent.get("desired_quantity", 0)) > available_to_sell:
             raise ValueError(
                 "INSUFFICIENT_POSITION: "
                 f"{{'owned_quantity': {owned}, 'reserved_sell_quantity': {reserved_sell}, "
                 f"'available_to_sell': {available_to_sell}}}"
             )
+    if side == "BUY" and short_enabled and position_qty < 0:
+        from .short_gate import enforce_equity_buy
+
+        if price_minor is None:
+            raise ValueError("REQUIRED_PRICE_MISSING: no price reference for pre-trade check")
+        # A cover is never refused for cash: closing must always be possible, and a short that rose past the
+        # account's cash leaves negative cash, which is the honest record of that loss. Reversal is still refused.
+        enforce_equity_buy(intent=intent, position_qty=position_qty, required_minor=0, buying_power_minor=0)
+        return
     if side == "BUY" or kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}:
         if side == "BUY" and kind in {"OPTION_CONTRACT", "TRADABLE_SECURITY", "ETF_FUND", "CRYPTO_PAIR"}:
             if price_minor is None:
@@ -162,6 +234,19 @@ def _enforce_pretrade_admission(
                 f"{{'required_cash_minor': {decision.required_cash_minor}, "
                 f"'available_cash_minor': {decision.available_cash_minor}}}"
             )
+        cash_less_obligations = max(0, int(account["cash_minor"]) - obligations.get(str(instrument.get("currency", "USD")).upper(), 0))
+        if side == "BUY" and short_enabled:
+            from .short_gate import enforce_equity_buy
+
+            # Short proceeds sit in cash but are held back from buying power: a long open never spends them.
+            enforce_equity_buy(
+                intent=intent,
+                position_qty=position_qty,
+                required_minor=decision.required_cash_minor + costs_minor,
+                buying_power_minor=int(account["buying_power_minor"]),
+            )
+        elif side == "BUY" and decision.required_cash_minor + costs_minor > cash_less_obligations:
+            raise ValueError("INSUFFICIENT_CASH")
 
 TERMINAL_ORDER_STATES = ORDER_LIFECYCLE_TERMINAL_STATES
 
@@ -207,9 +292,26 @@ def execute_order_intent(
         intent=intent,
         policy=ledger.policy,
         kill_switch=ledger.kill_switch,
-        current_position_shares=int(projection["position_shares"]),
+        current_position_shares=projection["position_shares"],
         open_order_count=ledger.open_order_count,
     )
+    instrument = intent.get("instrument") or {}
+    if instrument.get("instrument_kind") == "CRYPTO_PAIR":
+        quantity = order_quantity(intent["desired_quantity"], instrument)
+        position = ledger.canonical_portfolio.get_position(str(intent["instrument_id"]))
+        current = position.quantity if position is not None else Decimal(0)
+        reasons = []
+        if ledger.kill_switch.active:
+            reasons.append("RISK_KILL_SWITCH_ACTIVE")
+        if quantity > ledger.policy["max_order_shares"]:
+            reasons.append("RISK_MAX_ORDER_EXCEEDED")
+        projected = current + (quantity if intent["direction"] == "long" else -quantity)
+        if abs(projected) > ledger.policy["max_position_shares"]:
+            reasons.append("RISK_MAX_POSITION_EXCEEDED")
+        if ledger.open_order_count >= ledger.policy["max_open_orders"]:
+            reasons.append("RISK_MAX_OPEN_ORDERS")
+        decision.update(decision="REJECT" if reasons else "APPROVE", reason_codes=reasons,
+            approved_quantity="0" if reasons else serialized_quantity(quantity, instrument))
     if intent.get("lineage_refs"):
         decision["lineage_refs"] = intent["lineage_refs"]
     if intent.get("quantity_facts"):
@@ -241,13 +343,17 @@ def execute_order_intent(
             order["requested_quantity"] = facts["proposal_requested_quantity"]
         if facts.get("risk_approved_quantity") is not None:
             order["approved_quantity"] = facts["risk_approved_quantity"]
-    order["submitted_quantity"] = int(decision.get("approved_quantity", 0))
+    order["submitted_quantity"] = serialized_quantity(decision.get("approved_quantity", 0), instrument)
     if fill is not None:
         for key in ("lineage_refs", "quantity_facts"):
             if key in intent:
                 fill[key] = intent[key]
-        fill["submitted_quantity"] = int(decision.get("approved_quantity", 0))
-        fill["filled_quantity"] = int(fill["fill_quantity"])
+        fill["submitted_quantity"] = serialized_quantity(decision.get("approved_quantity", 0), instrument)
+        fill["filled_quantity"] = serialized_quantity(fill["fill_quantity"], instrument)
+        if instrument.get("instrument_kind") == "CRYPTO_PAIR":
+            commission = exact_quantity(fill["fill_quantity"]) * Decimal(int(ledger.policy.get("commission_minor_per_share", 0)))
+            fill["commission_minor"] = int(commission.to_integral_value(rounding=ROUND_CEILING))
+            fill["fees_minor"] = int(ledger.policy.get("fee_minor_per_order", 0))
         if intent.get("risk_decision_id"):
             fill["risk_decision_id"] = intent["risk_decision_id"]
         if isinstance(facts, dict):
@@ -270,16 +376,23 @@ def _build_preview_envelope(
     observation_time: int,
 ) -> dict[str, Any]:
     projection = ledger._project_ledger(instrument_id=str(intent.get("instrument_id", "")))
+    instrument = intent.get("instrument") or {}
+    fractional = instrument.get("instrument_kind") == "CRYPTO_PAIR"
     scale = int(ledger.policy["price_scale"])
     current_position = int(projection["position_shares"])
+    if fractional:
+        position = ledger.canonical_portfolio.get_position(str(intent["instrument_id"]))
+        current_position = position.quantity if position is not None else Decimal(0)
     projected_position = current_position
     if fill is not None:
-        signed = int(fill["fill_quantity"]) if fill["direction"] == "long" else -int(fill["fill_quantity"])
+        amount = exact_quantity(fill["fill_quantity"]) if fractional else int(fill["fill_quantity"])
+        signed = amount if fill["direction"] == "long" else -amount
         projected_position += signed
 
     estimated_notional_minor = 0
     if fill is not None:
-        estimated_notional_minor = int(fill["fill_quantity"]) * int(fill["fill_price_minor"])
+        amount = exact_quantity(fill["fill_quantity"]) if fractional else int(fill["fill_quantity"])
+        estimated_notional_minor = int((amount * int(fill["fill_price_minor"]) * scale / int(instrument.get("price_scale", scale))))
 
     current_gross = abs(current_position)
     projected_gross = abs(projected_position)
@@ -289,7 +402,8 @@ def _build_preview_envelope(
     max_position = int(ledger.policy["max_position_shares"])
     max_order = int(ledger.policy["max_order_shares"])
     position_headroom = max(0, max_position - abs(projected_position))
-    order_headroom = max(0, max_order - int(intent.get("desired_quantity", 0)))
+    desired = exact_quantity(intent["desired_quantity"]) if fractional else int(intent["desired_quantity"])
+    order_headroom = max(0, max_order - desired)
 
     risk_verdict = "PASS" if decision["decision"] in {"APPROVE", "RESIZE"} else "BLOCKED"
     fill_available = fill is not None
@@ -344,7 +458,7 @@ def _build_preview_envelope(
         "current_gross_exposure_shares": current_gross,
         "current_net_exposure_shares": current_net,
         "current_position_shares": current_position,
-        "quantity": int(intent.get("desired_quantity", 0)),
+        "quantity": serialized_quantity(desired, instrument),
         "simulation_model": SIMULATOR_VERSION,
     }
 
@@ -370,6 +484,7 @@ def preview_interactive_order(
     squeeze_context: dict[str, Any] | None = None,
     instrument: Mapping[str, Any] | None = None,
     margin_facts: Any = None,
+    short_sale_facts: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     intent = build_user_order_intent(
         instrument=instrument if instrument is not None else build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
@@ -393,6 +508,13 @@ def preview_interactive_order(
             intent["margin_facts"] = margin_facts.to_dict()
         else:
             intent["margin_facts"] = margin_facts
+    if short_sale_facts is not None:
+        intent["short_sale_facts"] = dict(short_sale_facts)
+    if intent["instrument"].get("instrument_kind") == "CRYPTO_PAIR":
+        _enforce_pretrade_admission(intent=intent, ledger=ledger, bars=bars)
+    elif str(side).upper() == "SELL" and ledger.allows_short():
+        # The short-sale gate runs at preview too, so a short is never shown as allowed and refused at submit.
+        _enforce_pretrade_admission(intent=intent, ledger=ledger, bars=bars)
     # Dry-run: a preview fill is never recorded, so it must not consume the
     # session's per-bar participation capacity (E9) — use a throwaway simulator.
     decision, order, fill = execute_order_intent(
@@ -462,6 +584,7 @@ def _submit_interactive_order(
     instrument: Mapping[str, Any] | None = None,
     reference_price_minor: int | None = None,
     margin_facts: Any = None,
+    short_sale_facts: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     intent = build_user_order_intent(
         instrument=instrument if instrument is not None else build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
@@ -485,6 +608,8 @@ def _submit_interactive_order(
             intent["margin_facts"] = margin_facts.to_dict()
         else:
             intent["margin_facts"] = margin_facts
+    if short_sale_facts is not None:
+        intent["short_sale_facts"] = dict(short_sale_facts)
     with ledger.submit_critical_section():
         existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
         if existing_order_id:
@@ -580,7 +705,7 @@ def cancel_interactive_order(
         cancelled = ledger.cancel_order(order_id=order_id, prior_state=state)
         return {
             "duplicate": False,
-            "filled_quantity": int(order.get("cumulative_filled_quantity", 0)),
+            "filled_quantity": serialized_quantity(order.get("cumulative_filled_quantity", 0), ledger.instrument_for(str(order.get("instrument_id")))),
             "order": cancelled,
             "order_id": order_id,
             "state": "CANCELLED",

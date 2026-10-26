@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from typing import Any
+from decimal import Decimal, ROUND_CEILING
+from ...paper.contracts import quantity_number
 
 from ..contracts.common import INTELLIGENCE_SCHEMA_VERSION
 from .exposure import compute_exposure
@@ -90,11 +92,20 @@ def snapshot_from_paper_ledger(
     positions: list[PaperPositionSnapshot] = []
     unrealized_total = 0
     for row in positions_raw:
-        qty = int(row["quantity"])
-        if str(row.get("side")) == "SHORT":
+        qty = quantity_number(row["quantity"])
+        # The Paper ledger already reports a short as a negative quantity with side SHORT. Negating it again
+        # turned every real short into a long; the sign is kept, and only an unsigned SHORT row is negated.
+        if str(row.get("side")) == "SHORT" and qty > 0:
             qty = -qty
+        if (str(row.get("side")) == "LONG" and qty < 0) or (str(row.get("side")) == "SHORT" and qty > 0):
+            raise ValueError("PAPER_POSITION_SIDE_SIGN_MISMATCH")
         mark = int(row.get("mark_minor") or row.get("average_fill_minor") or 0)
-        market_value = abs(qty) * mark if mark else int(row.get("notional_minor") or 0)
+        if row.get("market_value_minor") is not None:
+            market_value = abs(int(row["market_value_minor"]))
+        else:
+            unit_scale = Decimal(int(row.get("price_scale") or ledger.policy.get("price_scale", 100)))
+            multiplier = Decimal(str(row.get("contract_multiplier", "1")))
+            market_value = int((abs(Decimal(qty)) * mark * multiplier * Decimal(ledger.policy.get("price_scale", 100)) / unit_scale).to_integral_value(rounding=ROUND_CEILING)) if mark else int(row.get("notional_minor") or 0)
         if qty < 0:
             market_value = -market_value
         unrealized_total += int(row.get("unrealized_pnl_minor") or 0)
@@ -106,13 +117,7 @@ def snapshot_from_paper_ledger(
                 market_value_minor=abs(market_value),
             )
         )
-    equity_minor = cash_minor + sum(
-        pos.quantity * (pos.market_value_minor // abs(pos.quantity) if pos.quantity else 0)
-        for pos in positions
-        if pos.quantity != 0
-    )
-    if equity_minor <= 0:
-        equity_minor = cash_minor + unrealized_total + sum(abs(p.market_value_minor) for p in positions if p.quantity > 0)
+    equity_minor = cash_minor + sum(pos.market_value_minor if pos.quantity > 0 else -pos.market_value_minor for pos in positions)
 
     open_orders: list[PaperOpenOrderSnapshot] = []
     for order in ledger.project_orders():
@@ -124,7 +129,7 @@ def snapshot_from_paper_ledger(
                 order_id=str(order["order_id"]),
                 instrument_id=str(order.get("instrument_id", ledger._primary_instrument_id())),
                 side=str(order.get("side", "BUY")),
-                quantity=int(order.get("quantity") or order.get("desired_quantity") or 0),
+                quantity=quantity_number(order.get("working_remaining") or order.get("quantity") or order.get("desired_quantity") or 0),
                 opportunity_id=(order.get("metadata") or {}).get("opportunity_id"),
             )
         )
@@ -132,7 +137,8 @@ def snapshot_from_paper_ledger(
     return build_portfolio_snapshot(
         captured_at_ns=captured_at_ns,
         cash_minor=cash_minor,
-        equity_minor=max(equity_minor, cash_minor),
+        equity_minor=equity_minor,
+        reserved_cash_minor=int(account.get("reserved_cash_minor", 0)),
         currency=str(account.get("currency", "USD")),
         price_scale=int(ledger.policy.get("price_scale", 100)),
         positions=tuple(positions),

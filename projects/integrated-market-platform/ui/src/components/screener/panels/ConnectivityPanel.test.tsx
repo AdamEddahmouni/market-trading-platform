@@ -31,16 +31,30 @@ describe("Connectivity inspection", () => {
     render(<ConnectivityView data={payload} />);
     expect(screen.getByRole("region", { name: "Cross-asset connectivity graph" })).toBeInTheDocument();
     expect(screen.getByRole("table", { name: "Cross-asset relationships" })).toBeInTheDocument();
-    expect(screen.getAllByText("CONFLICTING").length).toBeGreaterThan(0);
-    expect(screen.getByText(/NOT_ENTITLED/)).toBeInTheDocument();
+    // Sprint 3 item 28: codes read as words; each keeps its raw code in title.
+    expect(screen.getAllByTitle("CONFLICTING").map(item => item.textContent)).toContain("Conflicting");
+    expect(screen.getByTitle("NOT_ENTITLED")).toHaveTextContent("Not entitled");
     fireEvent.click(screen.getByRole("button", { name: /Inspect NQ/ }));
     expect(screen.getByText("Why connected")).toBeInTheDocument();
     expect(screen.getAllByText(/Observed opposite direction/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/controlled/).length).toBeGreaterThan(0);
   });
-  it.each(["CONFIRMING", "CONTEXT_ONLY", "UNKNOWN", "UNAVAILABLE"] as const)("shows %s as text without relying on color", state => {
+  it.each([["CONFIRMING", "Confirming"], ["CONTEXT_ONLY", "Context only"], ["UNKNOWN", "Unknown"], ["UNAVAILABLE", "Unavailable"]] as const)("shows %s as text without relying on color", (state, words) => {
     render(<ConnectivityView data={{ ...payload, edges: [{ ...payload.edges[0], evidence_state: state }] }} />);
-    expect(screen.getAllByText(state).length).toBeGreaterThan(0);
+    expect(screen.getAllByTitle(state).map(item => item.textContent)).toContain(words);
+  });
+  it("shows no raw cross-asset codes outside tooltips and the provenance JSON, and keeps every code in title", () => {
+    const { container } = render(<ConnectivityView data={payload} />);
+    fireEvent.click(screen.getByRole("button", { name: /Inspect NQ/ }));
+    const visible = container.cloneNode(true) as HTMLElement;
+    visible.querySelectorAll("pre").forEach(item => item.remove());
+    const codes = ["STOCK_ETF", "TRADABLE_SECURITY", "REFERENCE_RELEVANT_TO", "CONTEXTUAL_MAPPING", "FUTURES_CONTEXT_MAP_V1", "CONFLICTING", "NOT_ENTITLED", "EQUITY"];
+    for (const code of codes) {
+      expect(visible.textContent).not.toContain(code);
+      expect(container.querySelector(`[title="${code}"]`)).not.toBeNull();
+    }
+    expect(visible.textContent).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
+    expect(container.querySelector('time[datetime="2026-10-02T15:00:00Z"]')).not.toBeNull();
   });
   it("clears the inspector when the selected graph is replaced", () => {
     const { rerender } = render(<ConnectivityView key="NVDA" data={payload} />);

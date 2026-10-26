@@ -1,3 +1,4 @@
+import { msIso, stampText } from "../screenerText";
 import { useEffect, useRef, useState } from "react";
 import type { AiScreenerScope } from "../../../api/screenerAi";
 import { armPaperAutomation, configurePaperAutomation, disarmPaperAutomation, emergencyStopPaperAutomation, paperAutomationHistory,
@@ -48,6 +49,14 @@ const OPTIONAL_BOUNDS: Record<typeof OPTIONAL_NUMBERS[number][0], { min: number;
   universe_max_age_seconds: { min: 300, max: 86400, step: 1 },
   universe_max_runs_per_day: { min: 1, max: 100, step: 1 },
 };
+const OVERNIGHT_NUMBERS = [
+  ["max_overnight_positions", "Maximum overnight positions (0–5)"],
+  ["max_overnight_exposure", "Maximum overnight exposure ($, at most 25,000)"],
+  ["max_hold_sessions", "Maximum holding period (1–5 trading days)"],
+] as const;
+type OvernightField = typeof OVERNIGHT_NUMBERS[number][0];
+type OvernightDraft = Record<OvernightField, string>;
+const EMPTY_OVERNIGHT = Object.fromEntries(OVERNIGHT_NUMBERS.map(([key]) => [key, ""])) as OvernightDraft;
 type NumberField = typeof NUMBERS[number][0];
 type ChoiceField = typeof CHOICES[number][0];
 type AdaptiveNumberField = typeof OPTIONAL_NUMBERS[number][0];
@@ -72,7 +81,7 @@ const BOUNDS: Record<NumberField, { min: number; max?: number; step: number }> =
   max_consecutive_failures: { min: 1, max: 20, step: 1 },
 };
 
-function policyFrom(draft: Draft, adaptiveDraft: AdaptiveDraft, universe: string): PaperAutomationPolicyInput | null {
+function policyFrom(draft: Draft, adaptiveDraft: AdaptiveDraft, universe: string, overnightDraft: OvernightDraft): PaperAutomationPolicyInput | null {
   const number = (key: NumberField) => draft[key].trim() !== "" && Number.isFinite(Number(draft[key])) ? Number(draft[key]) : null;
   const dollars = (key: NumberField) => { const value = number(key); return value == null ? null : Math.round(value * 100); };
   const choice = (key: ChoiceField) => draft[key] === "" ? null : draft[key] === "yes";
@@ -84,13 +93,21 @@ function policyFrom(draft: Draft, adaptiveDraft: AdaptiveDraft, universe: string
   const adaptive: Record<string, number | boolean> = {};
   for (const [key] of OPTIONAL_NUMBERS) { const value = typed(key); if (value !== undefined) adaptive[key] = value; }
   for (const [key] of OPTIONAL_CHOICES) if (adaptiveDraft[key] !== "") adaptive[key] = adaptiveDraft[key] === "yes";
+  const overnight: { max_overnight_positions?: number; max_overnight_exposure_minor?: number; max_hold_sessions?: number } = {};
+  const overnightValues = OVERNIGHT_NUMBERS.map(([key]) => overnightDraft[key].trim());
+  if (overnightValues.some(Boolean)) {
+    if (overnightValues.some((value) => value === "" || !Number.isFinite(Number(value)))) return null;
+    overnight.max_overnight_positions = Number(overnightDraft.max_overnight_positions);
+    overnight.max_overnight_exposure_minor = Math.round(Number(overnightDraft.max_overnight_exposure) * 100);
+    overnight.max_hold_sessions = Number(overnightDraft.max_hold_sessions);
+  }
   return {
     schedule: { sessions: ["REGULAR"], cadence_seconds: number("cadence_seconds")!, universe_evaluation_interval_seconds: number("universe_evaluation_interval_seconds")!,
       no_new_entries_minutes_before_close: number("no_new_entries_minutes_before_close")!, ...adaptive },
     risk: { max_position_notional_minor: dollars("max_position_notional")!, max_aggregate_exposure_minor: dollars("max_aggregate_exposure")!,
       max_open_positions: number("max_open_positions")!, max_daily_loss_minor: dollars("max_daily_loss")!, max_per_trade_risk_minor: dollars("max_per_trade_risk")!,
       assumed_adverse_move_bps: number("assumed_adverse_move_bps")!, allowed_universes: [universe], order_types: ["MARKET"],
-      allow_long: choice("allow_long")!, allow_short: choice("allow_short")!, allow_entries: choice("allow_entries")!, allow_exits: choice("allow_exits")! },
+      allow_long: choice("allow_long")!, allow_short: choice("allow_short")!, allow_entries: choice("allow_entries")!, allow_exits: choice("allow_exits")!, ...overnight },
     exits: { on_stop_breach: choice("on_stop_breach")!, on_thesis_exit: choice("on_thesis_exit")! },
     ai: { allow_local_inference: choice("allow_local_inference")!, allow_paid_inference: choice("allow_paid_inference")!,
       max_paid_requests_per_day: number("max_paid_requests_per_day")!, max_paid_tokens_per_day: number("max_paid_tokens_per_day")! },
@@ -113,6 +130,7 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
   const [report, setReport] = useState<PaperAutomationReport | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [adaptive, setAdaptive] = useState<AdaptiveDraft>(EMPTY_ADAPTIVE);
+  const [overnight, setOvernight] = useState<OvernightDraft>(EMPTY_OVERNIGHT);
   const [phrase, setPhrase] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -148,7 +166,7 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
   const scheduled = status?.desired_state === "RUNNING" || status?.desired_state === "PAUSED";
   // Display refresh only: reads status, history and the report. It never evaluates, previews or submits.
   useEffect(() => { if (!open || !scheduled) return; const timer = setInterval(() => { void refresh().catch(() => undefined); }, 5_000); return () => clearInterval(timer); }, [open, scheduled]);
-  const policy = policyFrom(draft, adaptive, scope.universe);
+  const policy = policyFrom(draft, adaptive, scope.universe, overnight);
   const configured = Boolean(status?.policy);
   const armed = Boolean(status?.armed);
   const emergency = Boolean(status?.emergency);
@@ -184,6 +202,10 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
           {OPTIONAL_NUMBERS.map(([key, label]) => <label key={key}>{label} <input type="number" {...OPTIONAL_BOUNDS[key]} value={adaptive[key]} onChange={(event) => setAdaptive({ ...adaptive, [key]: event.target.value })} /></label>)}
           {OPTIONAL_CHOICES.map(([key, label]) => <label key={key}>{label} <select value={adaptive[key]} onChange={(event) => setAdaptive({ ...adaptive, [key]: event.target.value as AdaptiveDraft[AdaptiveChoiceField] })}>
             <option value="">Not enabled</option><option value="yes">Enabled</option><option value="no">Disabled</option></select></label>)}
+          <p>Overnight holds are optional. Leave all three blank to close every automation position before the bell.</p>
+          {OVERNIGHT_NUMBERS.map(([key, label]) => <label key={key}>{label} <input type="number" min={key === "max_hold_sessions" ? 1 : 0}
+            max={key === "max_overnight_exposure" ? 25000 : 5} step={key === "max_overnight_exposure" ? 0.01 : 1}
+            value={overnight[key]} onChange={(event) => setOvernight({ ...overnight, [key]: event.target.value })} /></label>)}
           <button type="button" disabled={busy || !policy} onClick={() => request(() => configurePaperAutomation(scope, policy!))}>Save policy</button>
           {!policy && <p>Complete every field to save the policy. Saving a policy arms nothing.</p>}
         </fieldset>}
@@ -220,7 +242,7 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
             <p>{scheduling.adaptive ? "Adaptive" : "Fixed minimum separation only"} · minimum separation {scheduling.policy.min_separation_seconds}s{scheduling.policy.max_age_seconds != null ? ` · a selection stays useful for ${scheduling.policy.max_age_seconds}s` : ""}{scheduling.policy.material_change_trigger ? " · re-runs on a material universe change" : ""}{scheduling.policy.max_runs_per_day != null ? ` · at most ${scheduling.policy.max_runs_per_day} runs per UTC day` : ""} · runs today {scheduling.runs_today.started}{scheduling.runs_today.limit != null ? ` of ${scheduling.runs_today.limit}` : ""}</p>
             {scheduling.last_complete_fingerprint ? <p>Last complete selection from session {scheduling.last_complete_fingerprint.session_date}{scheduling.last_complete_fingerprint.universe_count != null ? ` (${scheduling.last_complete_fingerprint.universe_count} rows read)` : ""}.</p> : <p>No complete full-universe selection has been adopted yet.</p>}
             {scheduling.last_decision ? <p>Last decision <strong>{words(scheduling.last_decision.decision)}</strong> at {text(scheduling.last_decision.at_iso)} because {scheduling.last_decision.reason_codes.map(words).join(", ")}{scheduling.next_eligible ? ` · next eligible ${scheduling.next_eligible}` : ""}.</p> : <p>No scheduling decision has been recorded yet.</p>}
-            {scheduling.failure ? <p>Last run was not adoptable ({scheduling.failure.code}), {scheduling.failure.count} in a row; the next attempt waits until {new Date(scheduling.failure.backoff_until * 1000).toISOString()}.</p> : null}
+            {scheduling.failure ? <p>Last run was not adoptable ({scheduling.failure.code}), {scheduling.failure.count} in a row; the next attempt waits until {stampText(msIso(scheduling.failure.backoff_until * 1000))}.</p> : null}
           </>}
 
           <h4>AI evaluation</h4>
@@ -235,6 +257,9 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
             {cycle.actions.length > 0 && <ul>{cycle.actions.map((action) => <li key={`${action.decision_id}-${action.outcome}`}>{action.instrument_id} · {action.action} · {words(action.outcome)}{action.side ? ` · ${action.side} ${text(action.quantity)}` : ""}{action.order_state ? ` · order ${action.order_state} · filled ${text(action.filled_quantity)}${action.fill_price_minor != null ? ` at ${money(action.fill_price_minor)} (simulated)` : ""}` : ""} · {action.reason_codes.join(", ")}</li>)}</ul>}
           </> : <p>No cycle has run.</p>}
 
+          <h4>Overnight positions</h4>
+          <p>Approved to hold: {Object.keys(status.carry?.approved ?? {}).join(", ") || "none"}.</p>
+          <p>Awaiting closure after an unplanned carry: {Object.keys(status.carry?.pending ?? {}).join(", ") || "none"}.</p>
           <h4>Risk and Paper account</h4>
           {status.risk && <p>Open positions {status.risk.open_positions}/{status.risk.max_open_positions} · exposure {money(status.risk.exposure_minor)} of {money(status.risk.max_aggregate_exposure_minor)} · day P&amp;L {money(status.risk.day_pnl_minor)} (halt at −{money(status.risk.max_daily_loss_minor)}) · equity {money(status.risk.equity_minor)} · realized {money(status.risk.realized_pnl_minor)} · unrealized {money(status.risk.unrealized_pnl_minor)} · valuation {text(status.risk.valuation_quality)}</p>}
           {(status.positions?.length ?? 0) > 0 ? <table><caption>Open Paper positions</caption>

@@ -42,7 +42,8 @@ export const ReevaluationStatusSchema = z.object({ schema_version: z.literal("re
   scope: z.object({ universe: z.string() }).passthrough().optional(), requested_cadence_seconds: z.number().optional(), effective_cadence_seconds: z.number().optional(),
   cadence: z.object({ limiting_constraint: z.string(), degraded: z.boolean() }).passthrough().optional(),
   liveness: z.object({ last_scheduled: z.string().nullable(), last_started: z.string().nullable(), last_completed: z.string().nullable(), last_success: z.string().nullable(),
-    last_error: z.object({ at: z.string(), code: z.string() }).nullable(), last_status: z.string().nullable(), missed_ticks: z.number(), cycle_count: z.number() }).passthrough().optional(),
+    last_error: z.object({ at: z.string(), code: z.string() }).nullable(), last_status: z.string().nullable(), missed_ticks: z.number(), cycle_count: z.number(),
+    heartbeat_at: z.string().nullable().optional() }).passthrough().optional(),
   next_scheduled: z.string().nullable().optional(), last_cycle: Cycle.nullable().optional(),
   readiness: Readiness.extend({ provider_states: z.array(ProviderState) }).nullable().optional(),
   projection: z.object({ worst_case_model_calls: z.number(), cycles: z.number(), session_minutes: z.number() }).passthrough().optional() }).passthrough();

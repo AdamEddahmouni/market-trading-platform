@@ -38,7 +38,7 @@ Out of scope: evaluation, metrics, win/loss labels, performance ranking (OCT1-11
 | Routes | `ui_api/server.py` |
 | Route policy | `platform/security/route_policy.py` |
 | Client contract (zod) | `ui/src/api/screenerLifecycle.ts` |
-| View | `ui/src/components/screener/lifecycle/` and `panels/AiScreenerPanel.tsx` |
+| View | `ui/src/components/screener/lifecycle/` and `ai/AiScreenerWorkspace.tsx` (the right rail's AI tab) |
 
 ## Routes
 

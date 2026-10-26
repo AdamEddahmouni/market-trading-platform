@@ -27,6 +27,7 @@ authenticates orders.
 from __future__ import annotations
 
 import json
+import math
 import random
 import threading
 import time
@@ -48,6 +49,9 @@ IDLE_LINGER_SECONDS = 30.0
 BACKOFF_SECONDS = (1.0, 2.0, 4.0, 8.0, 16.0, 30.0)
 RESYNC_MIN_INTERVAL_SECONDS = 2.0
 RECEIVE_SLICE_SECONDS = 0.25
+# Stop bounds. The collection supervisor waits for their sum (news.supervision.child_stop_bound_seconds).
+RECEIVER_JOIN_SECONDS = 5.0
+DRAIN_SECONDS = 5.0
 
 
 class _Lifecycle:
@@ -136,6 +140,9 @@ class KrakenStreamRuntime:
         self._idle_since: float | None = None
         self._worker: threading.Thread | None = None
         self._start_worker = start_worker
+        self._shutdown_status: dict[str, Any] = {'state': 'NOT_REQUESTED'}
+        #: an acknowledged connection ended without a drain and none has replaced it
+        self._tail_lost = False
 
     # ------------------------------------------------------------ demand side
 
@@ -150,6 +157,9 @@ class KrakenStreamRuntime:
                     results.append({"accepted": False, "reason": "UNKNOWN_INSTRUMENT" if pair is None else "UNSUPPORTED_CAPABILITY",
                                     "ref_count": 0, "provider_subscription_active": False})
                     continue
+                if self._shutdown_status['state'] != 'NOT_REQUESTED':
+                    # Demand after a finished shutdown is a new lifecycle; its stop reports only its own tail.
+                    self._shutdown_status, self._tail_lost = {'state': 'NOT_REQUESTED'}, False
                 self._pairs[instrument_id] = pair
                 self._symbols[instrument_id] = pair[0]
                 self._by_symbol[pair[0]] = instrument_id
@@ -204,13 +214,83 @@ class KrakenStreamRuntime:
                 self._worker = threading.Thread(target=self._run, name="imp-kraken-stream", daemon=True)
                 self._worker.start()
 
-    def shutdown(self) -> None:
+    def shutdown(self, *, drain_seconds: float = DRAIN_SECONDS) -> dict[str, Any]:
+        """Stop the receiver, then consume the ordered tail through unsubscribe acknowledgements.
+
+        An acknowledgement bounds this connection's tail; producer enqueue is
+        never treated as process receipt. Routing remains active while draining.
+        A deadline or transport failure leaves an unknown tail, not a made-up
+        number of lost observations. Call before removing the final consumer.
+        """
+        if not math.isfinite(drain_seconds) or not 0 <= drain_seconds <= DRAIN_SECONDS:
+            raise ValueError('KRAKEN_DRAIN_BOUND_INVALID')
         self._stop.set()
         self._wake.set()
         worker = self._worker
         if worker is not None and worker is not threading.current_thread():
-            worker.join(timeout=5)
+            worker.join(timeout=RECEIVER_JOIN_SECONDS)
+            if worker.is_alive():
+                self._shutdown_uncertain('RECEIVER_STILL_RUNNING', 0, 0)
+                # The connection still belongs to its receiver: do not use it concurrently.
+                raise RuntimeError('KRAKEN_SHUTDOWN_INCOMPLETE')
+        with self._lock:
+            connection = self._connection
+            if connection is None:
+                if self._tail_lost and self._shutdown_status['state'] == 'NOT_REQUESTED':
+                    # The receiver already lost the socket and recorded that gap; there is nothing left to drain.
+                    self._shutdown_status = {'state': 'UNVERIFIED', 'reason': 'DISCONNECTED_BEFORE_SHUTDOWN',
+                                             'messages_drained': 0, 'pending_unsubscribes': 0, 'tail_observations': 'UNKNOWN'}
+                return dict(self._shutdown_status)
+            # A refused request has no tail to bound, and the venue would refuse its unsubscribe. A request
+            # still unanswered is different: its acknowledgement and first data may already be in the socket.
+            targets = sorted(self._sent - set(self._refused))
+        deadline = time.monotonic() + drain_seconds
+        pending: dict[int, tuple[str, str]] = {}
+        received = 0
+        reason = None
+        try:
+            with self._lock:
+                for channel, symbol in targets:
+                    self._send('unsubscribe', channel, symbol)
+                    pending[self._request_id] = (channel, symbol)
+            while pending and time.monotonic() < deadline:
+                message = connection.receive(min(RECEIVE_SLICE_SECONDS, max(0, deadline-time.monotonic())))
+                if message is None:
+                    continue
+                received += 1
+                try:
+                    decoded = parse_message(message)
+                except ValueError:
+                    decoded = None
+                if isinstance(decoded, dict) and decoded.get('req_id') in pending and decoded.get('method') == 'unsubscribe':
+                    # The venue declines to unsubscribe a channel whose subscribe it refused during this
+                    # drain: that channel never carried data. Any other refusal leaves a live channel.
+                    if decoded.get('success') is not True and pending[decoded['req_id']] not in self._refused:
+                        reason = 'UNSUBSCRIBE_REFUSED'
+                        break
+                    del pending[decoded['req_id']]
+                self.handle(message, received_ns=self._now_ns())
+            if pending and reason is None:
+                reason = 'DRAIN_DEADLINE'
+        except Exception:  # noqa: BLE001 - shutdown failure must preserve uncertainty and close the owned socket
+            reason = 'TRANSPORT_OR_DRAIN_FAILURE'
+        if reason is not None:
+            self._shutdown_uncertain(reason, received, len(pending))
+        else:
+            self._shutdown_status = {'state': 'ACKNOWLEDGED', 'messages_drained': received,
+                                     'pending_unsubscribes': 0, 'tail_observations': 'UNKNOWN_BEYOND_CONNECTION'}
         self._disconnect("IDLE")
+        return dict(self._shutdown_status)
+
+    def _shutdown_uncertain(self, reason: str, received: int, pending: int) -> None:
+        from ..market_data.persistence import active_writer
+
+        self._shutdown_status = {'state': 'UNVERIFIED', 'reason': reason, 'messages_drained': received,
+                                 'pending_unsubscribes': pending, 'tail_observations': 'UNKNOWN'}
+        writer = active_writer()
+        if writer is not None and 'kraken' in writer.sources:
+            # One uncertainty interval, not a count of trades that IMP never received.
+            writer.gap('KRAKEN_SHUTDOWN_TAIL_UNVERIFIED')
 
     def _run(self) -> None:
         while not self._stop.is_set():
@@ -264,6 +344,7 @@ class KrakenStreamRuntime:
             return
         with self._lock:
             self._connection = connection
+            self._tail_lost = False  # that loss is a recorded gap; this connection has its own tail
             self._sent.clear()
             self._acked.clear()
             self._refused.clear()
@@ -284,9 +365,16 @@ class KrakenStreamRuntime:
         self._wait(delay * (0.8 + 0.4 * self._jitter()))
 
     def _disconnect(self, state: str, *, error: str | None = None) -> None:
+        from ..market_data.persistence import active_writer
+
+        writer = active_writer()
+        if writer is not None and 'kraken' in writer.sources and self._connection is not None:
+            writer.gap('KRAKEN_DISCONNECT_NO_REPLAY')
         with self._lock:
             self.state.flow_history.interrupt(self._now_ns())
             connection, self._connection = self._connection, None
+            if connection is not None and state != "IDLE" and self._acked:
+                self._tail_lost = True
             self._sent.clear()
             self._acked.clear()
             self._pending.clear()
@@ -409,8 +497,10 @@ class KrakenStreamRuntime:
             try:
                 price, qty = float(item["price"]), float(item["qty"])
             except (KeyError, TypeError, ValueError):
+                self._invalid_trade_gap(instrument, item.get("symbol"), received_ns)
                 continue
-            if event_ns is None or price <= 0 or qty <= 0 or not isinstance(item.get("trade_id"), int):
+            if event_ns is None or not math.isfinite(price) or not math.isfinite(qty) or price <= 0 or qty <= 0 or type(item.get("trade_id")) is not int:
+                self._invalid_trade_gap(instrument, item.get("symbol"), received_ns)
                 continue
             row = {
                 "trade_id": str(item["trade_id"]), "event_time_ns": event_ns, "available_time_ns": received_ns,
@@ -421,10 +511,26 @@ class KrakenStreamRuntime:
             }
             self.state.flow_history.append(instrument, row)
             self._trades.setdefault(instrument, deque(maxlen=self.max_trades)).append(row)
+            from ..market_data.persistence import active_writer
+
+            writer = active_writer()
+            if writer is not None:
+                writer.submit({'provider': PROVIDER, 'instrument_id': instrument, 'provider_symbol': item['symbol'],
+                               'capability': TRADES, 'sequence': item['trade_id'],
+                               'clocks': {'event_time_ns': event_ns, 'provider_time_ns': None, 'received_time_ns': received_ns},
+                               'raw_payload': dict(item), 'market_session': 'CONTINUOUS'})
+
+    def _invalid_trade_gap(self, instrument: str, symbol: Any, received_ns: int) -> None:
+        from ..market_data.persistence import active_writer
+        writer = active_writer()
+        # Targets may be selected by canonical instrument or provider symbol, exactly as submit() accepts.
+        if writer is not None and writer.selects({'provider': PROVIDER, 'instrument_id': instrument,
+                                                  'provider_symbol': symbol}):
+            writer.gap('INVALID_OBSERVATION', stream=f'{PROVIDER}:{instrument}:{TRADES}', received_ns=received_ns)
 
     def _handle_book(self, message: dict[str, Any], received_ns: int) -> None:
         kind = message.get("type")
-        for item in message.get("data") or []:
+        for message_index, item in enumerate(message.get("data") or []):
             if not isinstance(item, dict):
                 continue
             symbol = item.get("symbol")
@@ -444,6 +550,21 @@ class KrakenStreamRuntime:
                 ok = book.apply_update(item, received_ns=received_ns)
             else:
                 continue
+            from ..market_data.persistence import active_writer
+
+            writer = active_writer()
+            if writer is not None:
+                if ok:
+                    writer.submit({'provider': PROVIDER, 'instrument_id': instrument, 'provider_symbol': symbol,
+                                   'capability': BOOK, 'sequence': None,
+                                   'clocks': {'event_time_ns': iso_ns(item.get('timestamp')), 'provider_time_ns': None,
+                                              'received_time_ns': received_ns}, 'raw_payload': dict(item),
+                                   'message_type': kind, 'message_index': message_index,
+                                   'subscription_id': f'kraken:{self.lifecycle.connected_ns}:{symbol}',
+                                   'market_session': 'CONTINUOUS'}, {'checksum': 'VALID'})
+                elif writer.selects({'provider': PROVIDER, 'instrument_id': instrument, 'provider_symbol': symbol}):
+                    writer.gap('KRAKEN_BOOK_INVALID_REQUIRES_SNAPSHOT', stream=f'KRAKEN:{instrument}:CRYPTO_BOOK',
+                               received_ns=received_ns)
             if not ok and instrument not in self._resync_due:
                 # Rate-limited so a persistent integrity fault cannot spin the connection.
                 last = self._resync_last.get(instrument)

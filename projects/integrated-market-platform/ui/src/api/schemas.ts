@@ -1823,6 +1823,13 @@ export const PaperValuationSchema = z.object({
   reserved_cash_minor: z.number(),
   buying_power_minor: z.number(),
   buying_power_basis: z.string(),
+  // Present only on an account whose frozen policy allows Paper short selling.
+  short_market_value_minor: z.number().optional(),
+  short_margin_reserved_minor: z.number().optional(),
+  maintenance_requirement_minor: z.number().optional(),
+  maintenance_breached: z.boolean().optional(),
+  total_borrow_fees_minor: z.number().optional(),
+  borrow_basis: z.string().optional(),
   position_value_minor: nullableNumber,
   marked_position_value_minor: z.number(),
   realized_pnl_minor: z.number(),

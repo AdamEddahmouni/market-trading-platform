@@ -1,7 +1,9 @@
 # Screener AI full-universe coverage
 
 Classification: CURRENT_CANONICAL_TRUTH, SOFTWARE_CONTROLLED software contract.
-Method: `ai-screener-coverage/1.0.0` (`FULL_UNIVERSE_TOURNAMENT_REDUCTION`).
+Method: `ai-screener-coverage/2.0.0` (`OPPORTUNITY_SHORTLIST_THEN_AI`) by default;
+`ai-screener-coverage/1.0.0` (`FULL_UNIVERSE_TOURNAMENT_REDUCTION`) with
+`IMP_AI_SCREENER_SHORTLIST=0`. See [Opportunity shortlist](#opportunity-shortlist).
 This document does not establish empirical provider proof, forecasts,
 profitability or trading authority. No paid model generation has been made
 under this method; every test and the acceptance receipt use controlled engines.
@@ -111,9 +113,63 @@ explicitly unavailable; its clock is never filled in. Shared news (Finviz,
 RSS) is refreshed under its own TTL; per-instrument news providers stay
 cache-only.
 
+## Opportunity shortlist
+
+Owner decision 5 of [2026-10-23](../platform/OWNER_DECISIONS_20261023.md):
+a fast numeric screen ranks the whole market, and only a shortlist sized to
+the model reaches it; the model still makes the final pick. On 2026-10-23 the
+local engine was given all 2,524 eligible equities one at a time and could not
+compare its 171 finalists inside its 8,192-token window.
+
+Since 2026-10-24 this is the default (`IMP_AI_SCREENER_SHORTLIST=0` restores the
+full tournament unchanged). After classification,
+`intelligence/inference/opportunity_shortlist.py` scores every `ELIGIBLE` row
+from evidence the gates already admitted. The score is a coverage filter, not a
+signal: it decides which rows the model sees, never what is traded, and it adds
+nothing to a model packet.
+
+| Part | Points | Rule |
+|---|---|---|
+| Movement | 0–25 | `abs(change_pct) × 2.5`; a 10% move scores full |
+| Unusual volume | 0–25 | `rel_volume × 5`; admitted evidence first, else the Screener row's reference value (`basis` says which) |
+| Tradability | 0–20 | `(log10(dollar volume) − 5) × 3.75`, at most 15, plus `5 − spread_pct × 10`, at least 0 |
+| Catalyst | 0–20 | 10 per current news story, 5 per delayed one |
+| Freshness | 0–10 | 10 for a quote observed at the cutoff, 0 at 60 s |
+
+- Only non-weak current evidence is read, with the provider-clocked OpenD
+  snapshot ahead of any other source. A missing input scores 0 and is named in
+  `missing`; nothing is filled in.
+- **Tradability floor:** an equity or ETF under $1, or any row trading under $1M
+  of dollar volume, is never shortlisted (`BELOW_TRADABILITY_FLOOR`).
+- **Size:** 20 for the local engine (each row is its own request, and twenty
+  finalists fit one comparison) and 50 for a paid engine (one request).
+  `IMP_AI_SCREENER_SHORTLIST_SIZE` overrides it (1–200); any other value refuses
+  the run before anything is recorded.
+- **Order:** highest total first, with ties in `sha256(result_set | instrument_id)`
+  order. A local slice still takes rows with no recent turn first.
+- **News:** cached news is read, with no provider call, only for rows that a
+  full catalyst part could still lift into the shortlist. At most ten times the
+  size is read, best first, and `news_read_capped` says when that bound cut the
+  list.
+- **Accounting:** eligible rows left out are `NOT_SHORTLISTED`
+  (`BELOW_SHORTLIST_CUTOFF` or `BELOW_TRADABILITY_FLOOR`) in the `ineligible`
+  bucket, so the four buckets still add up to the universe.
+  - A run where nothing clears the floor ends `NO_ELIGIBLE_ROWS` with reason
+    `NO_ROW_ABOVE_TRADABILITY_FLOOR` and calls no model.
+  - "Complete" and "global selection" mean every shortlisted row was answered
+    and compared.
+  - The Paper controller's coverage epoch counts only rows that were sent.
+- **Record:**
+  - the run head and every result carry `method_version`, `method_name` and
+    `shortlist` (`policy_id` `opportunity-shortlist/1.0.0`, size, counts, cutoff
+    score);
+  - the plan record also lists every shortlisted row's rank, total and parts.
+
+  Runs under the two methods are never pooled.
+
 ## Batch planning
 
-Eligible rows are ordered by `sha256(result_set | instrument_id)`. Batch
+Without the shortlist, eligible rows are ordered by `sha256(result_set | instrument_id)`. Batch
 membership therefore does not depend on sort, page, position, symbol length or
 how much metadata a provider returns for a row. A partial run covers an
 unbiased slice, never "the top of the list".
@@ -201,6 +257,59 @@ at that cutoff is not sent; it becomes `UNPROCESSED` with
 evidence cutoff, completion time, expiry, input hash and tokens. No
 observation later than a request's cutoff can enter it.
 
+### Row-level rejection
+
+A batch answer the unchanged canonical validator rejects (`INVALID_OUTPUT`), or
+one that reached its output allowance (`LOCAL_OUTPUT_LIMIT_REACHED`), is that
+batch's outcome only: its rows become `AI_REJECTED` with the rejection code (an
+evaluated bucket, never a finalist, never grounded) and the run continues with
+the next batch. Provider failures (timeout, runtime exit, unavailable) and
+evidence failures still end the run as before. A run without a slice plan
+with at least 10 rejected requests and more than half of its answered requests
+rejected ends `PROVISIONAL_PARTIAL_COVERAGE` (`AI_REJECTION_RATE_EXCEEDED`). In
+a slice the time box already bounds the cost, so only a systemic failure stops
+dispatch: 20 answered requests and every one rejected ends
+`PROVISIONAL_PARTIAL_COVERAGE` (`AI_REJECTION_SYSTEMIC`). On October 17–18
+about two thirds of the news-heavy crypto rows were rejected
+(`UNGROUNDED_NEWS_CLAIM`), and the half-rejected rule ended every slice after
+about 14 requests with nothing adopted. Either way the remaining rows are
+`UNPROCESSED:NOT_STARTED_AFTER_REJECTION_RATE`. A run without a slice plan
+that rejected any row is never a global selection: it ends
+`PROVISIONAL_PARTIAL_COVERAGE` with `BATCH_FAILED:<first rejection code>`.
+
+### Rolling slices (local engine, automation only)
+
+The Paper automation controller starts local-engine runs with a **slice plan**:
+a first-pass deadline (40% of the scope's minimum separation) and, for each
+row, when the scope's recent runs last evaluated it and when they last gave it
+a turn (`last_evaluated`, `last_turn`, read from those runs' immutable `rows`
+records). A turn is an answer, accepted or rejected, or a refusal to send the
+row alone. Every row is still enumerated and classified deterministically. The
+first pass sends rows with no turn in those runs first, then the least recent
+turn, then the fair order; this adds no score and no threshold. A row whose
+answer was just rejected therefore waits behind the rest instead of heading
+every slice. When the deadline passes, the remaining rows become
+`UNPROCESSED:DEFERRED_TO_NEXT_SLICE` and the finalists already found are
+compared as usual (the comparison is not cut short). A slice ends
+`SLICE_SELECTION_COMPLETE` or `SLICE_COMPLETE_NO_SELECTION`, with
+`slice_complete: true`, `coverage_complete: false` and a `slice` block (epoch,
+deadline, deferred, rejected and evaluated counts). It is never labelled
+`GLOBAL_SELECTION_COMPLETE`; a slice that reached every row with no rejection
+is an ordinary complete run. Paid engines are never sliced. Operator runs carry
+no slice plan.
+
+Inside a slice's comparison, a finalist that cannot be compared (not admissible
+at the comparison cutoff, or thinned below sufficiency) is deferred:
+`UNPROCESSED:DEFERRED_FROM_COMPARISON` with its own reasons, never selected. A
+comparison answer the validator rejects is compared again in halves; a single
+finalist whose comparison answer is rejected becomes
+`AI_REJECTED:COMPARISON:<code>`. Either makes the result a slice, never a global
+selection; the `slice` block counts `deferred_finalists` and
+`comparison_rejected`. Runs without a slice plan keep ending partial on these.
+A refused pair is thinned like a single row, since halving a pair compares
+nothing; larger refused comparisons are split, and once a size is refused,
+comparisons at least that large are split before sending.
+
 ## Global comparison
 
 Batch answers are **finalists**, not results. They are recorded as batch
@@ -221,6 +330,18 @@ has expired, it is not a selection: the run is `PROVISIONAL_PARTIAL_COVERAGE`
 provisional and nothing is stored. Quotes live 60 seconds, so a slow engine
 will meet this often; that is reported, not hidden.
 
+On the local engine a comparison the exact send-time count refuses (after the
+usual context-fit thinning) is split into two halves in the same fair order,
+each its own request on evidence acquired for it; a group of one cannot be
+split and ends the run partial. If a round of two or more groups advances every
+entrant, another round cannot reduce the pool: when the winners fit the
+selection cap (5) the result is the **union** of the group answers, ranked by
+each pick's own group rank with ties in the fair order, labelled
+`composition.method: UNION_OF_GROUP_ANSWERS_WITHIN_SELECTION_CAP` with every
+member answer id; it is `CURRENT` only while every member answer is current,
+and its lifetime is the shortest of theirs. Otherwise the run ends
+`PROVISIONAL_PARTIAL_COVERAGE` (`GLOBAL_COMPARISON_NO_PROGRESS`).
+
 "Selected" means selected by this documented tournament of bounded comparisons
 made by the configured model. It is not a ranking score and not a claim of
 best return. A model may choose differently in a different comparison context;
@@ -231,7 +352,9 @@ the receipts record every group, cutoff and answer.
 | Terminal status | Meaning | Stored candidate run |
 |---|---|---|
 | `GLOBAL_SELECTION_COMPLETE` | Complete coverage and a finished comparison with at least one selection whose evidence is current | Yes, as `CU-<run id>` |
+| `SLICE_SELECTION_COMPLETE` | A rolling slice: every row classified, the rows the slice reached answered and compared, a current selection | Yes, as `CU-<run id>`, labelled with its `slice` block |
 | `COMPLETE_NO_SELECTION` | Complete coverage; nothing selected | No |
+| `SLICE_COMPLETE_NO_SELECTION` | A rolling slice that selected nothing; says nothing about rows outside the slice | No |
 | `NO_ELIGIBLE_ROWS` | Every row assessed; none eligible; no model called | No |
 | `EMPTY_UNIVERSE` | The query matched no rows | No |
 | `EVIDENCE_PROVIDER_UNAVAILABLE` | The quote source returned nothing; no row could be assessed as eligible | No |
@@ -242,7 +365,7 @@ the receipts record every group, cutoff and answer.
 | `INTERRUPTED` | A server restart ended the run | No |
 | `FAILED` | Engine refused, or an unexpected error | No |
 
-Only the first status stores anything the Action Decision layer can load. The
+Only the two selection statuses store anything the Action Decision layer can load. The
 stored record is an ordinary candidate run whose picks and evidence both come
 from the final comparison, with an additive `universe_coverage` block (method,
 software SHA, counts, plan, budget, cutoffs). Its `valid_until` is bounded by
@@ -272,10 +395,40 @@ Stages (`screener-ai-screener-run/2.0.0`): `ENUMERATION`, `ELIGIBILITY`,
 - **Duplicate Run.** One run per account; a second POST joins it and starts
   and spends nothing.
 - **Stop.** `POST /screener/ai-screener/runs/{run_id}/stop` (`state.write`).
-  No further request starts. A request already sent is not claimed cancelled:
-  the provider offers no confirmed cancellation, so it finishes, is recorded
-  and stays charged. Stop is checked again after the last batch or comparison
+  No further request starts. The run signal reaches first-pass and comparison
+  packets. For a managed local model the existing resource monitor terminates
+  the owned process, and cleanup confirms exit before releasing its runtime lease.
+  A cancelled in-flight row remains unprocessed and the terminal status is `STOPPED`.
+  A Stop during exact token planning is also `STOPPED`: planned rows are
+  `UNPROCESSED:STOPPED_BY_OPERATOR`, never a provider preflight rejection.
+  Hosted requests have no confirmed cancellation: they finish, are recorded and
+  stay charged. Stop is checked again after the last batch or comparison
   request, before finalization. Finished receipts are kept; the unused hold is released.
+
+Local batch receipts include additive `provider_diagnostics`: actual HTTP start/end
+clocks and elapsed times for chat templating, exact token counting, and generation;
+slot wait and runtime readiness time; API-thread CPU time; runtime-reported prefill
+and generation timings when supplied; finish reason; cancellation state; and the
+existing resource-monitor sample. These clocks describe work performed, not an
+estimate of universe progress. A timeout with missing usage still has unknown token
+usage. The 300-second candidate-reduction timeout belongs to each generation HTTP
+request, not the entire universe. Startup retains its separate 180-second bound;
+the monitor retains its existing combined startup/request safety ceiling.
+
+The local candidate generation grammar privately copies the shared output schema
+and enforces the canonical parser's existing bounds: at most 1,200 characters per
+string, 12 list items, and at most five selected candidates (also bounded by the
+request's candidate count). This prevents a repeating string from continuing
+beyond a length the parser would reject. The hosted schema and canonical parser
+are unchanged. `canonical-parser-bounds/1` is part of local provider identity so
+answers generated under the old grammar are not reused as new-contract answers.
+These generation bounds do not extend a quote's lifetime or make a historical
+model response actionable.
+An exact `LOCAL_CONTEXT_EXCEEDED` refusal with `inference_dispatched=false`
+retains the healthy owned runtime for the next packet, including a request-time
+count after current evidence acquisition. Cancellation, resource failures and
+operational failures still stop and reap it. This preserves slot prefix reuse
+without dispatching an oversized prompt or enabling host prompt snapshots.
 - **Client disconnect.** The run lives on the server; a reloaded page
   re-attaches.
 - **Restart.** Receipts are appended to the coverage ledger

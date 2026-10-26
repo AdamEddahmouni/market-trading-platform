@@ -24,7 +24,7 @@ from market_platform_foundation.platform.security.route_policy import policy_for
 from market_platform_foundation.ui_api import paper_automation as controller_module
 from market_platform_foundation.ui_api.paper_risk_control import SmaStopService
 from market_platform_foundation.xa01.compatibility import register_equity
-from tests.intelligence.test_reevaluation import Clock
+from tests.intelligence.test_reevaluation import Clock, Pacer
 from tests.intelligence.test_sma_trailing_stop import series
 from tests.support.paper_automation_harness import (
     Automation, ClockedFeed, FixtureRuns, PaidProvider, experiment, policy_body,
@@ -464,6 +464,152 @@ class UniverseAndBudgetTests(AutoBase):
         self.assertEqual(a.cycle().get('skipped'), 'NOT_RUNNING')
 
 
+class RollingSliceControllerTests(AutoBase):
+    """Rolling slices on the local engine: time-boxed runs, coverage epochs, labelled adoption, hypothesis lifetime."""
+
+    SLICE = dict(status='SLICE_SELECTION_COMPLETE', coverage_complete=False, selection_complete=False, slice_complete=True)
+
+    def start_run(self):
+        a = self.auto
+        a.quote('AAPL', 150, 2)
+        a.opportunity('AAPL')
+        a.go()
+        a.cycle()
+        return a
+
+    def controller(self):
+        return self.auto.service._controller()
+
+    def test_a_local_universe_run_is_a_time_boxed_slice(self):
+        a = self.start_run()
+        plan = a.runs.started[0]['slice_plan']
+        # 40% of the owner's 1,800 s separation, from the cycle that started it.
+        self.assertLessEqual(plan['deadline_epoch'], self.clock.value + 720)
+        self.assertGreater(plan['deadline_epoch'], self.clock.value + 720 - 60)
+        self.assertEqual((plan['epoch'], plan['last_evaluated']), (1, {}))
+        started = a.events('UNIVERSE_RUN_STARTED')[0]
+        self.assertEqual(started['slice']['epoch'], 1)
+
+    def test_a_completed_slice_is_adopted_as_a_slice_and_orders_the_next_one(self):
+        a = self.start_run()
+        a.select('AAPL', evaluated=2, rows={'AAPL': 'AI_EVALUATED', 'NVDA': 'UNPROCESSED', 'MSFT': 'AI_EVALUATED'}, **self.SLICE)
+        cycle = a.cycle()
+        result = cycle['universe']['last_result']
+        self.assertEqual((result['status'], result['adopted'], result['slice_complete']), ('SLICE_SELECTION_COMPLETE', True, True))
+        self.assertEqual((result['epoch']['number'], result['epoch']['eligible'], result['epoch']['evaluated_in_epoch']), (1, 3, 2))
+        self.assertIsNone(self.controller()['universe'].get('failure'))
+        self.assertEqual(cycle['reevaluation']['candidate_count'], 1)
+        provenance = a.reevaluation._loop()['selection_provenance']
+        self.assertEqual((provenance['status'], provenance['state']), ('SLICE_SELECTION_COMPLETE', 'CURRENT'))
+        a.cycle(1800)
+        self.assertEqual(len(a.runs.started), 2)
+        self.assertEqual(set(a.runs.started[1]['slice_plan']['last_evaluated']), {'AAPL', 'MSFT'})
+        a.select('AAPL', rows={'NVDA': 'AI_EVALUATED', 'AAPL': 'INELIGIBLE', 'MSFT': 'INELIGIBLE'}, **self.SLICE)
+        finished = a.cycle()['universe']['last_result']
+        self.assertTrue(finished['epoch']['epoch_completed'])
+        self.assertEqual(self.controller()['universe']['epoch']['number'], 2)
+        self.assertEqual(a.events('UNIVERSE_EPOCH_COMPLETED')[0]['number'], 1)
+
+    def test_a_rejected_row_has_had_its_turn_but_is_not_evaluated(self):
+        a = self.start_run()
+        a.select('AAPL', evaluated=1, rows={'AAPL': 'AI_EVALUATED', 'NVDA': 'AI_REJECTED', 'MSFT': 'UNPROCESSED'}, **self.SLICE)
+        a.cycle()
+        a.cycle(1800)
+        plan = a.runs.started[1]['slice_plan']
+        self.assertEqual(set(plan['last_evaluated']), {'AAPL'})
+        # The next slice takes MSFT (deferred, no turn yet) before NVDA, whose answer was just rejected.
+        self.assertEqual(set(plan['last_turn']), {'AAPL', 'NVDA'})
+
+    def test_an_epoch_completes_when_every_row_has_had_a_turn_and_says_how_many_were_evaluated(self):
+        # A row the validator keeps rejecting, or one too large to send, would otherwise hold the epoch open for
+        # ever, and every slice would start on it again instead of refreshing the rows already evaluated.
+        a = self.start_run()
+        refused = ('UNPROCESSED', ['BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED'])
+        a.select('AAPL', evaluated=1, rows={'AAPL': 'AI_EVALUATED', 'NVDA': 'AI_REJECTED', 'MSFT': refused}, **self.SLICE)
+        epoch = a.cycle()['universe']['last_result']['epoch']
+        self.assertTrue(epoch['epoch_completed'])
+        self.assertEqual((epoch['eligible'], epoch['evaluated_in_epoch'], epoch['turns_in_epoch']), (3, 1, 3))
+        event = a.events('UNIVERSE_EPOCH_COMPLETED')[0]
+        self.assertEqual((event['eligible'], event['evaluated'], event['turns']), (3, 1, 3))
+
+    def test_rows_outside_the_opportunity_shortlist_need_no_turn(self):
+        # The shortlist decides which eligible rows the model sees; the rest must not hold the epoch open.
+        a = self.start_run()
+        screened = ('NOT_SHORTLISTED', ['BELOW_SHORTLIST_CUTOFF'])
+        a.select('AAPL', evaluated=2, rows={'AAPL': 'AI_EVALUATED', 'NVDA': screened, 'MSFT': 'AI_EVALUATED'}, **self.SLICE)
+        epoch = a.cycle()['universe']['last_result']['epoch']
+        self.assertTrue(epoch['epoch_completed'])
+        self.assertEqual((epoch['eligible'], epoch['evaluated_in_epoch'], epoch['turns_in_epoch']), (2, 2, 2))
+
+    def test_a_deferred_row_keeps_the_epoch_open(self):
+        a = self.start_run()
+        deferred = ('UNPROCESSED', ['DEFERRED_TO_NEXT_SLICE'])
+        a.select('AAPL', evaluated=1, rows={'AAPL': 'AI_EVALUATED', 'NVDA': 'AI_REJECTED', 'MSFT': deferred}, **self.SLICE)
+        epoch = a.cycle()['universe']['last_result']['epoch']
+        self.assertFalse(epoch.get('epoch_completed'))
+        self.assertEqual((epoch['evaluated_in_epoch'], epoch['turns_in_epoch']), (1, 2))
+
+    def test_a_slice_that_selected_nothing_is_not_adopted_and_does_not_back_off(self):
+        a = self.start_run()
+        a.select(status='SLICE_COMPLETE_NO_SELECTION', coverage_complete=False, selection_complete=False, slice_complete=True,
+                 rows={'AAPL': 'AI_EVALUATED'})
+        result = a.cycle()['universe']['last_result']
+        self.assertEqual((result['adopted'], result.get('adoption_refused')), (False, None))
+        self.assertIsNone(self.controller()['universe'].get('failure'))
+
+    def test_an_incomplete_slice_is_never_adopted(self):
+        a = self.start_run()
+        a.select('AAPL', status='PROVISIONAL_PARTIAL_COVERAGE', coverage_complete=False, selection_complete=False, slice_complete=False)
+        cycle = a.cycle()
+        self.assertFalse(cycle['universe']['last_result']['adopted'])
+        self.assertEqual(cycle['reevaluation']['candidate_count'], 0)
+
+    def test_an_adopted_selection_expires_after_two_separations(self):
+        a = self.start_run()
+        a.select('AAPL', rows={'AAPL': 'AI_EVALUATED'}, **self.SLICE)
+        self.assertEqual(a.cycle()['reevaluation']['candidate_count'], 1)
+        a.cycle(1800)  # the next slice starts and is still running
+        self.assertEqual(a.service.status()['universe']['active_run_id'], a.runs.started[1]['run_id'])
+        expired = a.cycle(1800)
+        self.assertEqual(expired['reevaluation']['candidate_count'], 0)
+        self.assertEqual(self.automation_orders(), [])
+
+    def test_a_slice_selection_reaches_a_simulated_fill_only_through_a_fresh_action_decision(self):
+        a = self.start_run()
+        a.select('AAPL', rows={'AAPL': 'AI_EVALUATED'}, **self.SLICE)
+        adopted = a.cycle()
+        self.assertTrue(adopted['universe']['last_result']['adopted'])
+        deferred = adopted['actions'][0]
+        self.assertEqual((deferred['outcome'], deferred['quantity']), ('DEFERRED', 6))  # the risk engine sizes it first
+        self.assertEqual(self.automation_orders(), [])
+        entry = a.cycle()['actions'][0]
+        self.assertEqual((entry['outcome'], entry['action'], entry['filled_quantity']), ('SUBMITTED', 'ENTER', 6))
+        order = self.automation_orders()[0]
+        reasons = {r['code']: r['label'] for r in order['decision_source_snapshot']['reasons']}
+        self.assertEqual(reasons['ACTION_DECISION'], entry['decision_id'])
+        decision = a.actions.history('AAPL')[0]
+        self.assertEqual(decision['decision_id'], entry['decision_id'])
+        self.assertEqual(a.position('AAPL')['quantity'], 6)
+        self.assertEqual(a.cycle()['actions'], [])  # never a second entry
+        self.assertEqual(len(self.automation_orders()), 1)
+
+    def test_action_decisions_are_not_withheld_while_a_universe_run_is_active(self):
+        self.enter()
+        a = self.auto
+        gates, driven = [], a.reevaluation.driven_cycle
+
+        def recording(*args, **kwargs):
+            gates.append(kwargs.get('model_gate'))
+            return driven(*args, **kwargs)
+        a.reevaluation.driven_cycle = recording
+        a.cycle(1800)  # the next slice starts and stays running
+        self.assertEqual(len(a.runs.started), 2)
+        cycle = a.cycle()
+        self.assertEqual(cycle['universe']['state'], 'RUNNING')
+        self.assertTrue(gates and all(gate['allowed'] for gate in gates), gates)
+        self.assertNotEqual(cycle['reevaluation']['cycle_status'], 'REEVALUATION_BLOCKED')
+
+
 class RiskTests(AutoBase):
     def two_candidates(self, **sections):
         a = self.auto
@@ -587,6 +733,47 @@ class RiskTests(AutoBase):
         decision = a.actions.history('AAPL')[0]
         self.assertIn('NO_GOVERNED_OPPORTUNITY', decision['blocker_codes'])
         self.assertTrue(all(o['outcome'] == 'BLOCKED' for o in outcomes))
+
+    def test_ai_direct_admits_a_gated_entry_without_an_opportunity(self):
+        from unittest import mock
+        a = self.auto
+        a.quote('AAPL', 150, 2)  # no Opportunity minted: the gated model proposal is the entry basis
+        with mock.patch.dict(os.environ, {'IMP_PAPER_AI_DIRECT': '1'}):
+            a.go()
+            a.cycle()
+            a.select('AAPL')
+            outcomes = [o for _ in range(3) for o in a.cycle()['actions']]
+        decision = next(d for d in a.actions.history('AAPL') if d['action_state'] == 'ENTER')
+        self.assertNotIn('NO_GOVERNED_OPPORTUNITY', decision['blocker_codes'])
+        self.assertTrue(decision['evidence_snapshot']['context']['ai_direct'])
+        submitted = [o for o in outcomes if o['outcome'] == 'SUBMITTED']
+        self.assertEqual([(o['action'], o['side']) for o in submitted], [('ENTER', 'BUY')])
+        self.assertGreater(a.position('AAPL')['quantity'], 0)
+        order = self.automation_orders()[0]
+        self.assertEqual(order['correlation_id'], 'lane:order-flow')
+        # The existing pre-trade engine still sized it against an in-memory Opportunity that is never persisted.
+        self.assertEqual([o for o in self.store.strategy_repository.list_opportunities() if o.opportunity_id.startswith('OPP-AID-')], [])
+
+    def test_eod_flatten_closes_equity_positions_once_near_the_bell(self):
+        self.enter()
+        a = self.auto
+        a.minutes_to_close = 8
+        a.quote('AAPL', 151, 2)
+        flattened = [o for o in a.cycle(400)['actions'] if o['action'] == 'EOD_FLATTEN']
+        self.assertEqual([(o['outcome'], o['quantity']) for o in flattened], [('SUBMITTED', 6)])
+        self.assertIsNone(a.position('AAPL'))
+        self.assertIn('PAPER_EOD_FLATTEN', [e['kind'] for e in a.events()])
+        again = a.cycle(60)
+        self.assertEqual([o for o in again['actions'] if o['action'] == 'EOD_FLATTEN'], [])
+        self.assertEqual(len([o for o in a.orders() if str(o.get('client_order_id') or '').startswith('PAI-EOD-')]), 1)
+
+    def test_eod_flatten_waits_for_the_window(self):
+        self.enter()
+        a = self.auto
+        a.minutes_to_close = 60
+        a.quote('AAPL', 151, 2)
+        self.assertEqual([o for o in a.cycle(400)['actions'] if o['action'] == 'EOD_FLATTEN'], [])
+        self.assertEqual(a.position('AAPL')['quantity'], 6)
 
 
 class ExitTests(AutoBase):
@@ -992,6 +1179,47 @@ class OwnershipAndRecoveryTests(AutoBase):
         self.assertEqual(b.cycle()['status'], 'RUNNING')
         self.assertEqual(len(self.automation_orders(b)), 1)
 
+    def test_a_restart_inside_the_predecessor_lease_waits_it_out_and_resumes(self):
+        self.enter()
+        self.clock.value += 30  # an operator restart: the old process is gone, its lease still has ~150 s
+        b = self.restart()
+        waited = []
+
+        def sleep(seconds):
+            waited.append(seconds)
+            self.clock.value += seconds
+        b.service.sleep = sleep
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=True, reason=None))
+        self.assertEqual(len(waited), 1)
+        self.assertLessEqual(waited[0], 180 + 5)
+        self.assertEqual(b.events('STARTUP_RESUME_WAITING_FOR_LEASE')[0]['wait_seconds'], round(waited[0], 3))
+        self.assertTrue(b.events('STARTUP_RESUMED')[0]['after_lease_wait'])
+        self.assertEqual((b.service.status()['status'], b.service.status()['liveness']['owner']), ('RUNNING', 'THIS_PROCESS'))
+
+    def test_a_predecessor_that_keeps_renewing_still_wins_after_the_wait(self):
+        self.enter()
+        b = self.restart()
+        account = b.service._account()
+
+        def sleep(seconds):
+            self.clock.value += seconds
+            # The old process is alive and renews its lease while the new one waits.
+            b.service.repository.heartbeat(account, 'process-a', now=self.clock.value, lease_seconds=180)
+        b.service.sleep = sleep
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='AUTOMATION_ALREADY_OWNED'))
+        self.assertEqual(b.events('STARTUP_RESUME_REFUSED')[0]['reason'], 'AUTOMATION_ALREADY_OWNED')
+
+    def test_a_controller_stopped_during_the_wait_is_not_resumed(self):
+        self.enter()
+        b = self.restart()
+
+        def sleep(seconds):
+            b.service.stop()  # the operator stops automation while the new process waits
+            self.clock.value += seconds
+        b.service.sleep = sleep
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='NOT_RUNNING_BEFORE_RESTART'))
+        self.assertNotEqual(b.service.status()['status'], 'RUNNING')
+
     def test_restart_does_not_resume_a_stopped_paused_or_disarmed_controller(self):
         a = self.auto
         a.go()
@@ -1026,6 +1254,78 @@ class OwnershipAndRecoveryTests(AutoBase):
         self.store.paper_ledger.policy['risk_policy_identity_hash'] = 'changed-since-arming'
         self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='PAPER_RISK_POLICY_CHANGED'))
         self.assertNotEqual(b.service.status()['status'], 'RUNNING')
+
+    # --- unattended restart (owner decision 3, 2026-10-23): refusals time can clear are retried, bounded ---------
+    def _refused_starts(self, b, errors, on_sleep=None):
+        """The first starts raise ``errors`` in order, then the real start runs. Returns the waits taken."""
+        real, queue, waited = b.service.start, list(errors), []
+
+        def start(**kwargs):
+            if queue:
+                raise queue.pop(0)
+            return real(**kwargs)
+
+        def sleep(seconds):
+            waited.append(seconds)
+            self.clock.value += seconds
+            if on_sleep:
+                on_sleep(len(waited))
+        b.service.start, b.service.sleep = start, sleep
+        return waited
+
+    def test_a_restart_retries_a_loop_another_process_still_owns_and_then_resumes(self):
+        self.enter()
+        self.clock.value += 600
+        b = self.restart()
+        waited = self._refused_starts(b, [ValueError('REEVALUATION_LOOP_ALREADY_OWNED')] * 2)
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=True, reason=None))
+        self.assertEqual(waited, [controller_module.STARTUP_RESUME_RETRY_SECONDS] * 2)
+        self.assertEqual({e['reason'] for e in b.events('STARTUP_RESUME_RETRYING')}, {'REEVALUATION_LOOP_ALREADY_OWNED'})
+        self.assertEqual(b.events('STARTUP_RESUMED')[0]['attempts'], 2)
+        self.assertEqual(b.events('STARTUP_RESUME_REFUSED'), [])
+        status = b.service.status()
+        self.assertEqual((status['status'], status['liveness']['owner']), ('RUNNING', 'THIS_PROCESS'))
+
+    def test_a_busy_store_at_restart_is_retried(self):
+        import sqlite3
+        self.enter()
+        self.clock.value += 600
+        b = self.restart()
+        self._refused_starts(b, [sqlite3.OperationalError('database is locked')])
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=True, reason=None))
+        self.assertEqual(b.events('STARTUP_RESUME_RETRYING')[0]['reason'], 'OperationalError')
+
+    def test_a_refusal_that_never_clears_is_given_up_within_the_retry_limit(self):
+        self.enter()
+        self.clock.value += 600
+        b = self.restart()
+        waited = self._refused_starts(b, [ValueError('REEVALUATION_LOOP_ALREADY_OWNED')] * 1000)
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='REEVALUATION_LOOP_ALREADY_OWNED'))
+        limit, step = controller_module.STARTUP_RESUME_RETRY_LIMIT_SECONDS, controller_module.STARTUP_RESUME_RETRY_SECONDS
+        self.assertLessEqual(sum(waited), limit)
+        self.assertGreaterEqual(sum(waited), limit - step)
+        self.assertEqual(b.events('STARTUP_RESUME_REFUSED')[0]['reason'], 'REEVALUATION_LOOP_ALREADY_OWNED')
+        self.assertLessEqual(len(b.events('STARTUP_RESUME_RETRYING')), limit // 60 + 1)  # about one record a minute
+        status = b.service.status()
+        self.assertNotEqual(status['status'], 'RUNNING')
+        self.assertEqual(status['liveness']['last_error']['code'], 'REEVALUATION_LOOP_ALREADY_OWNED')
+
+    def test_an_operator_stop_during_the_retries_wins(self):
+        self.enter()
+        self.clock.value += 600
+        b = self.restart()
+        self._refused_starts(b, [ValueError('REEVALUATION_LOOP_ALREADY_OWNED')] * 1000,
+                             on_sleep=lambda count: b.service.stop() if count == 3 else None)
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='NOT_RUNNING_BEFORE_RESTART'))
+        self.assertNotEqual(b.service.status()['status'], 'RUNNING')
+
+    def test_a_refusal_time_cannot_clear_is_not_retried(self):
+        self.enter()
+        self.clock.value += 600
+        b = self.restart()
+        waited = self._refused_starts(b, [ValueError('PAPER_RISK_POLICY_CHANGED')])
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='PAPER_RISK_POLICY_CHANGED'))
+        self.assertEqual((waited, b.events('STARTUP_RESUME_RETRYING')), ([], []))
 
     def test_an_order_is_never_repeated_for_the_same_decision(self):
         self.enter()
@@ -1092,6 +1392,148 @@ class WorkerScheduleTests(AutoBase):
         self.assertEqual(controller['last_cycle']['missed_cycles_before'], 2)
         self.assertTrue(worker.alive())
 
+    def _fault_log(self):
+        import tempfile
+        from pathlib import Path
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.auto.service._trace_log_path = lambda: Path(folder.name) / 'paper-automation-scope-errors.log'
+        return Path(folder.name) / 'paper-automation-worker-errors.log'
+
+    def test_a_busy_store_during_lease_renewal_is_retried_with_its_traceback_retained(self):
+        import sqlite3
+        a = self.auto
+        a.go()
+        log = self._fault_log()
+        worker = a.service.worker
+        worker.wait = lambda seconds: setattr(self.clock, 'value', self.clock.value + seconds)
+        real, failures = a.service.heartbeat, [2]
+
+        def heartbeat():
+            if failures[0]:
+                failures[0] -= 1
+                raise sqlite3.OperationalError('database is locked')
+            return real()
+        a.service.heartbeat = heartbeat
+        before = a.service._controller()['cycle_count']
+        worker.run(max_cycles=3)
+        # The worker's renewal fails once; the cycle's own renewal fails once, so that slot is unobserved, not run.
+        self.assertEqual(a.service._controller()['cycle_count'], before + 2)
+        self.assertTrue(worker.alive())
+        self.assertEqual(worker.transient_failures, 0)
+        text = log.read_text(encoding='utf-8')
+        self.assertEqual((text.count('"phase": "HEARTBEAT"'), text.count('"phase": "CYCLE"')), (1, 1))
+        self.assertIn('sqlite3.OperationalError: database is locked', text)
+        self.assertIn('"owner_id": "%s"' % a.service.owner_id, text)
+
+    def test_persistent_store_errors_end_the_worker_and_say_why(self):
+        import sqlite3
+        from market_platform_foundation.ui_api.paper_automation import TRANSIENT_STORE_RETRIES
+        a = self.auto
+        a.go()
+        log = self._fault_log()
+        worker = a.service.worker
+        worker.wait = lambda seconds: setattr(self.clock, 'value', self.clock.value + seconds)
+
+        def heartbeat():
+            raise sqlite3.OperationalError('database is locked')
+        a.service.heartbeat = heartbeat
+        worker.run(max_cycles=3)
+        self.assertFalse(worker.alive())
+        self.assertEqual(a.service._controller()['last_error']['code'], 'WORKER_OperationalError')
+        text = log.read_text(encoding='utf-8')
+        self.assertEqual(text.count('"transient": true'), TRANSIENT_STORE_RETRIES)
+        self.assertIn('"phase": "WORKER_EXIT"', text)
+        self.assertIn('Traceback (most recent call last)', text)
+
+    def test_a_cadence_longer_than_the_lease_keeps_the_driven_loop_held(self):
+        a = self.auto
+        a.go(schedule=dict(cadence_seconds=900))
+        worker = a.service.worker
+        owners = []
+
+        def wait(seconds):
+            self.clock.value += seconds
+            owners.append(a.reevaluation.status()['liveness']['owner'])
+        worker.wait = wait
+        worker.run(max_cycles=2)  # 900 s between cycles against the loop's 180 s lease
+        self.assertEqual(len(owners), 15)
+        self.assertEqual(set(owners), {'THIS_PROCESS'})
+        a.service.stop()
+        self.assertFalse(a.service.heartbeat())  # a stopped controller renews neither lease
+        status = a.reevaluation.status()
+        self.assertEqual((status['worker_state'], status['liveness']['lease_until']), ('STOPPED', None))
+
+    def paced(self, a, work):
+        """Run one controller cycle whose driven reevaluation first does ``work`` (a long model call)."""
+        pacer = Pacer()
+        self.addCleanup(pacer.close)
+        a.service.lease_wait = pacer.wait
+        original, failed = a.reevaluation.driven_cycle, []
+
+        def driven(*args, **kwargs):
+            a.reevaluation.driven_cycle = original
+            try:
+                work(pacer)
+            except AssertionError as exc:  # the cycle records any exception as a cycle error; surface it here
+                failed.append(exc)
+            return original(*args, **kwargs)
+        a.reevaluation.driven_cycle = driven
+        summary = a.cycle()
+        if failed:
+            raise failed[0]
+        return summary
+
+    def test_the_controller_stays_held_through_a_driven_call_longer_than_its_lease(self):
+        a = self.auto
+        a.go()
+        other = Automation(self.store, clock=self.clock, feed=self.feed, ai=a.ai, provider=a.provider, runs=a.runs, owner='process-b')
+        seen = []
+
+        def long_call(pacer):  # 7 x 70 s = 490 s against the controller's 180 s lease
+            for _ in range(7):
+                self.clock.value += 70
+                self.assertTrue(pacer.tick())
+                status = a.service.status()
+                seen.append((status['liveness']['owner'], [b['code'] for b in status['blockers'] if b['category'] == 'AUTHORITY']))
+                with self.assertRaisesRegex(ValueError, 'AUTOMATION_ALREADY_OWNED'):
+                    other.service.start(threaded=False)
+        summary = self.paced(a, long_call)
+        self.assertEqual(seen, [('THIS_PROCESS', [])] * 7)
+        self.assertEqual((summary['error'], summary.get('superseded')), (None, None))
+        self.assertEqual(a.service._controller()['owner_id'], a.service.owner_id)
+
+    def test_the_controller_keeper_never_renews_after_stop(self):
+        a = self.auto
+        a.go()
+        renewed = []
+
+        def call_then_stop(pacer):
+            self.clock.value += 70
+            renewed.append(pacer.tick())
+            a.service.stop()  # releases the controller and the driven loop while the call is still running
+            self.clock.value += 70
+            renewed.append(pacer.tick())
+        summary = self.paced(a, call_then_stop)
+        controller = a.service._controller()
+        self.assertEqual(renewed, [True, False])
+        self.assertEqual((controller['owner_id'], controller['lease_until'], controller['desired_state']), (None, None, 'STOPPED'))
+        self.assertTrue(summary['superseded'])
+
+    def test_the_controller_keeper_never_takes_back_a_lease_another_process_holds(self):
+        a = self.auto
+        a.go()
+        renewed = []
+
+        def takeover(pacer):  # the host stalls past the lease and another process takes the controller
+            self.clock.value += 200
+            a.service.repository.acquire_lease(a.service._account(), 'process-b', now=self.clock(), lease_seconds=180)
+            renewed.append(pacer.tick())
+        summary = self.paced(a, takeover)
+        self.assertEqual(renewed, [False])
+        self.assertEqual(a.service._controller()['owner_id'], 'process-b')
+        self.assertTrue(summary['superseded'])
+
     def test_a_worker_that_loses_its_lease_stops_scheduling(self):
         a = self.auto
         a.go()
@@ -1100,6 +1542,91 @@ class WorkerScheduleTests(AutoBase):
         worker.run(max_cycles=1)
         self.assertEqual((worker.exit_reason, worker.alive()), ('AUTOMATION_LEASE_LOST', False))
         self.assertEqual(a.service.status()['status'], 'ERROR')
+
+    # --- a worker that ends on its own (owner decision 3, 2026-10-23) ------------------------------------------
+    def _ended(self, reason):
+        worker = self.auto.service.worker
+        worker.exit_reason, worker.finished = reason, True
+        return worker
+
+    def _instant_sleep(self):
+        waited = []
+
+        def sleep(seconds):
+            waited.append(seconds)
+            self.clock.value += seconds
+        self.auto.service.sleep = sleep
+        return waited
+
+    def test_a_worker_that_ends_on_an_error_is_recorded_and_revived(self):
+        a = self.auto
+        a.go()
+        waited = self._instant_sleep()
+        old_run = a.service.status()['run']['run_id']
+        worker = self._ended('AUTOMATION_SOMETHING_FAILED')
+        self.assertEqual(a.service._worker_ended(worker, threaded=False), dict(revived=True, reason=None))
+        self.assertEqual(waited, [controller_module.WORKER_REVIVE_DELAY_SECONDS])
+        exited = a.events('WORKER_EXITED')[0]
+        self.assertEqual((exited['reason'], exited['run_id']), ('AUTOMATION_SOMETHING_FAILED', old_run))
+        revived = a.events('WORKER_REVIVED')[0]
+        self.assertEqual(revived['exited_for'], 'AUTOMATION_SOMETHING_FAILED')
+        self.assertNotEqual(revived['run_id'], old_run)
+        self.assertIsNot(a.service.worker, worker)
+        status = a.service.status()
+        self.assertEqual((status['status'], status['liveness']['owner']), ('RUNNING', 'THIS_PROCESS'))
+        self.assertEqual(a.cycle()['status'], 'RUNNING')
+
+    def test_revives_are_bounded_per_hour(self):
+        a = self.auto
+        a.go()
+        self._instant_sleep()
+        limit = controller_module.WORKER_REVIVE_LIMIT
+        for _ in range(limit):
+            self.assertTrue(a.service._worker_ended(self._ended('AUTOMATION_SOMETHING_FAILED'), threaded=False)['revived'])
+        self.assertEqual(a.service._worker_ended(self._ended('AUTOMATION_SOMETHING_FAILED'), threaded=False),
+                         dict(revived=False, reason='WORKER_REVIVE_BUDGET_SPENT'))
+        self.assertEqual(len(a.events('WORKER_REVIVE_BUDGET_SPENT')), 1)
+        self.assertEqual(a.service.status()['status'], 'ERROR')  # wanted running, nothing is: never shown as RUNNING
+        self.clock.value += controller_module.WORKER_REVIVE_WINDOW_SECONDS
+        self.assertTrue(a.service._worker_ended(a.service.worker, threaded=False)['revived'])
+
+    def test_a_lost_lease_a_stop_or_an_emergency_latch_is_never_revived(self):
+        a = self.auto
+        a.go()
+        self._instant_sleep()
+        self.assertEqual(a.service._worker_ended(self._ended('AUTOMATION_LEASE_LOST'), threaded=False),
+                         dict(revived=False, reason='AUTOMATION_LEASE_LOST'))
+        controller = a.service._controller()
+        controller['emergency'] = dict(at='2026-10-24T00:00:00Z', reason='TEST', source='CONTROLLER')
+        a.service._save(controller)
+        self.assertIsNone(a.service._worker_ended(a.service.worker, threaded=False))
+        controller['emergency'] = None
+        a.service._save(controller)
+        worker = a.service.worker
+        a.service.stop()
+        self.assertIsNone(a.service._worker_ended(worker, threaded=False))
+        self.assertEqual(a.events('WORKER_REVIVED'), [])
+        self.assertEqual(len(a.events('WORKER_EXITED')), 1)
+
+    def test_a_scheduling_thread_that_dies_reports_its_end_and_revives_within_the_budget(self):
+        a = self.auto
+        a.configure()
+        a.arm()
+        a.service.sleep = lambda seconds: None
+
+        def broken(**kwargs):
+            raise ValueError('AUTOMATION_FIXTURE_BROKEN')
+        a.service.run_cycle = broken
+        a.service.start(threaded=True)
+        deadline = time.time() + 20
+        while time.time() < deadline and not a.events('WORKER_REVIVE_BUDGET_SPENT'):
+            time.sleep(0.05)
+        try:
+            self.assertEqual(len(a.events('WORKER_REVIVE_BUDGET_SPENT')), 1)
+            self.assertEqual(len(a.events('WORKER_REVIVED')), controller_module.WORKER_REVIVE_LIMIT)
+            self.assertEqual({e['reason'] for e in a.events('WORKER_EXITED')}, {'AUTOMATION_FIXTURE_BROKEN'})
+        finally:
+            a.service.stop()
 
     def test_threaded_start_runs_a_cycle_and_stop_ends_the_thread(self):
         a = self.auto

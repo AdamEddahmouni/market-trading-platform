@@ -225,7 +225,7 @@ def attach_news(candidate: dict, news: dict, *, now: str) -> None:
         candidate['alignments'].append(comparison)
 
 
-def fit_news(scope: dict, candidates: list[dict], projections: dict, *, now: str) -> None:
+def fit_news(scope: dict, candidates: list[dict], projections: dict, *, now: str, max_bytes: int | None = None) -> None:
     """Deterministic global thinning before inference, never raise MAX_PACKET_BYTES.
 
     Rebuild NEWS/SENTIMENT/alignments after each removal so refs and counts agree.
@@ -233,9 +233,12 @@ def fit_news(scope: dict, candidates: list[dict], projections: dict, *, now: str
     Thin per-provider status detail on candidates carrying no story before
     removing reference evidence. Repeat after each story removal, since a
     newly empty candidate can release coverage metadata without losing facts.
+    ``max_bytes`` only tightens the bound, for a request the exact send-time count refused.
     """
+    limit = MAX_PACKET_BYTES if max_bytes is None else min(MAX_PACKET_BYTES, int(max_bytes))
+
     def over():
-        return len(json.dumps(dict(scope=scope, decision_cutoff=now, candidates=packet_candidates(candidates)), ensure_ascii=False, sort_keys=True).encode('utf-8')) > MAX_PACKET_BYTES
+        return len(json.dumps(dict(scope=scope, decision_cutoff=now, candidates=packet_candidates(candidates)), ensure_ascii=False, sort_keys=True).encode('utf-8')) > limit
 
     def thin_empty_coverage():
         for candidate in sorted(candidates, key=lambda c: c['instrument']['instrument_id'], reverse=True):

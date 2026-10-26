@@ -12,7 +12,7 @@ model. The application parser still validates every result.
 generates nothing: it reports the input tokens and whether the provider accepts the body.
 
 ``BudgetedProvider`` wraps any provider with ``DailyBudget``, a persisted per-day
-limit on requests and tokens. Before each call it reserves the worst case (the prompt
+limit on requests and tokens, and with the hard dollar caps of ``paid_spend.DollarLedger``. Before each call it reserves the worst case (the prompt
 estimate plus ``max_tokens``). A call that could cross either limit is refused before
 any network request, with a stable reason. The file lives in the external IMP cache
 (``quota/anthropic-synthesis.json``, shared by every paid engine), so a restart cannot reset the count.
@@ -478,15 +478,19 @@ class BudgetedProvider:
 
     reports_stages = True  # announces BUDGET_RESERVED, then MODEL_CALL, only once the reservation is held
 
-    def __init__(self, provider: Any, budget: DailyBudget) -> None:
+    def __init__(self, provider: Any, budget: DailyBudget, ledger: Any = None) -> None:
         self._provider = provider
         self.budget = budget
+        self.ledger = ledger  # paid_spend.DollarLedger: daily and monthly dollar caps, checked first
         self.provider_id = getattr(provider, "provider_id", "")
         self.model_id = getattr(provider, "model_id", "")
         self.runtime = getattr(provider, "runtime", "PAID_API")
 
     def budget_status(self) -> dict[str, Any]:
         return self.budget.status()
+
+    def spend_status(self) -> dict[str, Any] | None:
+        return self.ledger.status() if self.ledger is not None else None
 
     @property
     def reasoning_headroom(self) -> int:
@@ -556,8 +560,20 @@ class BudgetedProvider:
         if held is not None:
             # Never reserve less than the run planned for this call (a plan calibrated by a provider count).
             worst_case = max(worst_case, held[1])
+        reserved_micro = 0
+        if self.ledger is not None:
+            # Dollars first: the whole output allowance (thinking included) at the pinned price, plus the input.
+            output_allowance = int(config.max_tokens) + self.reasoning_headroom
+            reserved_micro, reason = self.ledger.reserve(self.model_id, max(0, worst_case - output_allowance),
+                                                         output_allowance)
+            if reason is not None:
+                return ProviderInferenceResponse(raw_text="", provider_id=self.provider_id, model_id=self.model_id,
+                                                 error_code=InferenceErrorCode.PROVIDER_RATE_LIMIT, error_message=reason,
+                                                 parsing_status=ParsingStatus.PROVIDER_ERROR, latency_ms=0)
         reason = self.budget.reserve(worst_case, hold=held[0] if held is not None else None)
         if reason is not None:
+            if self.ledger is not None:
+                self.ledger.release(reserved_micro)
             return ProviderInferenceResponse(raw_text="", provider_id=self.provider_id, model_id=self.model_id,
                                              error_code=InferenceErrorCode.PROVIDER_RATE_LIMIT, error_message=reason,
                                              parsing_status=ParsingStatus.PROVIDER_ERROR, latency_ms=0)
@@ -570,7 +586,7 @@ class BudgetedProvider:
         finally:
             if response is None or response.parsing_status == ParsingStatus.TIMEOUT:
                 # Unknown outcome: the request may have been billed, so the worst case stays charged.
-                self.budget.settle(worst_case, None, None)
+                usage: tuple[int | None, int | None] = (None, None)
             elif response.error_code is not None and response.tokens_input is None and response.tokens_output is None:
                 # Only a known pre-generation refusal establishes zero usage. Unknown transport/server
                 # outcomes retain the reservation. No automatic retry is made.
@@ -578,9 +594,12 @@ class BudgetedProvider:
                     "ANTHROPIC_RATE_LIMIT_ERROR","ANTHROPIC_OVERLOADED_ERROR","ANTHROPIC_INVALID_REQUEST_ERROR",
                     "ANTHROPIC_SCHEMA_REJECTED","ANTHROPIC_GRAMMAR_TOO_LARGE","ANTHROPIC_CONTEXT_EXCEEDED",
                     "ANTHROPIC_TOOL_CHOICE_UNSUPPORTED","ANTHROPIC_PARAMETER_UNSUPPORTED"}
-                self.budget.settle(worst_case,0 if refused else None,0 if refused else None)
+                usage = (0, 0) if refused else (None, None)
             else:
-                self.budget.settle(worst_case, response.tokens_input, response.tokens_output)
+                usage = (response.tokens_input, response.tokens_output)
+            self.budget.settle(worst_case, *usage)
+            if self.ledger is not None:
+                self.ledger.settle(reserved_micro, self.model_id, *usage)  # never raises; unsettled stays charged
 
 
 def _int_setting(value: Callable[[str], str | None], name: str, default: int) -> int:
@@ -592,21 +611,29 @@ def _int_setting(value: Callable[[str], str | None], name: str, default: int) ->
 
 def build_paid_provider(value: Callable[[str], str | None], *, cache_dir: Path | None, provider: Any = None,
                         model: str | None = None) -> BudgetedProvider:
-    """A production paid provider behind the daily budget: limits from process env / private provider file.
+    """A production paid provider behind the daily budget and the dollar caps: limits from process env / private
+    provider file.
 
-    Every paid engine (Anthropic, OpenAI, Gemini) shares one budget file, so switching vendors never resets or
-    multiplies the cap. ``provider`` defaults to Claude with the key from ``value``."""
+    Every paid engine (Anthropic, OpenAI, Gemini) shares one budget file and one dollar ledger, so switching vendors
+    never resets or multiplies a cap. ``provider`` defaults to Claude with the key from ``value``."""
+
+    from .paid_prices import price_schedule
+    from .paid_spend import ledger_for
 
     budget = DailyBudget(cache_dir / BUDGET_RELATIVE if cache_dir is not None else None,
                          max_requests=_int_setting(value, DAILY_REQUESTS_ENV, DEFAULT_DAILY_REQUESTS),
                          max_tokens=_int_setting(value, DAILY_TOKENS_ENV, DEFAULT_DAILY_TOKENS))
     if provider is None:
         provider = AnthropicSynthesisProvider(api_key=value("ANTHROPIC_API_KEY") or "", model=model or value(MODEL_ENV))
-    wrapped = BudgetedProvider(provider, budget)
+    ledger = ledger_for(value, cache_dir)
+    wrapped = BudgetedProvider(provider, budget, ledger)
     try:
         wrapped.price_schedule = json.loads(value("IMP_SYNTHESIS_PRICE_SCHEDULE") or "null")
     except (TypeError,ValueError):
         wrapped.price_schedule = None
+    if wrapped.price_schedule is None:
+        # Cost previews use the same pinned price the dollar caps charge.
+        wrapped.price_schedule = price_schedule(wrapped.model_id, ledger.today())
     return wrapped
 
 

@@ -20,6 +20,9 @@ from datetime import UTC, date, datetime
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
+from ..market_data.delayed_futures_bridge import SOURCE_ID as DELAYED_FUTURES_SOURCE
+from ..market_data.delayed_futures_bridge import DelayedFuturesSource, FuturesContractRef, delayed_futures_source
+
 ET = ZoneInfo("America/New_York")
 SCHEMA_VERSION = "screener-futures-context/1.0.0"
 MAPPING_VERSION = "FUTURES_CONTEXT_MAP_V1"
@@ -169,11 +172,26 @@ def _default_bridge() -> dict[str, Any] | None:
     return fetch_depth_latest() if is_available() else None
 
 
+def _delayed_quote(values: dict[str, Any] | None, now_s: float) -> dict[str, Any] | None:
+    """A second source's delayed last price. It is DELAYED whatever its age, never LIVE."""
+
+    price, updated = _number((values or {}).get("last")), _number((values or {}).get("updated_s"))
+    if price is None or updated is None:
+        return None
+    previous = _number(values.get("prev_close"))
+    return {"price": price, "price_basis": "LAST",
+            "change_pct": round((price - previous) / previous * 100, 4) if previous else None,
+            "provider": DELAYED_FUTURES_SOURCE, "age_ms": max(0, int((now_s - updated) * 1000)),
+            "as_of": datetime.fromtimestamp(updated, tz=UTC).isoformat().replace("+00:00", "Z"), "state": "DELAYED"}
+
+
 class FuturesContextService:
     def __init__(self, *, transport_getter: Callable[[], Any | None], bridge: Callable[[], dict[str, Any] | None] = _default_bridge,
                  monotonic: Callable[[], float] = time.monotonic, now_s: Callable[[], float] = time.time,
-                 today: Callable[[], date] = lambda: datetime.now(ET).date()) -> None:
+                 today: Callable[[], date] = lambda: datetime.now(ET).date(),
+                 delayed_source: Callable[[], DelayedFuturesSource | None] = delayed_futures_source) -> None:
         self._transport_getter = transport_getter
+        self._delayed_source = delayed_source
         self._bridge = bridge
         self._monotonic = monotonic
         self._now_s = now_s
@@ -224,6 +242,19 @@ class FuturesContextService:
         self._quotes = (now, frozenset(codes), rows)
         return rows, None
 
+    def _delayed_quotes(self, contracts: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+        """Delayed quotes for contracts the primary source did not price; empty without a second source."""
+
+        source = self._delayed_source() if contracts else None
+        if source is None:
+            return {}
+        try:
+            return source.quotes([FuturesContractRef(key=c["contract_id"], root=c["contract_id"][:-3],
+                                                     contract_month=c["contract_month"], expiry=c["last_trade_date"])
+                                  for c in contracts])
+        except Exception:  # noqa: BLE001 — provider boundary fails closed
+            return {}
+
     def read(self, *, sector: str | None, industry: str | None, market_cap: float | None) -> dict[str, Any]:
         relations = related_futures(sector=sector, industry=industry, market_cap=market_cap)
         with self._lock:
@@ -232,6 +263,8 @@ class FuturesContextService:
             codes = [c["provider_code"] for c in contracts.values() if c["state"] == "CURRENT"]
             vendor, vendor_reason = self._vendor_quotes(codes, transport)
         now_s = self._now_s()
+        delayed = self._delayed_quotes([c for c in contracts.values() if c["state"] == "CURRENT"
+                                        and _number((vendor.get(c["provider_code"]) or {}).get("last_price")) is None])
         items: list[dict[str, Any]] = []
         for relation in relations:
             contract = contracts[relation.root]
@@ -251,6 +284,8 @@ class FuturesContextService:
                              "state": "LIVE" if age is not None and age <= LIVE_MAX_AGE_SECONDS else "STALE"}
                 elif relation.root == "ES":
                     quote = _bridge_es_quote(contract["contract_month"], self._bridge, now_s)
+                if quote is None:
+                    quote = _delayed_quote(delayed.get(contract["contract_id"]), now_s)
             if relation.requires_current_data and (quote is None or quote["state"] != "LIVE"):
                 continue
             items.append({

@@ -78,6 +78,37 @@ class RuntimeAdmissionTests(unittest.TestCase):
         changed = replace(small, context=1024)
         self.assertEqual(runtime.profile_reason(changed), 'LOCAL_RUNTIME_PROFILE_MISMATCH')
 
+    def test_gpu_profile_keeps_model_context_and_the_unchanged_memory_admission(self):
+        from market_platform_foundation.intelligence.inference import local_runtime as runtime
+        base = self.manifest()
+        gpu = runtime.apply_profile(base, 'vulkan-8192/1')
+        self.assertEqual((gpu.model_id, gpu.revision, gpu.runtime_version, gpu.context), (base.model_id, base.revision, base.runtime_version, 8192))
+        self.assertEqual(gpu.gpu_layers, 99)
+        self.assertIsNone(runtime.profile_reason(gpu))
+        self.assertEqual(runtime.profile_device('vulkan-8192/1'), 'Vulkan0')
+        self.assertEqual(runtime.profile_device('cpu-8192/1'), 'none')
+        sample = {'available_bytes': 12*resources.GIB, 'commit_available_bytes': 12*resources.GIB}
+        with patch.object(runtime, 'verify_artifacts', return_value=None):
+            gpu_status, cpu_status = runtime.readiness(gpu, sample=sample), runtime.readiness(base, sample=sample)
+        self.assertEqual(gpu_status['context_configuration']['device'], 'Vulkan0')
+        # Rebuild step 5: weights and KV on the card are checked against the card's own budget; only what stays on
+        # the CPU (here nothing but the 2 GiB host allowance) is counted in RAM. The CPU estimate is unchanged.
+        pin = runtime.model_pin(gpu)
+        kv = pin.layers * pin.kv_heads * pin.head_dim * 4 * 8192
+        self.assertEqual(gpu_status['estimated_peak_memory'], 2*resources.GIB)
+        self.assertEqual(gpu_status['estimated_gpu_memory'], pin.weight_bytes + kv + resources.GIB)
+        self.assertEqual(cpu_status['estimated_peak_memory'], pin.weight_bytes + kv + 2*resources.GIB)
+        self.assertEqual(gpu_status['minimum_available_bytes'], 4*resources.GIB)
+        with patch.object(runtime, 'verify_artifacts', return_value=None):
+            self.assertEqual(runtime.readiness(gpu, sample={**sample, 'available_bytes': 5*resources.GIB})['rejection_reason'],
+                             'LOCAL_RESOURCE_PREDICTED_UNSAFE')
+
+    def test_cold_prediction_accounts_for_observed_cpu_repacking_overhead(self):
+        value=self.status(available_bytes=9*resources.GIB)
+        self.assertEqual(value['rejection_reason'],'LOCAL_RESOURCE_PREDICTED_UNSAFE')
+        self.assertGreater(value['estimated_peak_memory'],5*resources.GIB)
+        self.assertEqual(value['minimum_available_bytes'],4*resources.GIB)
+
     def test_wrong_identity_is_rejected_before_hashing(self):
         from market_platform_foundation.intelligence.inference import local_runtime as runtime
         self.assertEqual(runtime.verify_artifacts(replace(self.manifest(), revision='wrong')), 'PINNED_LOCAL_MODEL_REQUIRED')
@@ -201,6 +232,159 @@ class BenchmarkSafetyTests(unittest.TestCase):
 
 
 class ControlledLifecycleTests(unittest.TestCase):
+    def test_changed_local_grammar_contract_cannot_reuse_an_old_candidate_digest(self):
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.candidate_reduction import CandidateReducer
+        from tests.intelligence.test_ai_screener import candidate, NOW
+        provider = LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture')
+        reducer = CandidateReducer(provider=provider)
+        first = reducer.estimate({}, [candidate()], NOW)
+        provider.candidate_schema_contract = 'changed-local-generation-contract'
+        second = reducer.estimate({}, [candidate()], NOW)
+        self.assertNotEqual(first['input_hash'], second['input_hash'])
+
+    def test_local_generation_cannot_request_text_or_arrays_beyond_canonical_parser_bounds(self):
+        import copy
+        import json
+        from types import SimpleNamespace
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.candidate_reduction import ScreenerEvidencePacket, output_schema
+        from market_platform_foundation.intelligence.inference.contracts import IntelligenceTaskType
+        from market_platform_foundation.intelligence.inference.config import IntelligenceInferenceConfig
+        from tests.intelligence.test_ai_screener import candidate
+        candidates = [candidate()]
+        shared = output_schema(candidates)
+        before = copy.deepcopy(shared)
+        requests = []
+        def post(url, body, timeout):
+            if url.endswith('/apply-template'):
+                return 200, json_bytes({'prompt': 'prompt'})
+            if url.endswith('/tokenize'):
+                return 200, json_bytes({'tokens': [1]})
+            requests.append(json.loads(body))
+            return 200, json_bytes({'choices': [{'message': {'content': '{}'}}]})
+        server = SimpleNamespace(manifest=SimpleNamespace(context=8192), ensure_running=lambda: None, touch=lambda: None)
+        provider = LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture', server=server, poster=post)
+        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'i', 'h', 't', {}, candidates, shared)
+        provider.infer(packet, rendered_prompt='prompt', config=IntelligenceInferenceConfig())
+        schema = requests[0]['response_format']['json_schema']['schema']['properties']
+        self.assertEqual(schema['limitations']['items'].get('maxLength'), 1200)
+        self.assertEqual(schema['limitations'].get('maxItems'), 12)
+        self.assertEqual(schema['candidates'].get('maxItems'), 1)
+        pick = schema['candidates']['items']['properties']
+        self.assertEqual(pick['rationale'].get('maxLength'), 1200)
+        self.assertEqual(pick['uncertainties']['items'].get('maxLength'), 1200)
+        self.assertEqual(pick['supporting_refs'].get('maxItems'), 12)
+        self.assertEqual(shared, before, 'local grammar bounds must not mutate the shared hosted-provider schema')
+
+    def test_cancelled_waiter_releases_admission_without_waiting_for_generation_slot(self):
+        import threading
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError
+        from types import SimpleNamespace
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.contracts import IntelligenceTaskType
+        from market_platform_foundation.intelligence.inference.config import IntelligenceInferenceConfig
+        provider = LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture',
+            poster=lambda *args: self.fail('cancelled request must not use transport'))
+        queued, stop = threading.Event(), threading.Event()
+        packet = SimpleNamespace(task_type=IntelligenceTaskType.NEWS_SENTIMENT, should_stop=stop.is_set)
+        slot = resources.SLOT
+        class ObservedSlot:
+            def acquire(self, *args, **kwargs):
+                queued.set()
+                return slot.acquire(*args, **kwargs)
+            def release(self):
+                return slot.release()
+        slot.acquire()
+        with ThreadPoolExecutor(max_workers=1) as pool, patch.object(resources, 'SLOT', ObservedSlot()):
+            future = pool.submit(provider.infer, packet, rendered_prompt='unused', config=IntelligenceInferenceConfig(timeout_seconds=2))
+            try:
+                self.assertTrue(queued.wait(1))
+                stop.set()
+                try:
+                    result = future.result(timeout=.75)
+                    completed_before_release = True
+                except TimeoutError:
+                    completed_before_release = False
+            finally:
+                slot.release()
+            result = future.result(timeout=2)
+        self.assertTrue(completed_before_release)
+        self.assertEqual(result.error_message, 'STOPPED_BY_OPERATOR')
+        self.assertFalse(result.inference_dispatched)
+        self.assertTrue(resources.ADMISSION.acquire(blocking=False))
+        resources.ADMISSION.release()
+
+    def test_request_receipt_separates_exact_count_generation_and_runtime_timings(self):
+        from types import SimpleNamespace
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.candidate_reduction import ScreenerEvidencePacket
+        from market_platform_foundation.intelligence.inference.contracts import IntelligenceTaskType
+        from market_platform_foundation.intelligence.inference.config import IntelligenceInferenceConfig
+        def post(url, body, timeout):
+            if url.endswith('/apply-template'):
+                return 200, json_bytes({'prompt': 'exact full prompt'})
+            if url.endswith('/tokenize'):
+                return 200, json_bytes({'tokens': [1, 2, 3]})
+            return 200, json_bytes({'choices': [{'message': {'content': '{}'}, 'finish_reason': 'stop'}],
+                'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+                'timings': {'prompt_n': 3, 'prompt_ms': 7.0, 'predicted_n': 2, 'predicted_ms': 11.0}})
+        server = SimpleNamespace(manifest=SimpleNamespace(context=8192), ensure_running=lambda: None, touch=lambda: None)
+        provider = LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture', server=server, poster=post)
+        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'i', 'h', 't', {}, [], {})
+        result = provider.infer(packet, rendered_prompt='exact full prompt', config=IntelligenceInferenceConfig())
+        receipt = getattr(result, 'diagnostics', None) or {}
+        self.assertEqual([x['stage'] for x in receipt.get('http', [])], ['CHAT_TEMPLATE', 'EXACT_TOKEN_COUNT', 'GENERATION'])
+        self.assertEqual(receipt.get('runtime_timings', {}).get('predicted_ms'), 11.0)
+        self.assertEqual(receipt.get('finish_reason'), 'stop')
+        self.assertGreaterEqual(receipt.get('elapsed_ms', -1), 0)
+        self.assertTrue(all(x['started_at'] <= x['ended_at'] and x['elapsed_ms'] >= 0 for x in receipt['http']))
+
+    def _reduction_request(self, *, input_tokens, finish='stop', max_tokens=2600, candidates=1):
+        import json
+        from types import SimpleNamespace
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.candidate_reduction import ScreenerEvidencePacket
+        from market_platform_foundation.intelligence.inference.contracts import IntelligenceTaskType
+        from market_platform_foundation.intelligence.inference.config import IntelligenceInferenceConfig
+        sent = []
+        def post(url, body, timeout):
+            if url.endswith('/apply-template'):
+                return 200, json_bytes({'prompt': 'exact full prompt'})
+            if url.endswith('/tokenize'):
+                return 200, json_bytes({'tokens': [1] * input_tokens})
+            sent.append(json.loads(body))
+            return 200, json_bytes({'choices': [{'message': {'content': '{"schema_version":'}, 'finish_reason': finish}],
+                                    'usage': {'prompt_tokens': input_tokens, 'completion_tokens': 9}})
+        server = SimpleNamespace(manifest=SimpleNamespace(context=8192), ensure_running=lambda: None, touch=lambda: None)
+        provider = LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture', server=server, poster=post)
+        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'i', 'h', 't', {}, [{}] * candidates, {})
+        result = provider.infer(packet, rendered_prompt='exact full prompt', config=IntelligenceInferenceConfig(max_tokens=max_tokens))
+        return result, sent
+
+    def test_output_allowance_is_what_the_window_leaves_up_to_the_configured_maximum(self):
+        # The October 16 crypto packets counted ~6,000 tokens: refused under a fixed 2,600 reserve, sent now.
+        result, sent = self._reduction_request(input_tokens=6000)
+        self.assertEqual(sent[0]['max_tokens'], 8192 - 6000)
+        self.assertEqual(result.diagnostics['context']['output_floor'], 768)
+        small, sent = self._reduction_request(input_tokens=1000)
+        self.assertEqual(sent[0]['max_tokens'], 2600)  # never above the configured maximum
+
+    def test_input_leaving_less_than_the_floor_is_refused_before_generation(self):
+        result, sent = self._reduction_request(input_tokens=8192 - 767)
+        self.assertEqual(result.error_message, 'LOCAL_CONTEXT_EXCEEDED')
+        self.assertFalse(result.inference_dispatched)
+        self.assertEqual(sent, [])
+        five, sent = self._reduction_request(input_tokens=8192 - 1700, candidates=5)
+        self.assertEqual(five.error_message, 'LOCAL_CONTEXT_EXCEEDED')  # 5 candidates need 512 + 5*256
+
+    def test_a_reply_that_reaches_its_allowance_is_refused_never_parsed(self):
+        result, sent = self._reduction_request(input_tokens=6000, finish='length')
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(result.error_message, 'LOCAL_OUTPUT_LIMIT_REACHED')
+        self.assertTrue(result.inference_dispatched)
+        self.assertEqual(result.raw_text, '')
+
     def test_context_overflow_preserves_input_and_never_dispatches_generation(self):
         from types import SimpleNamespace
         from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
@@ -272,6 +456,86 @@ class ControlledLifecycleTests(unittest.TestCase):
         self.assertEqual(args[args.index('--ubatch-size')+1],'64')
         self.assertTrue(process.terminated)
 
+    def _gpu_server(self, getter, spawn):
+        from market_platform_foundation.intelligence.inference import local_runtime
+        server=self.harness.server(getter,spawn)
+        server.manifest=local_runtime.apply_profile(server.manifest,'vulkan-8192/1')
+        server.enforce_admission=True
+        return server
+
+    def test_gpu_profile_names_its_one_device_and_keeps_every_other_bound(self):
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        launches=[]
+        server=self._gpu_server(lambda *a:(503,b''),lambda command,**kw:(launches.append(list(command)) or FakeProcess()))
+        server._ours=lambda:None
+        with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness',return_value={'rejection_reason':None}):
+            server.ensure_running()
+        args=launches[0]  # the start timeout then falls back to the CPU profile (covered below)
+        self.assertEqual(args[args.index('--device')+1],'Vulkan0')
+        self.assertEqual(args[args.index('-ngl')+1],'99')
+        self.assertNotIn('--no-kv-offload',args)
+        self.assertEqual(args[args.index('-c')+1],'8192')
+        self.assertEqual(args[args.index('--fit')+1],'off')
+        self.assertEqual(args[args.index('--cache-ram')+1],'0')
+        self.assertEqual(args[args.index('--cache-type-k')+1],'f16')
+        self.assertEqual(args[args.index('-np')+1],'1')
+
+    def test_gpu_start_failure_falls_back_visibly_to_cpu_then_retries_gpu_after_cooldown(self):
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        from market_platform_foundation.intelligence.inference.local_provider import SERVER_ALIAS, GPU_FALLBACK_COOLDOWN_S
+        from urllib.error import URLError
+        launches=[];up={'on':False}
+        def spawn(command,**kw):
+            device=command[command.index('--device')+1]
+            launches.append(device)
+            if device=='Vulkan0':
+                return FakeProcess(exits=True)  # e.g. a failed device allocation under --fit off
+            up['on']=True
+            return FakeProcess()
+        def getter(url,timeout):
+            if not up['on']:
+                raise URLError('refused')
+            return (200,json_bytes({'data':[{'id':SERVER_ALIAS}]})) if url.endswith('/v1/models') else (200,b'{}')
+        server=self._gpu_server(getter,spawn)
+        with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness',return_value={'rejection_reason':None}):
+            self.assertIsNone(server.ensure_running())
+            self.assertEqual(launches,['Vulkan0','none'])
+            self.assertEqual(server.manifest.execution_profile,'cpu-8192/1')
+            self.assertEqual(server.manifest.context,8192)
+            self.assertEqual((server.gpu_fallback['from_profile'],server.gpu_fallback['reason']),('vulkan-8192/1','LOCAL_RUNTIME_EXITED'))
+            server.stop();up['on']=False
+            self.assertEqual(server.ensure_running(),None)  # inside the cooldown the CPU profile is reused
+            self.assertEqual(launches,['Vulkan0','none','none'])
+            server.stop();up['on']=False
+            self.harness.clock[0]+=GPU_FALLBACK_COOLDOWN_S+1
+            server.ensure_running()
+            self.assertEqual(launches[3],'Vulkan0')
+
+    def test_cpu_profile_start_failure_is_not_reported_as_gpu_fallback(self):
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        launches=[]
+        server=self.harness.server(lambda *a:(503,b''),lambda command,**kw:(launches.append(command) or FakeProcess(exits=True)))
+        server._ours=lambda:None
+        server.enforce_admission=True
+        with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness',return_value={'rejection_reason':None}):
+            self.assertEqual(server.ensure_running(),'LOCAL_RUNTIME_EXITED')
+        self.assertEqual(len(launches),1)
+        self.assertIsNone(server.gpu_fallback)
+
+    def test_profile_does_not_inherit_host_prompt_cache_larger_than_process_budget(self):
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        process=FakeProcess(); args=[]
+        server=self.harness.server(lambda *a:(503,b''),lambda command,**kw:(args.extend(command) or process))
+        server._ours=lambda:None
+        server.enforce_admission=True
+        with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness',return_value={'rejection_reason':None}):
+            self.assertEqual(server.ensure_running(),'LOCAL_RUNTIME_START_TIMEOUT')
+        self.assertIn('--cache-ram',args)
+        self.assertEqual(args[args.index('--cache-ram')+1],'0')
+        self.assertEqual(args[args.index('-c')+1],'8192')
+        self.assertTrue(process.terminated)
+        self.assertIsNone(server._runtime_lease)
+
     def test_foreign_alias_is_not_reused_or_killed(self):
         from market_platform_foundation.intelligence.inference.local_provider import SERVER_ALIAS
         server=self.harness.server(lambda *a:(200,json_bytes({'data':[{'id':SERVER_ALIAS}]})),unittest.mock.Mock())
@@ -331,6 +595,35 @@ class ControlledLifecycleTests(unittest.TestCase):
         server.stop()
         self.assertEqual(lease.read_text(encoding='utf-8'),'another owner')
         spawn.assert_not_called()
+
+    def test_lease_left_by_a_dead_owner_is_set_aside_and_retaken(self):
+        # 2026-10-21: a crashed API process left its lease behind and every later start refused.
+        import os
+        import time
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        process=FakeProcess()
+        server=self.harness.server(lambda *a:(503,b''),lambda command,**kw:process)
+        server._ours=lambda:None;server.enforce_admission=True
+        lease=self.harness.manifest.runtime_path.parent/'imp-local-runtime.lock'
+        lease.write_text('{"owner_pid": 31944}',encoding='utf-8')
+        old=time.time()-server._startup_timeout_s-120
+        os.utime(lease,(old,old))
+        with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness',return_value={'rejection_reason':None}):
+            self.assertEqual(server.ensure_running(),'LOCAL_RUNTIME_START_TIMEOUT')  # spawned: the lease was retaken
+        aside=list(lease.parent.glob('imp-local-runtime.lock.stale-*'))
+        self.assertEqual([path.read_text(encoding='utf-8') for path in aside],['{"owner_pid": 31944}'])
+        self.assertFalse(lease.exists())  # released again when the failed start was stopped
+
+    def test_stopping_owner_never_removes_a_lease_a_later_owner_took(self):
+        import json
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        server=self.harness.server(lambda *a:(503,b''),lambda command,**kw:FakeProcess())
+        lease=self.harness.manifest.runtime_path.parent/'imp-local-runtime.lock'
+        server._runtime_lease=(lease,json.dumps({'owner_pid':1,'token':'mine'}))
+        lease.write_text(json.dumps({'owner_pid':2,'token':'theirs'}),encoding='utf-8')
+        server.stop()
+        self.assertIn('theirs',lease.read_text(encoding='utf-8'))
+        self.assertIsNone(server._runtime_lease)
 
 
 def json_bytes(value):
@@ -448,7 +741,7 @@ class LaptopModelTests(unittest.TestCase):
     def test_registry_preserves_4b_and_registers_official_small_artifacts(self):
         from market_platform_foundation.intelligence.inference.local_models import MODELS
         from market_platform_foundation.intelligence.inference import local_runtime as runtime
-        self.assertEqual(len(MODELS), 3)
+        self.assertEqual(len(MODELS), 6)
         self.assertEqual(MODELS[runtime.MODEL_ID].sha256, runtime.MODEL_HASH)
         for size in ('0.6B', '1.7B'):
             pin = MODELS[f'Qwen/Qwen3-{size}-GGUF:Q8_0']
@@ -503,4 +796,4 @@ class LaptopModelTests(unittest.TestCase):
         hashes = {LocalQualifier(LocalChatInferenceProvider(base_url='http://127.0.0.1:18089',
             model_id=pin.model_id)).input(case['scope'], case['candidate'], load()['cutoff'])[0]
             for pin in MODELS.values()}
-        self.assertEqual(len(hashes), 3)
+        self.assertEqual(len(hashes), len(MODELS))

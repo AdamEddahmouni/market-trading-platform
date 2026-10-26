@@ -103,6 +103,38 @@ reevaluation stop; `Open` opens the AI Screener panel. The strip starts
 nothing on its own and is not an ARIA live region, because it changes every
 second while a model works.
 
+### Results where the rows are
+
+A finished run's `summary` also lists `intake` (the instrument ids the model
+was shown) and `reasons`: why the pass had little to select from, computed by
+the server from the evidence packet and never from model prose. A reason is
+blocked evidence by capability and reason code, a candidate shown with no news
+story, or a candidate without sufficient evidence; each carries a count and
+names at most three instruments. The Screener marks the rows of the latest
+pass for the query on screen: the selected rows with their rank and the other
+shown rows as "shown, not selected". A pass for another query marks nothing,
+and marks are struck through when the pass's evidence expires. The panel shows
+the reasons as chips with the codes in their titles, and keeps the model's own
+explanation behind a disclosure.
+
+For a full-universe run, `intake` and `reasons` describe the final selection:
+the finalists the last call compared, not every row the batches evaluated. The
+"shown, not selected" mark on such a run says "finalist", and an incomplete run
+has no selection, so it marks nothing. A local-first experimental pass stores
+no candidate run and marks nothing either.
+
+`GET /screener/ai-screener/runs/history?limit=N` (`state.read`, N from 1 to
+50, `screener-ai-screener-history/1.0.0`) lists stored candidate runs, newest
+first by storage order, without evidence packets. It reads the durable
+candidate-run records, so passes made by the reevaluation loop are listed and
+history survives a restart. Each row is compared with the previous stored run
+of the same Screener query (universe, view, saved screen, search, sort and
+filters; the list snapshot is not part of the identity) and states what was
+`added` and `removed`; with no earlier run of that query both are null and no
+change is claimed. A full-universe record stores its final reduction's result,
+so its query is read from the coverage ledger's terminal record, and its
+`intake_count` is the run's `ai_evaluated_count`.
+
 ### Engine choice
 
 The engine and model are one machine-wide setting shared by News synthesis,
@@ -206,6 +238,17 @@ canonical gate then runs on the decoded pick, including the ownership, weak
 support and missing-list checks. A rejection records `validation.stage`:
 `DECODE` or `CANONICAL_VALIDATION`. Output already in the stored shape is still
 accepted by the parser and passes the same canonical gates.
+
+The v3.4.1 prompt removes the copied news/FinBERT sample answer demonstrated in
+the October 15 BILLY/USD rejection. Market-only packets must describe their own
+quote and additional strong evidence; UNKNOWN alignments grant no support.
+The flat generation schema excludes positions that are weak in every packet
+candidate. Its structural minimum remains one for shared strict-provider
+compatibility; the canonical validator requires two strong references.
+Its union remains flat:
+the unchanged canonical validator independently checks the chosen candidate's
+own indices, weak support, current-market basis and news/sentiment attribution.
+No generated claim is repaired or given references after validation.
 
 Prompt `screener.ai_candidate_reduction.v3` describes this wire. It lists the
 output fields by name, and a regression compares that list with the schema and

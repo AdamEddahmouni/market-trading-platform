@@ -40,9 +40,23 @@ class RemedyTextTests(unittest.TestCase):
         self.assertIn("contact email", sec["step"])
         self.assertEqual(sec["action"], {"kind": "CONFIGURE", "provider": "sec", "label": "Set SEC identity"})
         self.assertEqual(remedy_for("IMP_EDGAR_LIVE_NOT_SET")["action"]["provider"], "sec")
-        for code, flag in (("IMP_NEWS_RSS_LIVE_NOT_SET", "IMP_NEWS_RSS_LIVE=1"), ("FINVIZ_LIVE_DISABLED", "IMP_FINVIZ_LIVE=1"),
-                           ("IMP_PUBLIC_RECORDS_LIVE_NOT_SET", "IMP_PUBLIC_RECORDS_LIVE=1")):
-            self.assertIn(flag, remedy_for(code)["step"], code)
+        # A source switched only by the environment says what to do in words; the setting is the line to copy.
+        for code, flag in (("FINVIZ_LIVE_DISABLED", "IMP_FINVIZ_LIVE=1"), ("IMP_SENATE_EFD_LIVE_NOT_SET", "IMP_SENATE_EFD_LIVE=1")):
+            remedy = remedy_for(code)
+            self.assertEqual(remedy["action"], {"kind": "COMMAND", "command": flag}, code)
+            self.assertNotIn("IMP_", remedy["step"], code)
+            self.assertIn("restart the API", remedy["step"], code)
+        # Keyless public sources are switched on in Setup (PR D): no command, no restart.
+        for code, provider in (("IMP_NEWS_RSS_LIVE_NOT_SET", "rss"), ("IMP_PUBLIC_RECORDS_LIVE_NOT_SET", "public_records"),
+                               ("IMP_TREASURY_LIVE_NOT_SET", "treasury"), ("TREASURY_NOT_CONFIGURED", "treasury"),
+                               ("CRYPTO_NOT_CONFIGURED", "kraken"), ("IMP_OPENFIGI_LIVE_NOT_SET", "openfigi")):
+            remedy = remedy_for(code)
+            self.assertEqual(remedy["action"], {"kind": "CONFIGURE", "provider": provider, "label": "Turn on in Setup"}, code)
+            self.assertNotIn("IMP_", remedy["step"], code)
+            self.assertNotIn("restart", remedy["step"], code)
+        no_news = remedy_for("NO_NEWS_PROVIDER_CONFIGURED")
+        self.assertNotIn("IMP_", no_news["step"])
+        self.assertEqual(no_news["action"], {"kind": "CONFIGURE", "provider": "rss", "label": "Turn on RSS in Setup"})
         self.assertEqual(remedy_for("IMP_NEWSAPI_LIVE_NOT_SET")["action"],
                          {"kind": "CONFIGURE", "provider": "newsapi", "label": "Enter key"})
 
@@ -56,7 +70,9 @@ class RemedyTextTests(unittest.TestCase):
                                                  "OPENAI_API_KEY_NOT_SET", "GEMINI_API_KEY_NOT_SET",
                                                  "ANTHROPIC_API_KEY_NOT_SET", "FINRA_CREDENTIALS_MISSING"})
         for code, provider in configure.items():
-            self.assertTrue(PROVIDERS_BY_ID[provider].configurable, code)
+            # Setup can act on it: a form to save a value, or (PR D) a switch for a keyless source.
+            entry = PROVIDERS_BY_ID[provider]
+            self.assertTrue(entry.configurable or entry.switchable, code)
 
     def test_unknown_or_empty_reason_has_no_remedy(self):
         self.assertIsNone(remedy_for(None))
@@ -94,7 +110,9 @@ class FeedRemedyTests(unittest.TestCase):
         payload = service(rss_env={}).feed(universe="US_ETFS")
         rss = next(item for item in payload["providers"] if item["id"] == "rss")
         self.assertEqual(rss["state"], "LIVE_DISABLED")
-        self.assertIn("IMP_NEWS_RSS_LIVE=1", rss["remedy"]["step"])
+        # Sprint 3 item 30: the step is words; RSS is switched on from Setup (PR D).
+        self.assertNotIn("IMP_", rss["remedy"]["step"])
+        self.assertEqual(rss["remedy"]["action"], {"kind": "CONFIGURE", "provider": "rss", "label": "Turn on in Setup"})
 
     def test_sentiment_model_status_carries_remedy(self):
         payload = service(sentiment=FinbertSentiment(model_path="")).feed(universe="US_EQUITIES")

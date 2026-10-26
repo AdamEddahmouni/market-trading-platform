@@ -7,7 +7,8 @@ import { ScreenerPage } from "../ScreenerPage";
 import { sideLabel, windowLabel } from "./OrderFlowPanel";
 import { anchorLabel } from "./CvdPanel";
 import { perSecond } from "./CvdChart";
-import ScreenerDock, { serializeLayout, type DockHandle } from "./ScreenerDock";
+import ScreenerDock, { maxColumns, MIN_COLUMN_WIDTH, serializeLayout, type DockHandle } from "./ScreenerDock";
+import { BOOK_WAIT_MS } from "./Level2Panel";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
@@ -33,6 +34,9 @@ vi.mock("@tanstack/react-virtual", () => ({
     getVirtualItems: () => Array.from({ length: count }, (_, index) => ({ index, start: index * 34 })),
     getTotalSize: () => count * 34, scrollToIndex: vi.fn(),
   }),
+}));
+vi.mock("../ai/AiScreenerWorkspace", () => ({
+  default: ({ visible }: { visible: boolean }) => <section aria-label="AI Screener workspace" data-visible={String(visible)} />,
 }));
 vi.mock("lightweight-charts", () => {
   const series = () => ({ setData: vi.fn(), createPriceLine: vi.fn((options: unknown) => options), removePriceLine: vi.fn() });
@@ -208,7 +212,6 @@ describe("S4 Screener dock", () => {
     expect(await screen.findByText("Loading AAPL squeeze evidence…")).toBeInTheDocument();
     await waitFor(() => expect(mocks.squeeze).toHaveBeenCalledWith("AAPL", expect.objectContaining({ view: "detail", universe: "US_EQUITIES" })));
     await waitFor(() => expect(mocks.demand).toHaveBeenCalledWith(expect.any(String), "AAPL", ["short_squeeze"]));
-    fireEvent.click(launcher().getByRole("button", { name: "Short Squeeze" }));
     expect(document.querySelectorAll("#screener-panel-short_squeeze")).toHaveLength(1);
   });
 
@@ -223,15 +226,68 @@ describe("S4 Screener dock", () => {
     expect(mocks.cvd).not.toHaveBeenCalled();
   });
 
-  it("opens a panel, focuses instead of duplicating, and asks for a selection", async () => {
+  it("opens a panel, asks for a selection, and a second press of the pressed button closes it", async () => {
     renderPage();
     await screen.findByText("AAPL", { selector: "strong" });
     fireEvent.click(launcher().getByRole("button", { name: "CVD" }));
     expect(await screen.findByText("Select an instrument to view CVD.")).toBeInTheDocument();
-    expect(launcher().getByRole("button", { name: "CVD" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(launcher().getByRole("button", { name: "CVD" }));
-    await waitFor(() => expect(document.querySelectorAll("#screener-panel-cvd")).toHaveLength(1));
+    const cvd = launcher().getByRole("button", { name: "CVD" });
+    expect(cvd).toHaveAttribute("aria-pressed", "true");
+    expect(cvd).toHaveAttribute("title", "Close CVD");
+    expect(document.querySelectorAll("#screener-panel-cvd")).toHaveLength(1);
     expect(mocks.cvd).not.toHaveBeenCalled(); // no selection → nothing requested
+    fireEvent.click(cvd);
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Specialist panels" })).toBeNull());
+    expect(launcher().getByRole("button", { name: "CVD" })).toHaveAttribute("aria-pressed", "false");
+    expect(launcher().getByRole("button", { name: "CVD" })).toHaveAttribute("title", "Open CVD");
+  });
+
+  it("opens the AI tab beside the dock shortcut from the panel bar, and the shortcut returns to it", async () => {
+    window.localStorage.removeItem("imp.screener.railTab");
+    renderPage();
+    await screen.findByText("AAPL", { selector: "strong" });
+    fireEvent.click(launcher().getByRole("button", { name: "AI Screener" }));
+    await waitFor(() => expect(screen.getByRole("tab", { name: "AI" })).toHaveAttribute("aria-selected", "true"));
+    const shortcut = await screen.findByRole("button", { name: "Show in right rail" });
+    expect(launcher().getByRole("button", { name: "AI Screener" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("tab", { name: "Preview" }));
+    fireEvent.click(shortcut);
+    expect(screen.getByRole("tab", { name: "AI" })).toHaveAttribute("aria-selected", "true");
+    // The controls exist once, in the rail; the dock holds only the shortcut.
+    expect(screen.getAllByRole("region", { name: "AI Screener workspace" })).toHaveLength(1);
+    expect(within(screen.getByRole("region", { name: "Specialist panels" })).queryByRole("region", { name: "AI Screener workspace" })).toBeNull();
+  });
+
+  it("closes only the pressed panel and keeps the others open", async () => {
+    renderPage();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "Order Flow" }));
+    fireEvent.click(await screen.findByRole("button", { name: "CVD" }));
+    await waitFor(() => expect(mocks.demand).toHaveBeenLastCalledWith(expect.any(String), "AAPL", ["order_flow", "cvd"]));
+    fireEvent.click(launcher().getByRole("button", { name: "Order Flow" }));
+    await waitFor(() => expect(mocks.demand).toHaveBeenLastCalledWith(expect.any(String), "AAPL", ["cvd"]));
+    expect(screen.getByRole("region", { name: "CVD for AAPL" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Order Flow for AAPL" })).toBeNull();
+  });
+
+  it("says when no order book has arrived after the wait, with the reason and a way to check again", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
+    mocks.depth.mockImplementation(async (id: string) => ({ ...depthPayload(id, "CONNECTING"), bids: [], asks: [], best_bid: null, best_ask: null,
+      spread: null, mid: null, spread_bps: null, imbalance: [], completeness: null, freshness: null, latest_event_at: null, latest_received_at: null,
+      reason: "AWAITING_BOOK_SNAPSHOT" }));
+    mocks.demand.mockImplementation(async (_client: string, instrument: string | null, panels: string[]) => ({
+      schema_version: "screener-specialist/1.0.0", instrument_id: instrument, panels, cap: { max_instruments: 6, occupied_instruments: 1 },
+      capabilities: [{ panel: "level2", capability: "DEPTH", accepted: false, reason: "PROVIDER_QUOTA_EXHAUSTED", ref_count: 1, provider_subscription_active: false }] }));
+    renderPage();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "Level 2" }));
+    const panel = await screen.findByRole("region", { name: "Level 2 for AAPL" });
+    expect(await within(panel).findByText("Waiting for a current book snapshot")).toBeInTheDocument();
+    await act(async () => { vi.advanceTimersByTime(BOOK_WAIT_MS + 1_000); });
+    expect(await within(panel).findByText(/No order book from Moomoo after \d+s · Provider subscription quota exhausted\./)).toBeInTheDocument();
+    const calls = mocks.depth.mock.calls.length;
+    fireEvent.click(within(panel).getByRole("button", { name: "Check again" }));
+    await waitFor(() => expect(mocks.depth.mock.calls.length).toBeGreaterThan(calls));
   });
 
   it("drives Order Flow and CVD from one demand and renders truthful wording", async () => {
@@ -346,6 +402,29 @@ describe("S4 Screener dock", () => {
     expect(await screen.findByRole("region", { name: "Level 2 for NVDA" })).toBeInTheDocument();
   });
 
+  it("keeps a dock of instrument panels to its tab strip until a row is selected, and again once it is cleared", async () => {
+    renderPage({ version: 1, open_panels: ["order_flow"], active_panel: "order_flow", dock_height: 320, dockview_layout: null });
+    const dock = await screen.findByRole("region", { name: "Specialist panels" });
+    await waitFor(() => expect(dock).toHaveClass("slim"));
+    await selectRow("AAPL");
+    await waitFor(() => expect(dock).not.toHaveClass("slim"));
+    expect(dock).toHaveStyle({ height: "320px" });
+    fireEvent.keyDown(screen.getByRole("grid"), { key: "Escape" });
+    await waitFor(() => expect(dock).toHaveClass("slim"));
+  });
+
+  it("keeps the dock open with no selection when a workstation panel is open", async () => {
+    renderPage({ version: 1, open_panels: ["order_flow", "setup"], active_panel: "setup", dock_height: 320, dockview_layout: null });
+    const dock = await screen.findByRole("region", { name: "Specialist panels" });
+    expect(dock).not.toHaveClass("slim");
+    expect(screen.getByRole("separator", { name: "Resize specialist panels" })).toBeInTheDocument();
+  });
+
+  it("opens a dock column only when it can be at least 480px wide; further panels become tabs", () => {
+    expect([1920, 1600, 1280, 960, 800, 400].map(maxColumns)).toEqual([4, 3, 2, 2, 1, 1]);
+    expect(MIN_COLUMN_WIDTH).toBe(480);
+  });
+
   it("persists presentation only, restores a saved layout, and resets", async () => {
     renderPage({ version: 1, open_panels: ["level2"], active_panel: "level2", dock_height: 360,
       dockview_layout: { grid: { root: { type: "branch", data: [{ type: "leaf", data: { views: ["cvd"], activeView: "cvd", id: "1" }, size: 100 }], size: 360 },
@@ -353,6 +432,13 @@ describe("S4 Screener dock", () => {
     // The saved arrangement names another panel set, so it is ignored for a default arrangement of the open panels.
     expect(await screen.findByText("Select an instrument to view Level 2.")).toBeInTheDocument();
     expect(screen.queryByText("Select an instrument to view CVD.")).toBeNull();
+    // Nothing selected and only an instrument panel open: the dock is its tab strip until it is used.
+    const dock = screen.getByRole("region", { name: "Specialist panels" });
+    expect(dock).toHaveClass("slim");
+    expect(screen.queryByRole("separator", { name: "Resize specialist panels" })).toBeNull();
+    fireEvent.pointerDown(dock);
+    expect(dock).not.toHaveClass("slim");
+    expect(dock).toHaveStyle({ height: "360px" });
     const splitter = screen.getByRole("separator", { name: "Resize specialist panels" });
     expect(splitter).toHaveAttribute("aria-valuenow", "360");
     fireEvent.keyDown(splitter, { key: "ArrowDown" });

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createChart, LineStyle, type IChartApi, type IPriceLine, type ISeriesApi, type Time } from "lightweight-charts";
 import type { PreviewBar } from "../../api/screener";
 import type { ClassifiedZone } from "./srClassify";
+import { zoneSuffix } from "./localZone";
 
 const et = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false });
 const etDay = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" });
@@ -15,7 +16,7 @@ export type PreviewChartProps = {
   support: ClassifiedZone | null;
   resistance: ClassifiedZone | null;
   label: string;
-  timeZone?: "UTC" | "America/New_York";
+  timeZone?: string;
   /** Decimal places for the price axis (sub-cent crypto pairs need more than two). */
   precision?: number;
 };
@@ -30,16 +31,22 @@ export default function PreviewChart({ bars, forming, support, resistance, label
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
-    const timeFormat = timeZone === "UTC" ? new Intl.DateTimeFormat("en-US", { timeZone: "UTC", hour: "2-digit", minute: "2-digit" }) : et;
-    const dayFormat = timeZone === "UTC" ? new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "short", day: "numeric" }) : etDay;
+    const eastern = !timeZone || timeZone === "America/New_York";
+    const timeFormat = eastern ? et : new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", minute: "2-digit" });
+    const dayFormat = eastern ? etDay : new Intl.DateTimeFormat("en-US", { timeZone, month: "short", day: "numeric" });
+    const suffix = zoneSuffix(timeZone || "America/New_York");
     const chart = createChart(element, {
-      width: element.clientWidth || 360, height: 188,
-      layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 10 },
+      // Inside the border, so the canvas never paints past its box onto the controls below.
+      width: element.clientWidth || 360, height: element.clientHeight || 186,
+      // The logo sat over the latest candles; the preview links TradingView in text under the chart instead,
+      // which the library's licence accepts in place of the logo.
+      layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 11, attributionLogo: false },
       grid: { vertLines: { color: "#18212b" }, horzLines: { color: "#18212b" } },
-      rightPriceScale: { borderColor: "#27323f" },
+      // Wide enough for a five-digit price at two decimals, so axis labels are never clipped.
+      rightPriceScale: { borderColor: "#27323f", minimumWidth: 58 },
       timeScale: { borderColor: "#27323f", timeVisible: true, secondsVisible: false, rightOffset: 2,
         tickMarkFormatter: (time: Time) => timeFormat.format(new Date(Number(time) * 1000)) },
-      localization: { timeFormatter: (time: Time) => `${dayFormat.format(new Date(Number(time) * 1000))} ${timeFormat.format(new Date(Number(time) * 1000))} ${timeZone === "UTC" ? "UTC" : "ET"}` },
+      localization: { timeFormatter: (time: Time) => `${dayFormat.format(new Date(Number(time) * 1000))} ${timeFormat.format(new Date(Number(time) * 1000))} ${suffix}` },
       crosshair: { mode: 0 },
       handleScroll: false, handleScale: false,
     });
@@ -75,5 +82,8 @@ export default function PreviewChart({ bars, forming, support, resistance, label
     if (resistance) { add(resistance.lower, RESISTANCE, "R"); add(resistance.upper, RESISTANCE, ""); }
   }, [support?.lower, support?.upper, resistance?.lower, resistance?.upper, timeZone, precision]);
 
-  return <div className="screener-preview-chart" ref={containerRef} role="img" aria-label={label} />;
+  return <>
+    <div className="screener-preview-chart" ref={containerRef} role="img" aria-label={label} />
+    <a className="screener-chart-credit" href="https://www.tradingview.com/" target="_blank" rel="noreferrer">Charts by TradingView</a>
+  </>;
 }

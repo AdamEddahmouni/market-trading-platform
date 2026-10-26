@@ -122,7 +122,7 @@ def build_feature_snapshot(
     prior_bar = series.bar_at_or_before(as_of)
     return_1 = None
     if prior_bar and price is not None:
-        bars = series.bars
+        bars = series.visible_bars(as_of)
         idx = next((i for i, b in enumerate(bars) if b.event_time == prior_bar.event_time), None)
         if idx is not None and idx > 0:
             prev_close = bars[idx - 1].close

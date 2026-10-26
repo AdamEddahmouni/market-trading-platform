@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import math
 from typing import Any, Mapping
 
@@ -19,6 +19,7 @@ from ..xa01.tradability import NON_EXECUTABLE_KINDS
 # retains the paper-local PREDICTION_MARKET value, which has no XA-01 class.
 ASSET_CLASSES: tuple[str, ...] = (
     "EQUITY",
+    "ETF_FUND",
     "OPTION",
     "FUTURE",
     "CRYPTO",
@@ -83,6 +84,10 @@ def build_instrument_ref(
     underlying: str | None = None,
     instrument_kind: str | None = None,
     tradability: str | None = None,
+    quantity_step: str | None = None,
+    minimum_quantity: str | None = None,
+    price_scale: int | None = None,
+    economics_revision: str | None = None,
 ) -> dict[str, Any]:
     """Build a runtime instrument reference (display/simulation, not identity).
 
@@ -117,10 +122,72 @@ def build_instrument_ref(
         ("settlement_type", settlement_type),
         ("strike", strike),
         ("underlying", underlying),
+        ("quantity_step", quantity_step),
+        ("minimum_quantity", minimum_quantity),
+        ("price_scale", price_scale),
+        ("economics_revision", economics_revision),
     ):
         if value is not None:
             body[key] = value
     return body
+
+
+def exact_quantity(value: Any) -> Decimal:
+    """Read bounded exact quantity text; binary floats and non-finite values fail closed."""
+    if isinstance(value, bool) or not isinstance(value, (int, str, Decimal)):
+        raise ValueError("ORDER_QUANTITY_INVALID")
+    try:
+        number = Decimal(value)
+    except (InvalidOperation, ValueError):
+        raise ValueError("ORDER_QUANTITY_INVALID") from None
+    if not number.is_finite() or abs(number) > Decimal("1e18") or number.as_tuple().exponent < -18:
+        raise ValueError("ORDER_QUANTITY_INVALID")
+    return number
+
+
+def quantity_number(value: Any) -> int | Decimal:
+    """Exact arithmetic value; preserve historical integer quantities."""
+    number = exact_quantity(value)
+    return value if type(value) is int else number.normalize()
+
+
+def quantity_wire(value: Any) -> int | str:
+    """Stable JSON quantity without introducing binary float arithmetic."""
+    number = quantity_number(value)
+    return number if type(number) is int else (format(number, "f") if number else "0")
+
+
+def order_quantity(value: Any, instrument: Mapping[str, Any]) -> int | Decimal:
+    """Validate order size against canonical units and verified venue increments."""
+    if instrument.get("instrument_kind") != "CRYPTO_PAIR":
+        if type(value) is not int or value <= 0:
+            raise ValueError("ORDER_QUANTITY_INVALID")
+        return value
+    quantity = exact_quantity(value)
+    try:
+        step = exact_quantity(instrument["quantity_step"])
+        minimum = exact_quantity(instrument["minimum_quantity"])
+        tick = exact_quantity(instrument["tick_size"])
+        scale = instrument["price_scale"]
+    except (KeyError, ValueError):
+        raise ValueError("CRYPTO_ECONOMICS_REQUIRED") from None
+    if step <= 0 or minimum <= 0 or tick <= 0 or type(scale) is not int or scale < 1 or scale > 10**18:
+        raise ValueError("CRYPTO_ECONOMICS_INVALID")
+    if (tick * scale) != (tick * scale).to_integral_value():
+        raise ValueError("CRYPTO_PRICE_SCALE_INVALID")
+    if quantity <= 0 or quantity < minimum or quantity % step:
+        raise ValueError("ORDER_QUANTITY_INCREMENT_INVALID")
+    if not str(instrument.get("currency") or "").strip() or not str(instrument.get("venue") or "").strip():
+        raise ValueError("CRYPTO_ECONOMICS_REQUIRED")
+    return quantity
+
+
+def serialized_quantity(value: Any, instrument: Mapping[str, Any]) -> int | str:
+    """Wire quantity without changing any historical whole-share representation."""
+    if instrument.get("instrument_kind") != "CRYPTO_PAIR":
+        return int(value)
+    number = exact_quantity(value)
+    return format(number.normalize(), "f") if number else "0"
 
 
 def _assert_instrument_executable(instrument: Mapping[str, Any]) -> None:
@@ -220,9 +287,18 @@ def _quantity_facts_to_dict(value: Mapping[str, Any] | None) -> dict[str, int]:
             raise ValueError("PAPER_QUANTITY_FACT_KEY_INVALID")
         if key not in allowed:
             raise ValueError("PAPER_QUANTITY_FACT_KEY_UNSUPPORTED")
-        if not isinstance(raw, int) or isinstance(raw, bool) or raw < 0:
-            raise ValueError("PAPER_QUANTITY_FACT_INVALID")
-        facts[key] = raw
+        if key.endswith("_notional_minor"):
+            if type(raw) is not int or raw < 0:
+                raise ValueError("PAPER_QUANTITY_FACT_INVALID")
+            facts[key] = raw
+        else:
+            try:
+                amount = quantity_number(raw)
+            except ValueError:
+                raise ValueError("PAPER_QUANTITY_FACT_INVALID") from None
+            if amount < 0:
+                raise ValueError("PAPER_QUANTITY_FACT_INVALID")
+            facts[key] = quantity_wire(amount)
     return facts
 
 
@@ -230,7 +306,7 @@ def build_user_order_intent(
     *,
     instrument: dict[str, Any],
     side: str,
-    quantity: int,
+    quantity: int | str | Decimal,
     observation_time: int,
     order_type: str = "MARKET",
     limit_price_minor: int | None = None,
@@ -250,12 +326,7 @@ def build_user_order_intent(
     # Fail closed against adversarial numerics: NaN bypasses every ordering
     # comparison and a float/bool quantity would poison content-derived ids
     # and downstream int() coercions.
-    if (
-        not isinstance(quantity, int)
-        or isinstance(quantity, bool)
-        or quantity <= 0
-    ):
-        raise ValueError("ORDER_QUANTITY_INVALID")
+    quantity = serialized_quantity(order_quantity(quantity, instrument), instrument)
     if limit_price_minor is not None and (
         not isinstance(limit_price_minor, int)
         or isinstance(limit_price_minor, bool)
@@ -352,6 +423,9 @@ def build_semantic_intent_digest(intent: Mapping[str, Any]) -> str:
     body: dict[str, Any] = {}
     for key in SEMANTIC_INTENT_FIELDS:
         value = _semantic_value(intent, key)
+        instrument = intent.get("instrument") or {}
+        if key == "desired_quantity" and instrument.get("instrument_kind") == "CRYPTO_PAIR":
+            value = serialized_quantity(value, instrument)
         if value is None:
             continue
         if isinstance(value, int) and not isinstance(value, bool):
@@ -361,6 +435,9 @@ def build_semantic_intent_digest(intent: Mapping[str, Any]) -> str:
             body[key] = str(value).upper() if key in upper_keys else str(value)
         else:
             body[key] = value
+    instrument = intent.get("instrument") or {}
+    if instrument.get("instrument_kind") == "CRYPTO_PAIR" or instrument.get("economics_revision"):
+        body["instrument_economics"] = dict(instrument)
     return sha256_bytes(canonical_bytes(body))
 
 
@@ -381,7 +458,7 @@ def normalize_execution_intent(intent: dict[str, Any]) -> dict[str, Any]:
     body: dict[str, Any] = {
         "action": intent.get("action", "OPEN"),
         "created_time": intent["created_time"],
-        "desired_quantity": int(intent["desired_quantity"]),
+        "desired_quantity": serialized_quantity(intent["desired_quantity"], intent.get("instrument") or {}),
         "direction": intent["direction"],
         "instrument_id": intent["instrument_id"],
     }

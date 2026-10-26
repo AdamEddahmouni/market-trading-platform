@@ -20,6 +20,7 @@ import os
 import socket
 import ssl
 import struct
+import time
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
@@ -164,13 +165,24 @@ class WebSocketClient:
     def receive(self, timeout: float) -> str | None:
         """The next complete text message, or None when ``timeout`` passes first."""
 
+        deadline = time.monotonic() + max(0, timeout)
+        first_iteration = True
         while True:
+            # Permit one already-buffered frame at zero timeout, but control
+            # frames and fragments must not renew the whole-call deadline.
+            # Check before parsing so an expired call consumes no next frame.
+            if not first_iteration and time.monotonic() >= deadline:
+                return None
+            first_iteration = False
             frame = parse_frame(self._buffer, max_bytes=self._max)
             if frame is None:
                 if self.closed:
                     raise WebSocketError("WS_CLOSED")
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return None
                 try:
-                    self._sock.settimeout(timeout)
+                    self._sock.settimeout(remaining)
                     chunk = self._sock.recv(65536)
                 except (socket.timeout, TimeoutError):
                     return None

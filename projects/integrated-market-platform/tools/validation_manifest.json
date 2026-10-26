@@ -537,6 +537,7 @@
         "src/market_platform_foundation/ui_api/screener_ai_staged.py",
         "tools/ai_screener_local_first_benchmark.py",
         "tools/local_runtime_benchmark.py",
+        "tools/ai_decision_benchmark.py",
         "tests/support/local_first.py"
       ],
       "test_globs": [
@@ -2449,6 +2450,8 @@
         "src/market_platform_foundation/providers/adapters/moomoo_paper.py",
         "src/market_platform_foundation/ui_api/paper_projections.py",
         "src/market_platform_foundation/ui_api/server.py",
+        "src/market_platform_foundation/ui_api/evidence_review.py",
+        "ui/src/components/evaluation/evidenceReviewFixture.json",
         "tests/fixtures/providers/tradier/**",
         "tests/fixtures/providers/moomoo/**"
       ],
@@ -2559,8 +2562,12 @@
       "source_globs": [
         "src/market_platform_foundation/intelligence/news_strategy_evaluation/**",
         "tests/intelligence/test_news_strategy_evaluation.py",
+        "tests/intelligence/test_market_day_replay.py",
+        "tests/intelligence/test_decision_journal.py",
+        "tests/intelligence/test_professor_integration.py",
         "tests/fixtures/news_strategy_evaluation/**",
-        "tools/research/evaluate_news_intelligence.py"
+        "tools/research/evaluate_news_intelligence.py",
+        "tools/research/professor_integration_demo.py"
       ],
       "dependent_suites": [],
       "reason": "Strategy-evaluation laboratory; no automatic upstream news/provider breadth"

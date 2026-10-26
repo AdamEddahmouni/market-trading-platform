@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
+from ...paper.contracts import order_quantity, exact_quantity, quantity_wire
+
 from typing import Any
 
 from ..contracts.common import (
@@ -24,6 +27,7 @@ from .exposure import (
 )
 from .identity import derive_risk_decision_id, derive_trade_proposal_id
 from .sizing import (
+    is_risk_reducing,
     reference_price_for_side,
     size_fixed_fraction_nav_with_caps,
     validate_position_interaction,
@@ -148,6 +152,7 @@ class PreTradeRiskEngine:
         allocation_desired_quantity: int | None = None,
         allocation_desired_notional_minor: int | None = None,
         requested_quantity: int | None = None,
+        instrument: dict[str, Any] | None = None,
     ) -> TradeProposalV1:
         if isinstance(opportunity, ForecastV1):
             raise DirectForecastTradeForbidden("FORECAST_TO_TRADE_FORBIDDEN")
@@ -167,6 +172,11 @@ class PreTradeRiskEngine:
             ask_minor=quote.ask_minor,
             side=side,
         )
+        fractional = bool(instrument and instrument.get("instrument_kind") == "CRYPTO_PAIR")
+        step = exact_quantity(instrument["quantity_step"]) if fractional else None
+        if fractional:
+            # Validate verified instrument economics independently of sizing.
+            order_quantity(instrument["minimum_quantity"], instrument)
         sizing = size_fixed_fraction_nav_with_caps(
             policy=policy,
             portfolio=portfolio,
@@ -174,6 +184,7 @@ class PreTradeRiskEngine:
             symbol=symbol,
             side=side,
             reference_price_minor=reference_price_minor,
+            quantity_step=step,
         )
         permitted_qty, _ = validate_position_interaction(
             policy=policy,
@@ -187,20 +198,16 @@ class PreTradeRiskEngine:
         allocation_notional: int | None = None
         allocation_id = getattr(allocation_decision, "allocation_decision_id", None)
         if requested_quantity is not None:
-            if (
-                isinstance(requested_quantity, bool)
-                or not isinstance(requested_quantity, int)
-                or requested_quantity <= 0
-            ):
-                raise OpportunityGateError("REQUESTED_QUANTITY_INVALID")
+            try:
+                requested_quantity = order_quantity(requested_quantity, instrument or {})
+            except ValueError:
+                raise OpportunityGateError("REQUESTED_QUANTITY_INVALID") from None
             quantity = requested_quantity
         elif allocation_desired_quantity is not None:
-            if (
-                isinstance(allocation_desired_quantity, bool)
-                or not isinstance(allocation_desired_quantity, int)
-                or allocation_desired_quantity <= 0
-            ):
-                raise OpportunityGateError("ALLOCATION_QUANTITY_INVALID")
+            try:
+                allocation_desired_quantity = order_quantity(allocation_desired_quantity, instrument or {})
+            except ValueError:
+                raise OpportunityGateError("ALLOCATION_QUANTITY_INVALID") from None
             allocation_quantity = allocation_desired_quantity
             allocation_notional = allocation_desired_notional_minor
             if allocation_notional is not None and (
@@ -210,7 +217,7 @@ class PreTradeRiskEngine:
             ):
                 raise OpportunityGateError("ALLOCATION_NOTIONAL_INVALID")
             if allocation_notional is None:
-                allocation_notional = allocation_quantity * reference_price_minor
+                allocation_notional = int((Decimal(allocation_quantity) * reference_price_minor).to_integral_value(rounding=ROUND_CEILING))
         elif allocation_desired_notional_minor is not None:
             if (
                 isinstance(allocation_desired_notional_minor, bool)
@@ -237,7 +244,7 @@ class PreTradeRiskEngine:
             quantity = min(allocation_quantity, sizing.quantity)
             if quantity <= 0:
                 raise OpportunityGateError("ALLOCATION_QUANTITY_INVALID")
-        notional = quantity * reference_price_minor
+        notional = int((Decimal(quantity) * reference_price_minor).to_integral_value(rounding=ROUND_CEILING))
         expires_at_ns = opportunity.valid_until_ns or proposal_time_ns
         proposal_id = derive_trade_proposal_id(
             opportunity_id=opportunity.opportunity_id,
@@ -263,12 +270,15 @@ class PreTradeRiskEngine:
             "symbol": symbol,
             "sizing_capped_by": list(sizing.capped_by),
         }
+        if fractional:
+            metadata["instrument"] = dict(instrument)
+            metadata["quantity_step"] = str(step)
         if correlation_id is not None:
             metadata["correlation_id"] = str(correlation_id)
         if allocation_id is not None:
             metadata["allocation_decision_id"] = str(allocation_id)
         if allocation_quantity is not None:
-            metadata["allocation_desired_quantity"] = allocation_quantity
+            metadata["allocation_desired_quantity"] = quantity_wire(allocation_quantity)
             metadata["allocation_desired_notional_minor"] = allocation_notional
         elif allocation_notional is not None:
             metadata["allocation_desired_notional_minor"] = allocation_notional
@@ -416,10 +426,14 @@ class PreTradeRiskEngine:
         post = compute_exposure(projected)
         max_gross = int(portfolio.equity_minor * policy.max_gross_exposure_fraction)
         max_net = int(portfolio.equity_minor * policy.max_net_exposure_fraction)
-        if post.gross_exposure_minor > max_gross:
+        # Closing is always allowed: a cover or sell-to-close within the held size never trips an exposure or
+        # cash cap, and a cap only bites on a trade that raises the exposure it limits.
+        current_qty = symbol_position_quantity(portfolio.positions, instrument_id=proposal.instrument_id)
+        reducing = is_risk_reducing(side=proposal.side, current_quantity=current_qty) and approved_qty <= abs(current_qty)
+        if not reducing and post.gross_exposure_minor > max_gross and post.gross_exposure_minor > pre.gross_exposure_minor:
             if policy.allow_size_reduction:
                 excess = post.gross_exposure_minor - max_gross
-                reduce_qty = min(approved_qty, excess // proposal.reference_price_minor + 1)
+                reduce_qty = min(approved_qty, ((Decimal(excess) / proposal.reference_price_minor / exact_quantity(proposal.metadata["quantity_step"])).to_integral_value(rounding=ROUND_CEILING) * exact_quantity(proposal.metadata["quantity_step"]) if proposal.metadata.get("quantity_step") is not None else excess // proposal.reference_price_minor + 1))
                 approved_qty = max(0, approved_qty - reduce_qty)
                 decision = RiskDecisionKind.REDUCE if approved_qty > 0 else RiskDecisionKind.REJECT
                 reason_codes.append(RiskReasonCode.MAX_GROSS_EXPOSURE)
@@ -428,9 +442,10 @@ class PreTradeRiskEngine:
                 decision = RiskDecisionKind.REJECT
                 approved_qty = 0
                 reason_codes.append(RiskReasonCode.MAX_GROSS_EXPOSURE)
-        if approved_qty > 0 and abs(post.net_exposure_minor) > max_net:
+        if (not reducing and approved_qty > 0 and abs(post.net_exposure_minor) > max_net
+                and abs(post.net_exposure_minor) > abs(pre.net_exposure_minor)):
             if policy.allow_size_reduction:
-                approved_qty = max(0, approved_qty // 2)
+                approved_qty = max(0, (Decimal(approved_qty) / 2 / exact_quantity(proposal.metadata["quantity_step"])).to_integral_value(rounding=ROUND_FLOOR) * exact_quantity(proposal.metadata["quantity_step"]) if proposal.metadata.get("quantity_step") is not None else approved_qty // 2)
                 decision = RiskDecisionKind.REDUCE if approved_qty > 0 else RiskDecisionKind.REJECT
                 reason_codes.append(RiskReasonCode.MAX_NET_EXPOSURE)
                 reason_codes.append(RiskReasonCode.SIZE_REDUCED)
@@ -439,12 +454,12 @@ class PreTradeRiskEngine:
                 approved_qty = 0
                 reason_codes.append(RiskReasonCode.MAX_NET_EXPOSURE)
 
-        if proposal.side == "BUY":
+        if proposal.side == "BUY" and not reducing:
             required_cash = approved_qty * proposal.reference_price_minor
             available = portfolio.cash_minor - portfolio.reserved_cash_minor
             if required_cash > available:
                 if policy.allow_size_reduction and proposal.reference_price_minor > 0:
-                    approved_qty = available // proposal.reference_price_minor
+                    approved_qty = ((Decimal(available) / proposal.reference_price_minor / exact_quantity(proposal.metadata["quantity_step"])).to_integral_value(rounding=ROUND_FLOOR) * exact_quantity(proposal.metadata["quantity_step"]) if proposal.metadata.get("quantity_step") is not None else available // proposal.reference_price_minor)
                     decision = RiskDecisionKind.REDUCE if approved_qty >= policy.minimum_quantity else RiskDecisionKind.REJECT
                     if approved_qty < policy.minimum_quantity:
                         approved_qty = 0
@@ -455,6 +470,13 @@ class PreTradeRiskEngine:
                     approved_qty = 0
                     reason_codes.append(RiskReasonCode.INSUFFICIENT_PAPER_CASH)
 
+        if proposal.metadata.get("quantity_step") is not None:
+            step = exact_quantity(proposal.metadata["quantity_step"])
+            approved_qty = (Decimal(approved_qty) / step).to_integral_value(rounding=ROUND_FLOOR) * step
+            if approved_qty < policy.minimum_quantity or int((approved_qty * proposal.reference_price_minor).to_integral_value(rounding=ROUND_CEILING)) < policy.minimum_trade_notional_minor:
+                approved_qty = Decimal(0)
+                decision = RiskDecisionKind.REJECT
+                reason_codes.append(RiskReasonCode.REQUESTED_SIZE_TOO_SMALL)
         if decision == RiskDecisionKind.APPROVE:
             reason_codes.append(RiskReasonCode.RISK_APPROVED)
         elif decision == RiskDecisionKind.REJECT and RiskReasonCode.RISK_REJECTED not in reason_codes:
@@ -500,7 +522,7 @@ class PreTradeRiskEngine:
             portfolio_snapshot_id=portfolio.snapshot_id,
             decision_time_ns=decision_time_ns,
         )
-        approved_notional = approved_quantity * proposal.reference_price_minor
+        approved_notional = int((Decimal(approved_quantity) * proposal.reference_price_minor).to_integral_value(rounding=ROUND_CEILING))
         unique_codes = tuple(dict.fromkeys(reason_codes))
         return RiskDecisionV1(
             risk_decision_id=risk_decision_id,
@@ -590,6 +612,7 @@ class PaperExecutionOrchestrator:
         allocation_desired_quantity: int | None = None,
         allocation_desired_notional_minor: int | None = None,
         requested_quantity: int | None = None,
+        instrument: dict[str, Any] | None = None,
     ) -> PreparedPaperExecution:
         if ledger is not None:
             self._check_paper_authority(
@@ -612,6 +635,7 @@ class PaperExecutionOrchestrator:
             allocation_desired_quantity=allocation_desired_quantity,
             allocation_desired_notional_minor=allocation_desired_notional_minor,
             requested_quantity=requested_quantity,
+            instrument=instrument,
         )
         risk = self._risk.assess(
             proposal=proposal,
@@ -626,14 +650,14 @@ class PaperExecutionOrchestrator:
 
         idempotency_key = derive_paper_order_idempotency_key(risk.risk_decision_id)
         quantity_facts: dict[str, int] = {
-            "proposal_requested_quantity": proposal.requested_quantity,
+            "proposal_requested_quantity": quantity_wire(proposal.requested_quantity),
             "proposal_requested_notional_minor": proposal.requested_notional_minor,
-            "risk_approved_quantity": risk.approved_quantity,
+            "risk_approved_quantity": quantity_wire(risk.approved_quantity),
             "risk_approved_notional_minor": risk.approved_notional_minor,
-            "submitted_quantity": risk.approved_quantity,
+            "submitted_quantity": quantity_wire(risk.approved_quantity),
         }
         if "allocation_desired_quantity" in proposal.metadata:
-            quantity_facts["allocation_desired_quantity"] = int(
+            quantity_facts["allocation_desired_quantity"] = quantity_wire(
                 proposal.metadata["allocation_desired_quantity"]
             )
         if "allocation_desired_notional_minor" in proposal.metadata:
@@ -776,6 +800,7 @@ class PaperExecutionOrchestrator:
                 quantity_facts=prepared.quantity_facts,
                 risk_decision_id=risk.risk_decision_id,
                 reference_price_minor=approved_reference_price_minor,
+                **({"instrument": prepared.proposal.metadata["instrument"]} if prepared.proposal.metadata.get("instrument") else {}),
             )
         return PaperExecutionResult(
             proposal=prepared.proposal,
@@ -802,14 +827,21 @@ class PaperExecutionOrchestrator:
         entry_allocation_decision: Any | None = None,
         runtime_governance: RuntimeGovernanceState | None = None,
     ) -> PaperExecutionResult:
-        """Submit a supplied canonical SELL opportunity as a bounded close."""
-        if opportunity.side != OpportunitySide.SHORT:
+        """Submit a supplied canonical opposite-side opportunity as a bounded close.
+
+        A SHORT (SELL) opportunity closes a long; a LONG (BUY) opportunity covers a short.
+        """
+        if opportunity.side == OpportunitySide.SHORT:
+            closes = lambda quantity: quantity > 0  # noqa: E731 - sell-to-close a long
+        elif opportunity.side == OpportunitySide.LONG:
+            closes = lambda quantity: quantity < 0  # noqa: E731 - buy-to-cover a short
+        else:
             raise OpportunityGateError("CLOSE_SELL_OPPORTUNITY_REQUIRED")
         if close_quantity is None:
             close_quantity = sum(
                 abs(position.quantity)
                 for position in portfolio.positions
-                if position.instrument_id == instrument_id and position.quantity > 0
+                if position.instrument_id == instrument_id and closes(position.quantity)
             )
         if close_quantity <= 0:
             raise OpportunityGateError("CLOSE_QUANTITY_UNAVAILABLE")
@@ -855,6 +887,7 @@ class PaperExecutionOrchestrator:
         allocation_desired_quantity: int | None = None,
         allocation_desired_notional_minor: int | None = None,
         requested_quantity: int | None = None,
+        instrument: dict[str, Any] | None = None,
     ) -> PaperExecutionResult:
         prepared = self.prepare_paper(
             opportunity=opportunity,
@@ -873,6 +906,7 @@ class PaperExecutionOrchestrator:
             allocation_desired_quantity=allocation_desired_quantity,
             allocation_desired_notional_minor=allocation_desired_notional_minor,
             requested_quantity=requested_quantity,
+            instrument=instrument,
         )
         return self.submit_prepared(prepared=prepared, ledger=ledger, bars=bars)
 

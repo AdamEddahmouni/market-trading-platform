@@ -156,11 +156,16 @@ def output_schema(candidates: list[dict]) -> dict:
     # Flat and instrument-independent: per-instrument branches and long reference enums exceed the vendor
     # grammar compiler. Evidence positions are candidate-local, so the enum is the largest single list.
     refs = list(range(max((len(reference_ids(c)) for c in candidates), default=0))) or [0]
+    # The grammar is flat across candidates; canonical validation still checks the selected
+    # candidate's own references. Do not invite the model to use weak context as support.
+    strong_refs = sorted({i for c in candidates for i, e in enumerate(
+        (*c['current_market_evidence'], *c['reference_evidence'])) if not e['weak_reasons']}) or [0]
     ref_list = dict(type='array', items={'type': 'integer', 'enum': refs}, description='reference_index values of the selected candidate only; at most 12 distinct.')
     properties = dict(candidate_key={'type': 'integer', 'enum': list(range(len(candidates))) or [0],
             'description': 'The candidate_key of the selected candidate. It binds the instrument and its fixed weak and missing lists.'},
-        rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED+1))}, rationale={'type': 'string'},
-        supporting_refs={**ref_list, 'minItems': 1, 'description': 'reference_index values of the selected candidate: at least two strong references including a current quote; at most 12 distinct.'},
+        rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED+1))}, rationale={'type': 'string',
+            'description': 'Grounded solely in cited supporting_refs: a sentence that mentions news or sentiment must have the matching NEWS or SENTIMENT reference_index in supporting_refs or conflicting_refs, and no sentence may describe evidence that is not cited.'},
+        supporting_refs={**ref_list, 'items': {'type': 'integer', 'enum': strong_refs}, 'minItems': 1, 'description': 'reference_index values of the selected candidate: at least two strong references including a current quote; at most 12 distinct.'},
         conflicting_refs=ref_list, uncertainties={'type': 'array', 'items': {'type': 'string'}, 'description': 'At most 12 distinct strings.'})
     items = dict(type='object', additionalProperties=False, required=list(properties), properties=properties)
     return dict(type='object', additionalProperties=False, required=['schema_version', 'candidates', 'limitations'],
@@ -275,6 +280,7 @@ class ScreenerEvidencePacket:
     scope: dict
     candidates: list[dict]
     output_schema: dict
+    should_stop: Any = lambda: False
 
 
 class CandidateReducer:
@@ -438,16 +444,16 @@ class CandidateReducer:
                     cached_selected=[p['instrument_id'] for p in entry[1]['candidates']] if cached else [],
                     optimizer_version=OPTIMIZER_VERSION, input_encoding=INPUT_ENCODING_VERSION if self.compact_input else 'canonical-json/1.0.0')
 
-    def preflight(self, scope, candidates, now):
+    def preflight(self, scope, candidates, now, *, should_stop=lambda: False):
         """The engine's own free count of this exact request, or None where it offers none. Spends nothing."""
         check = getattr(self.provider, 'preflight', None)
         if not callable(check):
             return None
         digest, rendered, _, _ = self._prepare(scope, candidates, now)
-        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'preflight', digest, now, scope, candidates, output_schema(candidates))
+        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'preflight', digest, now, scope, candidates, output_schema(candidates), should_stop)
         return check(packet, rendered_prompt=rendered, config=self.config)
 
-    def reduce(self, scope, candidates, now, *, allow_inference=True):
+    def reduce(self, scope, candidates, now, *, allow_inference=True, should_stop=lambda: False):
         report_stage('PACKET')
         digest, rendered, prompt, size = self._prepare(scope, candidates, now)
         report_stage('PACKET', packet_bytes=size, intake_count=len(candidates), sufficient_count=sum(bool(c['sufficient']) for c in candidates))
@@ -474,6 +480,8 @@ class CandidateReducer:
                     'compatibility': {k: contract[k] for k in ('selected_model', 'required_contract', 'unsupported_capability')}}
         if not any(c['sufficient'] for c in candidates):
             return {**base, 'state': 'NO_GROUNDED_CANDIDATES', 'reason': 'INSUFFICIENT_EVIDENCE', 'limitations': ['No admissible current price plus additional strong evidence.']}
+        if should_stop():
+            return {**base, 'state': 'UNAVAILABLE', 'reason': 'STOPPED_BY_OPERATOR'}
         with self.lock:
             cached = self._entry(digest, candidates)
             if cached:
@@ -484,22 +492,31 @@ class CandidateReducer:
         if waiter is not None:
             # Another caller already holds this exact packet's model call; this run waits for that answer.
             report_stage('MODEL_CALL', shared=True)
-            waiter.wait(self.config.timeout_seconds + 5)
+            deadline = time.monotonic() + self.config.timeout_seconds + 5
+            while not should_stop() and time.monotonic() < deadline:
+                if waiter.wait(min(.25, max(0, deadline-time.monotonic()))):
+                    break
+            if should_stop():
+                return {**base, 'state': 'UNAVAILABLE', 'reason': 'STOPPED_BY_OPERATOR'}
             with self.lock:
                 cached = self._entry(digest, candidates)
             return self._hit(cached[1], now) if cached else {**base, 'state': 'UNAVAILABLE', 'reason': 'SYNTHESIS_IN_PROGRESS_OR_EXPIRED'}
         try:
+            if should_stop():
+                return {**base, 'state': 'UNAVAILABLE', 'reason': 'STOPPED_BY_OPERATOR'}
             if not allow_inference:
                 return {**base,'state':'UNAVAILABLE','reason':'REUSE_INVALIDATED_AFTER_PLANNING'}
-            packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, base['run_id'], digest, now, scope, candidates, output_schema(candidates))
+            packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, base['run_id'], digest, now, scope, candidates, output_schema(candidates), should_stop)
             if not getattr(self.provider, 'reports_stages', False):
                 report_stage('MODEL_CALL')
             response = self.provider.infer(packet, rendered_prompt=rendered, config=self.config)
-            base['inference_dispatched'] = not (response.error_message or '').startswith('SYNTHESIS_')
+            base['inference_dispatched'] = response.inference_dispatched if response.inference_dispatched is not None else not (response.error_message or '').startswith(('SYNTHESIS_', 'PAID_AI_', 'PAID_MODEL_'))
             base.update(provider_id=response.provider_id, model_id=response.model_id, tokens_input=response.tokens_input,
                         tokens_output=response.tokens_output, latency_ms=response.latency_ms, provider_request_id=response.provider_request_id,
                         provider_response_id=response.provider_response_id, simulated=response.simulated,
                         generated_at=datetime.fromtimestamp(self.clock(), UTC).isoformat().replace('+00:00', 'Z'))
+            if response.diagnostics is not None:
+                base['provider_diagnostics'] = response.diagnostics
             if response.error_code:
                 # Only stable reason codes; provider error bodies can include private information.
                 message = response.error_message
@@ -507,7 +524,10 @@ class CandidateReducer:
                 result = {**base, 'state': 'UNAVAILABLE', 'reason': reason}
             else:
                 report_stage('VALIDATION')
+                validation_started = time.perf_counter()
                 parsed, reason = parse_reduction(response.raw_text, candidates)
+                if 'provider_diagnostics' in base:
+                    base['provider_diagnostics']['grounding_validation_ms'] = round((time.perf_counter()-validation_started)*1000, 3)
                 if parsed and parsed['candidates']:
                     # Unselected observations cannot shorten the lifetime of valid selected evidence.
                     by_id = {c['instrument']['instrument_id']: c for c in candidates}
@@ -521,10 +541,11 @@ class CandidateReducer:
                 if reason:
                     result['validation'] = {'stage': rejection_stage(reason), **rejection_details(response.raw_text, candidates, reason)}
                 result['coverage']['selected'] = len(result['candidates'])
-            # Cache failures too: repeated explicit clicks never automatically re-bill invalid output.
+            # Cache provider failures too, but cancellation belongs only to the stopped caller.
             with self.lock:
                 cache_expiry = min(reuse_expiry, expiry, self.clock() + (60 if result['state'] == 'UNAVAILABLE' else 1800))
-                self._remember(digest, cache_expiry, result)
+                if result.get('reason') != 'STOPPED_BY_OPERATOR':
+                    self._remember(digest, cache_expiry, result)
                 if self.cache_store is not None and result['state'] in ('CURRENT','NO_GROUNDED_CANDIDATES'):
                     try:
                         self.cache_store.put(digest, cache_expiry, result, self.clock())

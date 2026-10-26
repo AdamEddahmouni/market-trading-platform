@@ -264,6 +264,18 @@ _PRESET_NAMES = {
 }
 
 
+# Why a discovery screen cannot run on the broad Screener yet, in words: the data its condition needs. No operator
+# setting turns these on; each needs a field the universe-wide snapshot does not carry.
+_UNSUPPORTED_REASONS = {
+    "GAP_CATALYST_DISCOVERY": "Needs the pre-market gap and a catalyst flag, which the universe snapshot does not carry.",
+    "EARNINGS_MOVER_DISCOVERY": "Needs earnings surprise and the post-report move, which the universe snapshot does not carry.",
+    "ANALYST_EVENT_DISCOVERY": "Needs analyst rating changes and target revisions, which the universe snapshot does not carry.",
+    "INSIDER_ACTIVITY_DISCOVERY": "Needs recent insider transactions for every row, which the universe snapshot does not carry.",
+    "TECHNICAL_BREAKOUT_DISCOVERY": "Needs breakout levels and pattern state for every row, which the universe snapshot does not carry.",
+}
+_UNSUPPORTED_DEFAULT = "Its discovery condition needs data the universe snapshot does not carry."
+
+
 def builtin_presets() -> list[dict[str, Any]]:
     result = []
     for screen_id, screen in SCREEN_LIBRARY.items():
@@ -272,7 +284,7 @@ def builtin_presets() -> list[dict[str, Any]]:
             "id": screen_id, "name": _PRESET_NAMES[screen_id],
             "universe": US_EQUITIES,
             "version": screen.version, "status": "SUPPORTED" if mapping is not None else "UNSUPPORTED",
-            "reason": None if mapping is not None else "Existing discovery condition is absent from the current broad Screener contract",
+            "reason": None if mapping is not None else _UNSUPPORTED_REASONS.get(screen_id, _UNSUPPORTED_DEFAULT),
             "filters": [{"id": f"{screen_id.lower()}-{index}", "field": field, "operator": operator, "value": value}
                         for index, (field, operator, value) in enumerate(mapping or ())],
         })

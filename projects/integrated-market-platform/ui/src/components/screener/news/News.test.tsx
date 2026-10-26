@@ -248,7 +248,13 @@ describe("S11 Screener News view", () => {
     expect(within(table).getByText("Negative")).toBeInTheDocument();
     expect(within(table).getByText("not scored")).toBeInTheDocument();
     expect(within(table).getByText("model not configured")).toBeInTheDocument();
-    expect(within(table).getByText("Official filing")).toBeInTheDocument();
+    // Sprint 3 item 28: no reason codes in visible text.
+    expect(document.body.innerText ?? document.body.textContent).not.toMatch(/\b[A-Z]{2,}(_[A-Z0-9]+)+\b(?!=)/);
+    // Sprint 3 item 43: no Type column (it was empty for almost every story); the filing badge sits before its headline.
+    expect(within(table).getAllByRole("columnheader").map((item) => item.textContent)).toEqual(["Time", "Instruments", "Headline", "Source", "Category", "Sentiment"]);
+    const filing = within(table).getByText("Official filing");
+    expect(filing.closest(".news-headline-line")).toHaveTextContent(/^Official filing.*Form 8-K filed/);
+    expect(within(table).getAllByText("Official filing")).toHaveLength(1);
     // A context match is distinguished by text, not colour alone.
     expect(within(table).getByRole("button", { name: /Filter news by NVDA \(exact entity · context match/ })).toHaveTextContent("NVDA ctx");
     expect(within(table).queryByText(/bullish|bearish|buy|sell/i)).toBeNull();
@@ -297,7 +303,9 @@ describe("S11 Screener News view", () => {
     expect(screen.getByText("Sentiment model").parentElement).toHaveTextContent("Sentiment model not configured");
     // Partial: the not-current providers are named, never folded into "available".
     const notice = screen.getByText("Partial coverage").parentElement!;
-    expect(notice).toHaveTextContent(/NewsAPI \(not configured · IMP_NEWSAPI_LIVE_NOT_SET\); Finnhub \(rate limited · HTTP_429\)/);
+    // Sprint 3 item 28: states in words; the reason codes stay on hover.
+    expect(notice).toHaveTextContent(/NewsAPI \(not configured\); Finnhub \(rate limited\)/);
+    expect(within(notice).getByTitle("IMP_NEWSAPI_LIVE_NOT_SET, HTTP_429")).toBeInTheDocument();
   });
 
   it("names a delayed development-plan provider with its terms and a loading local model", async () => {
@@ -335,7 +343,8 @@ describe("S11 Screener News view", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("News providers are not configured for US Equities");
     expect(alert).toHaveTextContent("not an absence of news");
-    expect(alert).toHaveTextContent("Finviz Elite (not configured · FINVIZ_TOKEN_NOT_SET)");
+    expect(alert).toHaveTextContent("Finviz Elite (not configured)");
+    expect(within(alert).getByTitle(/FINVIZ_TOKEN_NOT_SET/)).toBeInTheDocument();
     expect(screen.queryByText(/No stories in this window/)).toBeNull();
   });
 
@@ -438,13 +447,14 @@ describe("S11 Screener News view", () => {
 });
 
 describe("S11 News & Analysis panel", () => {
-  it("is in the launcher, opens one instance, and asks for a selection", async () => {
+  it("is in the launcher, opens one instance, asks for a selection, and closes on a second press", async () => {
     mount();
     await screen.findByText("AAPL", { selector: ".screener-symbol strong" });
     fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
     expect(await screen.findByText("Select an instrument to view News & Analysis.")).toBeInTheDocument();
+    expect(document.querySelectorAll("#screener-panel-news")).toHaveLength(1);
     fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
-    await waitFor(() => expect(document.querySelectorAll("#screener-panel-news")).toHaveLength(1));
+    await waitFor(() => expect(document.querySelectorAll("#screener-panel-news")).toHaveLength(0));
     expect(mocks.instrumentNews).not.toHaveBeenCalled();
     // Not a live panel: no provider demand.
     expect(mocks.demand).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.arrayContaining(["news"]));
@@ -634,7 +644,7 @@ describe("S11 News & Analysis panel", () => {
     expect(select.value).toBe("auto");
     expect(within(select).getByRole("option", { name: "Automatic (now claude-sonnet-5-5)" })).toBeInTheDocument();
     expect(within(select).getByRole("option", { name: "Anthropic Claude · claude-haiku-4-5-20251001 (paid)" })).toBeEnabled();
-    expect(within(select).getByRole("option", { name: "OpenAI · gpt-6-luna (needs OPENAI_API_KEY)" })).toBeDisabled();
+    expect(within(select).getByRole("option", { name: "OpenAI · gpt-6-luna (add a key in Setup)" })).toBeDisabled();
     fireEvent.change(select, { target: { value: "local|qwen-local" } });
     // Choosing only proposes: the engine is machine-wide, so nothing is sent until the operator confirms.
     const confirm = within(region).getByRole("alertdialog", { name: "Confirm AI engine change" });
@@ -665,7 +675,7 @@ describe("S11 News & Analysis panel", () => {
     const select = within(region).getByRole("combobox", { name: "AI engine" }) as HTMLSelectElement;
     expect(select.value).toBe("openai|gpt-6-luna");
     fireEvent.change(select, { target: { value: "anthropic|claude-sonnet-5-5" } });
-    expect(within(region).getByRole("alertdialog")).toHaveTextContent("This is a paid API: its calls count against the shared daily budget.");
+    expect(within(region).getByRole("alertdialog")).toHaveTextContent("This is a paid API. Each call first sets aside its worst-case cost");
     fireEvent.click(within(region).getByRole("button", { name: "Switch engine" }));
     expect(await within(region).findByRole("alert")).toHaveTextContent("Could not switch the AI engine.");
   });
@@ -1061,7 +1071,7 @@ describe("News feed: partial sentiment filter", () => {
     const select = screen.getByRole("combobox", { name: "News sentiment" }) as HTMLSelectElement;
     expect(select).not.toBeDisabled();
     expect(select.value).toBe("POSITIVE");
-    expect([...select.options].map((option) => option.textContent)).toEqual(["Any language", "Positive (2)", "Neutral (0)", "Negative (1)"]);
+    expect([...select.options].map((option) => option.textContent)).toEqual(["Any sentiment", "Positive (2)", "Neutral (0)", "Negative (1)"]);
     expect(screen.getByText("12 unscored hidden")).toHaveAttribute("title", expect.stringContaining("hidden, not dropped"));
     expect(screen.queryByText(/Sentiment filter unavailable/)).toBeNull();
   });

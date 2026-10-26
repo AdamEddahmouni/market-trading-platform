@@ -276,12 +276,12 @@ describe("Bonds universe", () => {
     expect(within(panel).getByRole("img", { name: /Treasury yield curve by maturity/ })).toBeInTheDocument();
     expect(within(panel).getByText("Upward sloping")).toBeInTheDocument();
     expect(within(panel).getByText(/not this security's yield/)).toBeInTheDocument();
-    expect(within(panel).getAllByText(/FRED not configured · FRED API key not configured/, { selector: "p" })).toHaveLength(2);
+    expect(within(panel).getAllByText(/FRED not configured · FRED key not saved; add it in Setup/, { selector: "p" })).toHaveLength(2);
     expect(within(panel).getAllByText(/licensed TRACE feed required/).length).toBeGreaterThan(0);
     expect(within(panel).getByRole("table", { name: "Published par yields by tenor" })).toBeInTheDocument();
     await waitFor(() => expect(mocks.rates).toHaveBeenLastCalledWith("XA01:NOTE", expect.anything()));
-    fireEvent.click(within(launcher).getByRole("button", { name: "Rates & Curve" }));
     expect(screen.getAllByRole("region", { name: /Rates & Curve for/ })).toHaveLength(1);
+    expect(within(launcher).getByRole("button", { name: "Rates & Curve" })).toHaveAttribute("aria-pressed", "true");
     // Selection change: the panel follows the settled selection.
     fireEvent.click(within(screen.getByRole("grid")).getByText("912797WA1"));
     await waitFor(() => expect(mocks.rates).toHaveBeenLastCalledWith("XA01:BILL", expect.anything()), { timeout: 5000 });
@@ -328,7 +328,14 @@ describe("Bonds universe", () => {
       TREASURY: { state: "UNAVAILABLE", count: 0 }, CORPORATE: { state: "CORPORATE_COVERAGE_UNAVAILABLE", count: null } },
       provider_health: [{ provider: "US_TREASURY_FISCAL_DATA", state: "NOT_CONFIGURED", reason: "TREASURY_NOT_CONFIGURED" }] }));
     mount();
-    expect(await screen.findByText(/U.S. Treasury Fiscal Data is not enabled/)).toBeInTheDocument();
+    expect(await screen.findByText(/U.S. Treasury Fiscal Data is switched off/)).toBeInTheDocument();
+    // Sprint 3 item 42: a switched-off source is fixed by its Setup switch (PR D), never by retrying.
+    expect(screen.queryByRole("button", { name: "Retry source" })).toBeNull();
+    expect(within(screen.getByRole("alert")).getByRole("button", { name: "Turn on in Setup" })).toHaveAttribute("aria-haspopup", "dialog");
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/IMP_/);
+    // The page owns the dialog, so it stays open when switching the source on replaces this message.
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Turn on in Setup" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText(/— results/)).toBeInTheDocument();
   });
 });

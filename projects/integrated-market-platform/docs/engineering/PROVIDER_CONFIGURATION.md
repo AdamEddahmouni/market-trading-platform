@@ -47,13 +47,16 @@ gates switched on when the provider becomes fully configured.
 | Anthropic | `ANTHROPIC_API_KEY` | API key | yes | yes | — (paid) | next request | Claude synthesis engine |
 | OpenAI | `OPENAI_API_KEY` | API key | yes | yes | — (paid) | next request | OpenAI synthesis engine |
 | Google Gemini | `GEMINI_API_KEY` | API key | yes | yes | — (paid) | next request | Gemini synthesis engine |
+| Paid AI spending caps (`paid_ai`) | `IMP_PAID_AI_DAILY_USD`, `IMP_PAID_AI_MONTHLY_USD` | US dollars, 0–10000, two decimals | no | both | — | next request | choosing a paid AI engine; edited on Setup's "Which AI decides" card, not in the provider list |
 | Tradier paper sandbox | `IMP_TRADIER_TOKEN`, `IMP_TRADIER_ACCOUNT_ID` | token, account ID | token only | both | — | **restart** | sandbox paper account, only when paper routing is separately enabled |
 
-Paid AI keys switch on no gate and are never probed: synthesis runs only on an explicit
-request, on the engine the operator picks, under the shared daily synthesis budget. They
-are also never copied into the API's process environment (`process_names()`): synthesis
-reads the private file itself, and a key in the environment would silently switch the
-Assistant to paid Anthropic (`assistant/inference_factory.py`).
+Paid AI keys switch on no gate and are never probed: a saved key only makes its engine
+selectable. Paid AI runs only on the engine the operator picks, once both dollar caps are
+above $0, under the shared daily budget and the dollar caps
+([AI_ENGINE_SWITCH.md](../operations/AI_ENGINE_SWITCH.md)). Keys are never copied into the
+API's process environment (`process_names()`): synthesis reads the private file itself. The
+Assistant follows the same Setup choice (`assistant/inference_factory.py`), so a key alone
+never makes it paid either.
 
 ### Not accepted through the UI (by design)
 
@@ -62,7 +65,7 @@ Assistant to paid Anthropic (`assistant/inference_factory.py`).
 | moomoo OpenD | Start from the Setup checklist, log in inside OpenD | A local process with its own login; no key exists |
 | IBKR (`IBKR_USERNAME`, `IBKR_PASSWORD`, `IBKR_TOTP_SECRET`) | IB Gateway / TWS sign-in with IBKR two-factor | Brokerage passwords and 2FA seeds must not sit in a plaintext file. No runtime code reads them; the earlier Control-page fields were removed. Values already on disk are left untouched. |
 | Senate eFD (`IMP_SENATE_EFD_IMPORT_DIR`, `ACCESS_ATTESTATION.json`) | Operator's folder and signed attestation | Terms acceptance is a legal act by the operator (S14 contract); the form does not accept terms |
-| Assistant provider (`IMP_ASSISTANT_PROVIDER`, `ANTHROPIC_MODEL`, and an Anthropic key for the Assistant) | API environment or repository `.env` | Moving the Assistant onto a paid API is a separate, explicit decision; the earlier Control-page fields were removed because the Assistant reads only the process environment |
+| Assistant provider (`IMP_ASSISTANT_PROVIDER=grounded`, `IMP_ASSISTANT_STUB`) | API environment | The Assistant follows Setup's AI engine: paid Claude only when Claude is the chosen engine with both dollar caps set, charged to the same dollar ledger. These two settings only turn it further off |
 | Execution gates (`IMP_TRADIER_PAPER`, `IMP_BROKER_PAPER_EXECUTION`, `IMP_PAPER_EXECUTION`, …) | API environment | Authority, not configuration; never switched by a credential save |
 | Alpaca / moomoo paper keys (`APCA_*`, `IMP_MOOMOO_PAPER_*`) | API environment | Execution-adjacent research/calibration credentials |
 | Finviz login (`FINVIZ_USERNAME`, `FINVIZ_PASSWORD`) | Finviz secure store | Account passwords; the Elite token above covers the API |

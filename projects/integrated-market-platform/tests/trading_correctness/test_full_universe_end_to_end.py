@@ -19,9 +19,12 @@ from market_platform_foundation.local_state.reevaluation import ReevaluationRepo
 from market_platform_foundation.ui_api.prospective_evaluation import ProspectiveEvaluationService
 from market_platform_foundation.ui_api.screener_ai import ScreenerAiService
 from market_platform_foundation.ui_api.screener_ai_coverage import ScreenerAiCoverage
-from tests.intelligence.test_action_decision import proposal
-from tests.support.coverage_universe import SCOPE, News, PagingReader, RankingProvider, universe
+from tests.intelligence.test_action_decision import proposal, wire
+from tests.support.coverage_universe import SCOPE, News, PagingReader, RankingProvider, full_tournament, universe
 from tests.trading_correctness.test_trade_lifecycle import A, N, _Lifecycle, iso
+
+# The lifecycle is proven over the full tournament (IMP_AI_SCREENER_SHORTLIST=0); the shortlist is tested on its own.
+setUpModule, tearDownModule = full_tournament()
 
 
 class ActionModel:
@@ -39,7 +42,7 @@ class ActionModel:
         value['supporting_refs'] = refs
         value['conflicting_refs'] = []
         value['missing_capabilities'] = [m['capability'] for m in candidate['missing']]
-        return ProviderInferenceResponse(json.dumps(value), self.provider_id, self.model_id, simulated=True, tokens_input=1, tokens_output=1, latency_ms=1)
+        return ProviderInferenceResponse(wire(value, candidate), self.provider_id, self.model_id, simulated=True, tokens_input=1, tokens_output=1, latency_ms=1)
 
 
 class FullUniverseEndToEndTests(_Lifecycle):

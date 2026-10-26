@@ -6,6 +6,7 @@ It has no order, preview, handoff or submission path: Paper stays manual.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import threading
@@ -52,16 +53,28 @@ def consumed_opportunities(ledger):
 
 
 class ReevaluationService:
-    def __init__(self, store, *, repository=None, actions=None, ai=None, clock=time.time, owner_id=None):
+    def __init__(self, store, *, repository=None, actions=None, ai=None, clock=time.time, owner_id=None, scope=None,
+                 lease_wait=None):
         self.store = store
         self.repository = repository or reevaluation_repository()
         self._actions, self._ai = actions, ai
         self.clock = clock
         self.owner_id = owner_id or uuid.uuid4().hex
+        self.lease_wait = lease_wait  # tests pace the in-cycle lease keeper; by default it waits in real time
         self.cycle_lock = threading.Lock()
         self.worker = None
         # AUTO-01: a server-owned controller may drive this loop's cycles instead of the worker thread.
         self.external_driver = None
+        self.bound_scope = dict(scope) if scope is not None else None
+        self.bound_loop_id = None
+
+    def _current_loop(self):
+        if self.bound_loop_id is not None:
+            return self.repository.get_loop(self.bound_loop_id)
+        if self.bound_scope is not None:
+            identity, _ = loop_identity(self._account(), self.ai._query(self.bound_scope))
+            return self.repository.get_loop(identity)
+        return self.repository.latest_loop(self._account())
 
     @property
     def actions(self):
@@ -89,7 +102,7 @@ class ReevaluationService:
         return self.actions.risk_control
 
     def _loop(self):
-        loop = self.repository.latest_loop(self._account())
+        loop = self._current_loop()
         if loop is None:
             raise ValueError('REEVALUATION_NOT_CONFIGURED')
         return loop
@@ -97,7 +110,7 @@ class ReevaluationService:
     def engine_lock(self):
         """The engine choice is machine-wide. While a loop holds its lease the choice is locked, so a running
         session never changes model between cycles. Reads the lease only."""
-        loop = self.repository.latest_loop(self._account())
+        loop = self._current_loop()
         leased = bool(loop and loop['owner_id'] and loop['lease_until'] and loop['lease_until'] > self.clock())
         return dict(locked=leased, reason='REEVALUATION_LOOP_RUNNING' if leased else None)
 
@@ -117,6 +130,8 @@ class ReevaluationService:
     def session_state(self, scope, epoch):
         if scope.get('universe') in ('US_EQUITIES', 'US_ETFS'):
             return us_equity_session_label(datetime.fromtimestamp(epoch, UTC))
+        if scope.get('universe') == 'CRYPTO':
+            return 'CONTINUOUS'
         return 'NO_SESSION_CALENDAR'
 
     # --- operator controls ------------------------------------------------------
@@ -136,10 +151,24 @@ class ReevaluationService:
         policy = build_policy(body.get('policy'))
         cadence = effective_cadence(body.get('requested_cadence_seconds'), policy)
         loop_id, scope_hash = loop_identity(self._account(), scope)
+        if self.bound_scope is not None:
+            expected, _ = loop_identity(self._account(), self.ai._query(self.bound_scope))
+            if loop_id != expected:
+                raise ValueError('REEVALUATION_SCOPE_MISMATCH')
+            self.bound_loop_id = loop_id
         now = self.clock()
         existing = self.repository.get_loop(loop_id)
         if existing and existing['owner_id'] and existing['lease_until'] and existing['lease_until'] > now:
             raise ValueError('REEVALUATION_RUNNING_STOP_FIRST')
+        current = self.repository.latest_loop(self._account())
+        if current and current['loop_id'] != loop_id and current['owner_id'] not in (None, self.owner_id) \
+                and current['owner_id'].rsplit(':', 1)[0] != self.owner_id.rsplit(':', 1)[0] \
+                and current['lease_until'] and current['lease_until'] > now:
+            # Another process runs this account's loop on another scope. A second loop would take turns with it as
+            # the account's latest, and status, Stop and the engine lock would follow whichever wrote last.
+            # Scoped services of one controller share its owner prefix (`<controller>:<scope hash>`), so the
+            # controller's own universe scopes are the same process, not a second owner.
+            raise ValueError('REEVALUATION_LOOP_ALREADY_OWNED')
         base = existing or dict(schema_version=LOOP_SCHEMA, loop_id=loop_id, account_id=self._account(), scope_hash=scope_hash,
                                 desired_state='STOPPED', clean_stop=True, anchor_epoch=None, tracked={}, selected=[], ranks={},
                                 intake={}, last_reduction_epoch=None, last_reduction_run_id=None, last_scheduled_epoch=None,
@@ -159,7 +188,7 @@ class ReevaluationService:
                     **cadence_readiness(states, ai_state=self.engine_state(), cadence=loop['cadence']))
 
     def status(self, *, readiness=False):
-        loop = self.repository.latest_loop(self._account())
+        loop = self._current_loop()
         engine = self.engine_state()
         if loop is None:
             return dict(schema_version=STATUS_SCHEMA, worker_state='NOT_CONFIGURED', worker_label='Not configured',
@@ -245,7 +274,7 @@ class ReevaluationService:
             raise ValueError('REEVALUATION_RUNNING_STOP_FIRST')
         if self.cycle_lock.locked():
             raise ValueError('CYCLE_IN_PROGRESS')
-        current = self.repository.latest_loop(self._account())
+        current = self._current_loop()
         wanted = self.ai._query(scope)
         if current is None or current['scope'] != wanted or current['requested_cadence_seconds'] != requested_cadence_seconds:
             self._configure(dict(scope=scope, requested_cadence_seconds=requested_cadence_seconds), readiness=False)
@@ -264,7 +293,7 @@ class ReevaluationService:
         if not self.external_driver:
             return
         self.external_driver = None
-        loop = self.repository.latest_loop(self._account())
+        loop = self._current_loop()
         if loop is None or loop['owner_id'] not in (None, self.owner_id):
             return
         loop.update(desired_state='STOPPED', clean_stop=True, updated_epoch=self.clock(), candidate_source=None,
@@ -272,21 +301,38 @@ class ReevaluationService:
         self.repository.save_loop(loop)
         self.repository.release_lease(loop['loop_id'], self.owner_id)
 
-    def adopt_selection(self, run):
-        """Queue a completed full-universe selection; the next cycle applies it and records the change."""
+    def adopt_selection(self, run, *, ttl_seconds=None):
+        """Queue a completed full-universe selection, or a completed rolling slice's selection; the next cycle
+        applies it and records the change. The selection is a hypothesis: every entry still needs a fresh Action
+        Decision on newly acquired evidence. With ``ttl_seconds`` it is dropped once that long has passed."""
         if not self.external_driver:
             raise ValueError('REEVALUATION_DRIVER_REQUIRED')
         coverage = run.get('universe_coverage') or {}
+        complete = coverage.get('selection_complete') and coverage.get('coverage_complete')
+        # A slice is adopted only for what it selected on current evidence; a slice that selected nothing says nothing
+        # about the rows it did not reach, so it never clears the previous selection.
+        sliced = coverage.get('slice_complete') and coverage.get('status') == 'SLICE_SELECTION_COMPLETE' and run.get('candidates')
         # A complete run that selected nothing is also a result: it clears the previous selection.
-        if not coverage.get('selection_complete') or not coverage.get('coverage_complete') \
-                or (run.get('candidates') and (run.get('state') != 'CURRENT' or coverage.get('status') != 'GLOBAL_SELECTION_COMPLETE')):
+        if not (complete or sliced) or (run.get('candidates') and (
+                run.get('state') != 'CURRENT' or coverage.get('status') not in ('GLOBAL_SELECTION_COMPLETE', 'SLICE_SELECTION_COMPLETE'))):
             raise ValueError('SELECTION_COVERAGE_INCOMPLETE')
-        symbols = {e['instrument']['instrument_id']: e['instrument'].get('symbol') for e in run.get('evidence', [])}
+        # The search text for a selection's targeted read. Crypto candidates carry their pair only as ``company``
+        # (the Screener's crypto symbol); the read keeps only the row with this exact instrument id.
+        symbols = {e['instrument']['instrument_id']: e['instrument'].get('symbol') or e['instrument'].get('company')
+                   for e in run.get('evidence', [])}
         picks = run.get('candidates', [])[:5]
         loop = self._loop()
+        now = self.clock()
         loop['pending_selection'] = dict(run_id=run['run_id'], chosen=[p['instrument_id'] for p in picks],
                                          ranks={p['instrument_id']: p['rank'] for p in picks},
-                                         symbols={p['instrument_id']: symbols.get(p['instrument_id']) for p in picks})
+                                         symbols={p['instrument_id']: symbols.get(p['instrument_id']) for p in picks},
+                                         valid_until_epoch=now + float(ttl_seconds) if ttl_seconds else None,
+                                         provenance=dict(run_id=run['run_id'], status=coverage.get('status'),
+                                                         reduction_run_id=coverage.get('reduction_run_id'),
+                                                         decision_cutoff=run.get('decision_cutoff'), evidence_valid_until=run.get('valid_until'),
+                                                         state=run.get('state'), model_id=run.get('model_id'), runtime=run.get('runtime'),
+                                                         prompt_id=run.get('prompt_id'), prompt_version=run.get('prompt_version'),
+                                                         slice=coverage.get('slice'), adopted_at=_iso(now)))
         loop['updated_epoch'] = self.clock()
         self.repository.save_loop(loop, owner_id=self.owner_id)
 
@@ -313,6 +359,14 @@ class ReevaluationService:
         if not self.heartbeat(loop['loop_id']):
             raise ValueError('REEVALUATION_LEASE_LOST')
         return self.evaluate_cycle(trigger, scheduled_for, missed=missed, loop_id=loop['loop_id'], model_gate=model_gate)
+
+    def renew_driver_lease(self):
+        """The driver's own heartbeat keeps the loop it holds, so a cadence longer than the lease is not a lapse.
+        A no-op once the driver is detached; a released or taken lease is never renewed."""
+        if not self.external_driver:
+            return False
+        loop = self._current_loop()
+        return bool(loop) and self.heartbeat(loop['loop_id'])
 
     def stop(self):
         if self.external_driver:
@@ -404,8 +458,13 @@ class ReevaluationService:
                 """Before a model call: renew the lease, or stop if another process took the loop."""
                 if fence and not self.heartbeat(loop['loop_id']) and self.repository.get_loop(loop['loop_id'])['owner_id'] is not None:
                     raise ValueError('REEVALUATION_LEASE_LOST')  # an operator Stop releases the lease; that cycle still finishes
+            # One model call can outlast the lease; between guards the keeper renews it so the loop never reads as
+            # interrupted while it is working. A manual cycle holds no lease and gets none.
+            keeper = LeaseKeeper(lambda: self.heartbeat(loop['loop_id']), loop['policy']['lease_seconds'] / 3,
+                                 wait=self.lease_wait) if fence else None
             try:
-                receipt = self._cycle(loop, trigger, scheduled_for, started, guard=guard, spent=spent, model_gate=model_gate)
+                with keeper or contextlib.nullcontext():
+                    receipt = self._cycle(loop, trigger, scheduled_for, started, guard=guard, spent=spent, model_gate=model_gate)
             except Exception as exc:  # a failed cycle is recorded, never silently retried
                 code = str(exc) if _CODE.fullmatch(str(exc)) else type(exc).__name__
                 receipt = self._receipt(loop, trigger=trigger, scheduled=scheduled_for, started=started, status=CycleStatus.FAILED)
@@ -724,6 +783,16 @@ class ReevaluationService:
         intake_changed = set(intake) != set(loop['intake']) or any(material_change(loop['intake'][i], intake[i], policy) for i in intake)
         if external:
             # AUTO-01: candidates come only from an adopted full-universe selection, never the intake head.
+            expiry = loop.get('selection_valid_until_epoch')
+            if not pending_selection and expiry is not None and started >= float(expiry) and loop['selected']:
+                # The adopted hypothesis outlived its lifetime: it is dropped, not acted on. Held positions are untouched.
+                state['material'] += 1
+                for iid in loop['selected']:
+                    note(iid, TransitionClass.CANDIDATE_REMOVED, ['SELECTION_HYPOTHESIS_EXPIRED', 'FULL_UNIVERSE_SELECTION'],
+                         candidate_run_id=loop.get('last_reduction_run_id'))
+                    if iid not in held:
+                        loop['tracked'].pop(iid, None)
+                loop.update(selected=[], ranks={}, symbols={}, selection_valid_until_epoch=None)
             if pending_selection:
                 state['material'] += 1
                 chosen, run_id = list(pending_selection['chosen']), pending_selection['run_id']
@@ -736,7 +805,9 @@ class ReevaluationService:
                         if iid not in held:
                             loop['tracked'].pop(iid, None)
                 loop.update(selected=chosen, ranks=dict(pending_selection['ranks']), symbols=dict(pending_selection['symbols']),
-                            last_reduction_epoch=started, last_reduction_run_id=run_id, intake=intake, pending_selection=None)
+                            last_reduction_epoch=started, last_reduction_run_id=run_id, intake=intake, pending_selection=None,
+                            selection_valid_until_epoch=pending_selection.get('valid_until_epoch'),
+                            selection_provenance=pending_selection.get('provenance'))
         elif loop['last_reduction_epoch'] is None or intake_changed:
             if loop['last_reduction_epoch'] is not None and started - loop['last_reduction_epoch'] < policy['candidate_refresh_min_seconds']:
                 reasons.append('CANDIDATE_REFRESH_DEFERRED')
@@ -788,6 +859,36 @@ class ReevaluationService:
                                          max_per_day=policy['max_model_calls_per_day']),
                        cycle_status=str(status))
         return receipt
+
+
+class LeaseKeeper:
+    """Renews a held lease every ``interval`` seconds for as long as one cycle runs, model calls included.
+
+    It stops with the cycle, and for good at the first refused renewal: the repository refuses once the lease
+    is released (Stop, Emergency Stop, detach) or held by another process, so a lost lease is never taken back.
+    A dead worker renews nothing, because the keeper lives only inside the cycle that worker is running.
+    """
+
+    def __init__(self, renew, interval, *, wait=None):
+        self.renew, self.interval = renew, interval
+        self.stopped = threading.Event()
+        self.wait = wait or self.stopped.wait
+        self.renewals = 0
+        self.thread = threading.Thread(target=self.run, name='imp-reevaluation-lease', daemon=True)
+
+    def __enter__(self):
+        self.thread.start()
+        return self
+
+    def __exit__(self, *exc):
+        self.stopped.set()  # the default wait wakes at once; a renewal already under way is refused or harmless
+
+    def run(self):
+        while True:
+            self.wait(self.interval)
+            if self.stopped.is_set() or not self.renew():
+                return
+            self.renewals += 1
 
 
 class ReevaluationWorker:

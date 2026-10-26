@@ -6,6 +6,7 @@ import {
   fetchProviderConfig,
   PROVIDER_CONFIG_QUERY_KEY,
   saveProviderSettings,
+  switchProvider,
   type ProviderField,
   type ProviderSetup,
   type SaveResult,
@@ -33,14 +34,17 @@ const STATE_TEXT: Record<ProviderSetup["state"], string> = {
   NEEDS_SETUP: "needs setup",
   OPTIONAL: "optional",
   EXTERNAL: "outside IMP",
+  ON: "on",
+  OFF: "off",
 };
 const STATE_TONE: Record<ProviderSetup["state"], string> = {
-  CONFIGURED: "ready", PARTIAL: "wait", NEEDS_SETUP: "off", OPTIONAL: "off", EXTERNAL: "off",
+  CONFIGURED: "ready", PARTIAL: "wait", NEEDS_SETUP: "off", OPTIONAL: "off", EXTERNAL: "off", ON: "ready", OFF: "off",
 };
 const SOURCE_TEXT: Record<ProviderField["source"], string> = {
   ENVIRONMENT: "Set by the API's environment. Change it there; IMP won't store a value that would be ignored.",
   PRIVATE_FILE: "Stored in IMP's private provider file on this computer.",
   ENV_FILE: "Read from the repository .env file. Saving here takes precedence.",
+  PROVIDER_STORE: "Held in this provider's own private store on this computer, saved when it was connected. A value saved here replaces it.",
   NONE: "Not set.",
 };
 const FREE_ACCESS = new Set(["FREE", "FREE_ACCOUNT"]);
@@ -116,7 +120,7 @@ export function ProviderConfigForm({ provider }: { provider: ProviderSetup }) {
   };
 
   if (!provider.configurable) {
-    return <p className="setup-config-external">{provider.external_setup}</p>;
+    return provider.external_setup ? <p className="setup-config-external">{provider.external_setup}</p> : null;
   }
   return <form className="setup-config-form" onSubmit={submit} aria-describedby={`${formId}-status`} autoComplete="off">
     {provider.fields.map((field) => {
@@ -158,6 +162,42 @@ export function ProviderConfigForm({ provider }: { provider: ProviderSetup }) {
   </form>;
 }
 
+/**
+ * A keyless public source's one read gate, as an On/Off switch. Nothing is sent until it is pressed; when the API's
+ * environment sets the gate, the switch shows that state and cannot be changed here.
+ */
+export function ProviderSwitch({ provider }: { provider: ProviderSetup }) {
+  const queryClient = useQueryClient();
+  const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const labelId = useId();
+  const gate = provider.switch;
+  if (!gate) return null;
+  const toggle = async () => {
+    setStatus({ kind: "saving" });
+    try {
+      const { result, ...config } = await switchProvider(provider.provider, !gate.on);
+      const turned = result.switch === "ON" ? `${provider.label} is switched on.` : `${provider.label} is switched off.`;
+      setStatus({ kind: "saved", text: `${turned} ${appliesText(result, provider)}` });
+      queryClient.setQueryData(PROVIDER_CONFIG_QUERY_KEY, config);
+      void queryClient.invalidateQueries({ queryKey: ["operator", "config"] });
+      refreshProviderQueries(queryClient);
+    } catch (error) {
+      setStatus({ kind: "error", message: describeSaveError(error) });
+    }
+  };
+  return <div className="setup-config-switch">
+    <span id={labelId} className="setup-config-switch-label">{gate.on ? "Switched on" : "Switched off"}</span>
+    <button type="button" role="switch" aria-checked={gate.on} aria-labelledby={labelId}
+      aria-describedby={`${labelId}-status`} className={`setup-switch${gate.on ? " on" : ""}`}
+      disabled={!gate.editable || status.kind === "saving"} onClick={() => void toggle()}>
+      <span aria-hidden="true">{gate.on ? "On" : "Off"}</span></button>
+    {!gate.editable && <small className="setup-config-source">Set in the API environment. Change it there.</small>}
+    <small className="setup-config-name"> Setting: {gate.name}</small>
+    <span id={`${labelId}-status`} role="status" className={`setup-config-status ${status.kind}`}>
+      {status.kind === "error" ? status.message : status.kind === "saved" ? status.text : ""}</span>
+  </div>;
+}
+
 function ProviderHeader({ provider, headingId }: { provider: ProviderSetup; headingId: string }) {
   return <header className="setup-config-header">
     <h2 id={headingId}>{provider.label}</h2>
@@ -176,6 +216,7 @@ export function ProviderConfigDetail({ provider, headingId }: { provider: Provid
       <ul>{provider.unlocks.map((item) => <li key={item}>{item}</li>)}</ul></div>
     {provider.applies === "RESTART" && provider.applies_note &&
       <p className="setup-config-restart">Needs an API restart after saving. {provider.applies_note}</p>}
+    <ProviderSwitch provider={provider} />
     <ProviderConfigForm provider={provider} />
   </div>;
 }
@@ -221,6 +262,10 @@ export function ConfigureButton({ provider, label }: { provider: string; label: 
   </>;
 }
 
+/** A keyless source that is off is turned on; anything set up is managed; the rest is configured. */
+const rowAction = (item: ProviderSetup) =>
+  item.state === "OFF" ? "Turn on" : item.state === "CONFIGURED" || item.state === "ON" ? "Manage" : "Configure";
+
 /** Every registered provider, grouped; groups with something to do start open. */
 export function ProviderSetupList({ enabled }: { enabled: boolean }) {
   const query = useProviderConfig(enabled);
@@ -230,7 +275,8 @@ export function ProviderSetupList({ enabled }: { enabled: boolean }) {
       <button type="button" className="setup-copy" onClick={() => void query.refetch()}>Retry</button></p>;
   }
   if (!query.data) return <p className="setup-summary">Loading provider settings…</p>;
-  const providers = query.data.providers;
+  // The paid AI dollar caps live on the "Which AI decides" card, next to the choice they gate.
+  const providers = query.data.providers.filter((item) => item.provider !== "paid_ai");
   return <section className="setup-providers" aria-label="Provider settings">
     <h3 className="setup-section-title">Provider settings</h3>
     {GROUPS.map(([group, title]) => {
@@ -243,11 +289,11 @@ export function ProviderSetupList({ enabled }: { enabled: boolean }) {
           <span className="setup-row-label">{item.label}
             <small className="setup-row-access">{ACCESS_TEXT[item.access] ?? item.access}</small></span>
           <span className={`setup-pill ${STATE_TONE[item.state]}`}>{stateLabel(item)}</span>
-          <span className="setup-row-step">{item.configurable
+          <span className="setup-row-step">{item.configurable || item.switch
             ? <><span className="setup-row-unlocks">{item.unlocks.join(" · ")}</span>{" "}
               <button type="button" className="screener-control setup-connect-button" aria-haspopup="dialog"
-                aria-label={`${item.state === "CONFIGURED" ? "Manage" : "Configure"} ${item.label}`}
-                onClick={() => setOpen(item.provider)}>{item.state === "CONFIGURED" ? "Manage" : "Configure"}</button></>
+                aria-label={`${rowAction(item)} ${item.label}`}
+                onClick={() => setOpen(item.provider)}>{rowAction(item)}</button></>
             : <span>{item.external_setup}</span>}</span>
         </li>)}</ul>
       </details>;

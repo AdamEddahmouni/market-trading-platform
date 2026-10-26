@@ -16,6 +16,7 @@ from ..finviz import (
     get_finviz_credential_manager,
     get_finviz_request_manager,
 )
+from ..finviz.config import FINVIZ_FEEDS, finviz_feed_disabled, finviz_live_enabled
 from ..finviz.news import FinvizNewsClient
 from ..finviz.provider_role import EXECUTION_ROLE, PROVIDER_ID
 from ..finviz.symbols import canonical_to_moomoo, finviz_to_canonical
@@ -34,6 +35,12 @@ def build_finviz_diagnostics_payload() -> dict[str, Any]:
     connection = "HEALTHY" if auth_state == "HEALTHY" else (
         "AUTH_REQUIRED" if auth_state.startswith("AUTH_") or auth_state == "UNCONFIGURED" else "DEGRADED"
     )
+    # The live gate is the authorization; a stored credential alone never makes Finviz available.
+    live = finviz_live_enabled()
+    feeds = {feed.lower(): "LIVE_DISABLED" if not live or finviz_feed_disabled(feed) else "ENABLED"
+             for feed in FINVIZ_FEEDS}
+    if not live and configured:
+        connection = "LIVE_DISABLED"
     return {
         "provider": PROVIDER_ID,
         "role": "DISCOVERY / CONTEXT",
@@ -48,13 +55,18 @@ def build_finviz_diagnostics_payload() -> dict[str, Any]:
         "recovery_mode": auth_health.recovery_mode.value,
         "automatic_recovery": auth_health.automatic_recovery,
         "last_auth_error": auth_health.last_auth_error,
-        "screener": "AVAILABLE" if configured and connection == "HEALTHY" else (
-            "UNAVAILABLE" if not configured else "DEGRADED"
+        "live_enabled": live,
+        "feeds": feeds,
+        "screener": "LIVE_DISABLED" if configured and feeds["screener"] != "ENABLED" else (
+            "AVAILABLE" if configured and connection == "HEALTHY" else (
+                "UNAVAILABLE" if not configured else "DEGRADED")
         ),
-        "news": "AVAILABLE" if configured and connection == "HEALTHY" else (
-            "UNAVAILABLE" if not configured else "DEGRADED"
+        "news": "LIVE_DISABLED" if configured and feeds["news"] != "ENABLED" else (
+            "AVAILABLE" if configured and connection == "HEALTHY" else (
+                "UNAVAILABLE" if not configured else "DEGRADED")
         ),
-        "options": "PARTIAL" if configured else "NOT_CONFIGURED",
+        "options": "LIVE_DISABLED" if configured and feeds["options"] != "ENABLED" else (
+            "PARTIAL" if configured else "NOT_CONFIGURED"),
         "rate": "PASS",
         "requests": manager.metrics.request_count,
         "cache_hits": manager.metrics.cache_hits,

@@ -13,6 +13,8 @@ import "./news.css";
 
 const WINDOW_LABELS: Record<NewsWindowId, string> = { "1h": "Last 1h", "4h": "Last 4h", "24h": "Last 24h", "72h": "Last 72h" };
 const SENTIMENTS = [{ id: "POSITIVE", label: "Positive" }, { id: "NEUTRAL", label: "Neutral" }, { id: "NEGATIVE", label: "Negative" }];
+/** Setting names read as what is missing; the rest read as words. */
+const SENTIMENT_REASON: Record<string, string> = { IMP_FINBERT_MODEL_PATH_NOT_SET: "sentiment model not installed" };
 const PREFETCH_ROWS = 30;
 const REFRESH_MS = 60_000;
 // While FinBERT loads, re-poll quickly so sentiment fills in without a reload; bounded in case the load hangs.
@@ -43,21 +45,23 @@ function parse(search: string) {
 
 function Notice({ feed, universeLabel, empty }: { feed: NewsFeed; universeLabel: string; empty: boolean }) {
   const degraded = degradedProviders(feed.providers);
-  const list = (items: ProviderStatus[]) => items.map((item) => `${item.label} (${stateText(item.state)}${item.reason ? ` · ${item.reason}` : ""})`).join("; ");
+  // Words in the line; the reason codes stay on hover (each provider's fix is listed below it).
+  const list = (items: ProviderStatus[]) => items.map((item) => `${item.label} (${stateText(item.state)})`).join("; ");
+  const codes = (items: ProviderStatus[]) => items.map((item) => item.reason).filter(Boolean).join(", ");
   // An empty feed shows the feed-level fix in its own empty state; the notice never repeats it.
   const remedy = empty ? null : feed.remedy ?? null;
   if (feed.state === "NOT_CONFIGURED" || feed.state === "UNAVAILABLE") {
     return <div className="news-notice error" role="alert">
       <strong>{feed.state === "NOT_CONFIGURED" ? `News providers are not configured for ${universeLabel}` : `News is unavailable for ${universeLabel}`}</strong>
       {remedy ? <RemedyHint remedy={remedy} /> : !feed.remedy && feed.reason ? <span>{humanize(feed.reason)}.</span> : null}
-      <span>This is a provider state, not an absence of news. {degraded.length ? `Missing: ${list(degraded)}.` : ""}</span>
+      <span title={codes(degraded) || undefined}>This is a provider state, not an absence of news. {degraded.length ? `Missing: ${list(degraded)}.` : ""}</span>
       <ProviderFixes providers={degraded} skip={feed.remedy?.reason} />
     </div>;
   }
   if (feed.state === "PARTIAL" && (degraded.length || remedy)) {
     return <div className="news-notice warn" role="status"><strong>Partial coverage</strong>
       {remedy && <RemedyHint remedy={remedy} />}
-      {degraded.length > 0 && <span>Stories below come only from current providers. Not current: {list(degraded)}.</span>}
+      {degraded.length > 0 && <span title={codes(degraded) || undefined}>Stories below come only from current providers. Not current: {list(degraded)}.</span>}
       <ProviderFixes providers={degraded} skip={feed.remedy?.reason} /></div>;
   }
   if (feed.state === "PENDING") return <div className="news-notice" role="status"><strong>Providers pending</strong><span>Some providers have not reported yet; the feed will refresh.</span></div>;
@@ -196,7 +200,7 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
     if ((event.target as HTMLElement).closest("a.news-headline")) markOpened(storyId);
   };
   const sentimentReason = filters && !filters.sentiment.enabled
-    ? `Sentiment filter unavailable${filters.sentiment.reason ? ` · ${humanize(filters.sentiment.reason)}` : ""}` : undefined;
+    ? `Sentiment filter unavailable${filters.sentiment.reason ? ` · ${SENTIMENT_REASON[filters.sentiment.reason] ?? humanize(filters.sentiment.reason)}` : ""}` : undefined;
 
   return <div className="news-view" aria-label={`${universeLabel} news`} role="region">
     <div className="news-controls">
@@ -212,9 +216,9 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
       <label>Category <select aria-label="News category" value={state.category ?? ""} disabled={!filters} onChange={(event) => onUpdate({ ncat: event.target.value || null })}>
         <option value="">All categories</option>
         {filters?.categories.map((item) => <option key={item.id} value={item.id}>{item.label} ({item.count})</option>)}</select></label>
-      <label title={sentimentReason}>Sentiment <select aria-label="News sentiment" value={sentimentEnabled ? state.sentiment ?? "" : ""} disabled={!sentimentEnabled}
+      <label title={sentimentReason && filters?.sentiment.reason ? `${sentimentReason}\nReason code: ${filters.sentiment.reason}` : sentimentReason}>Sentiment <select aria-label="News sentiment" value={sentimentEnabled ? state.sentiment ?? "" : ""} disabled={!sentimentEnabled}
         aria-describedby={sentimentReason ? "news-sentiment-reason" : undefined} onChange={(event) => onUpdate({ nsent: event.target.value || null })}>
-        <option value="">Any language</option>
+        <option value="">Any sentiment</option>
         {SENTIMENTS.map((item) => <option key={item.id} value={item.id}>{item.label}{sentimentEnabled && sentimentInfo?.counts
           ? ` (${sentimentInfo.counts[item.id.toLowerCase() as "positive" | "neutral" | "negative"]})` : ""}</option>)}</select></label>
       {sentimentReason && <span id="news-sentiment-reason" className="news-meta">{sentimentReason}</span>}
@@ -255,7 +259,7 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
         aria-activedescendant={active >= 0 && stories[active] ? `news-story-${active}` : undefined} aria-keyshortcuts="j k o Enter"
         onKeyDown={onFeedKeyDown}>
         <div className="news-row news-head" role="row">
-          {["Time", "Instruments", "Headline", "Source", "Category", "Sentiment", "Type"].map((name) => <span key={name} role="columnheader">{name}</span>)}
+          {["Time", "Instruments", "Headline", "Source", "Category", "Sentiment"].map((name) => <span key={name} role="columnheader">{name}</span>)}
         </div>
         <div className="news-virtual" style={{ height: virtualizer.getTotalSize() }}>
           {virtualRows.map((virtual) => {
@@ -268,23 +272,24 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
             if (!story) return null;
             const isActive = virtual.index === active;
             const isNew = isNewSince(story, baseline);
+            // One chip per instrument: a story can match the same instrument on several grounds.
+            const chips = story.matches.filter((match, index, all) => all.findIndex((other) => other.symbol === match.symbol) === index);
             return <div key={story.story_id} id={`news-story-${virtual.index}`} role="row" data-index={virtual.index} ref={virtualizer.measureElement}
               aria-rowindex={virtual.index + 2} aria-current={isActive ? "true" : undefined} onClick={onRowClick(virtual.index, story.story_id)}
               className={`news-row${isActive ? " news-active" : ""}${isNew ? " news-new" : ""}${opened.has(story.story_id) ? " news-read" : ""}`}
               style={{ transform: `translateY(${virtual.start}px)` }}>
               <span role="cell"><StoryTime story={story} universe={universe} /></span>
-              <span role="cell" className="news-matches">{story.matches.length ? <>{story.matches.slice(0, MAX_CHIPS).map((match, index) =>
+              <span role="cell" className="news-matches">{chips.length ? <>{chips.slice(0, MAX_CHIPS).map((match, index) =>
                 <MatchChip key={`${match.symbol}-${index}`} match={match} onFilter={filterInstrument} />)}
-                {story.matches.length > MAX_CHIPS && <span className="news-chip more" title={story.matches.slice(MAX_CHIPS).map((match) => `${match.symbol} (${match.confidence.toLowerCase()})`).join(", ")}>
-                  +{story.matches.length - MAX_CHIPS}</span>}</> : <span className="news-muted">—</span>}</span>
+                {chips.length > MAX_CHIPS && <span className="news-chip more" title={chips.slice(MAX_CHIPS).map((match) => `${match.symbol} (${match.confidence.toLowerCase()})`).join(", ")}>
+                  +{chips.length - MAX_CHIPS}</span>}</> : <span className="news-muted">—</span>}</span>
               <span role="cell" className="news-headline-cell"><span className="news-headline-line">
-                {isNew && <span className="news-new-tag">New<span className="sr-only"> since last view</span></span>}<Headline story={story} /></span></span>
+                {isNew && <span className="news-new-tag">New<span className="sr-only"> since last view</span></span>}<TypeBadge type={story.source_type} /><Headline story={story} /></span></span>
               <span role="cell"><StorySources story={story} universe={universe} open={expanded.has(story.story_id)}
                 onToggle={() => { setActive(virtual.index); toggleExpanded(story.story_id); }} /></span>
               <span role="cell" className="news-categories" title={story.categories.map((item) => item.label).join(", ") || "Uncategorized"}>
                 {story.categories.length ? story.categories.map((item) => item.label).join(", ") : "—"}</span>
               <span role="cell"><SentimentCell sentiment={story.sentiment} /></span>
-              <span role="cell"><TypeBadge type={story.source_type} /></span>
             </div>;
           })}
         </div>

@@ -7,6 +7,7 @@ missing one is an incomplete policy, not a silently chosen value.
 from __future__ import annotations
 
 from enum import StrEnum
+from decimal import Decimal, InvalidOperation, ROUND_FLOOR, ROUND_CEILING
 
 from .hashing import input_hash_from_dict
 
@@ -16,7 +17,9 @@ ARM_ACKNOWLEDGEMENT = 'ARM_PAPER_ONLY_AUTOMATION'
 # The stop monitor, the completed-bar feed and the fill model are regular-session contracts.
 SUPPORTED_SESSIONS = ('REGULAR',)
 # The experiment account values share positions only.
-SUPPORTED_UNIVERSES = ('US_EQUITIES', 'US_ETFS')
+SUPPORTED_UNIVERSES = ('US_EQUITIES', 'US_ETFS', 'CRYPTO', 'FUTURES', 'BONDS')
+UNIVERSE_SESSIONS = dict(US_EQUITIES=('REGULAR',), US_ETFS=('REGULAR',),
+                         CRYPTO=('CONTINUOUS',), FUTURES=('TRADING',), BONDS=('REFERENCE_ONLY',))
 # The governed handoff and the deterministic exit are MARKET_NOW_IF_GATES_PASS.
 SUPPORTED_ORDER_TYPES = ('MARKET',)
 REGULAR_SESSION_MINUTES = 390
@@ -70,6 +73,9 @@ INTENT_TERMINAL = frozenset({IntentState.SUBMITTED})
 # floor, and this only names it.
 _SCHEDULE_OPTIONAL = dict(universe_max_age_seconds=int, universe_material_change_trigger=bool,
                           universe_max_runs_per_day=int)
+# Selective overnight holds (owner decision 6, rebuild step 7) are optional and additive in the same way: a body
+# without them keeps its exact policy id and carries nothing over the close. The three are supplied together.
+_RISK_OPTIONAL = dict(max_overnight_positions=int, max_overnight_exposure_minor=int, max_hold_sessions=int)
 _SECTIONS = dict(
     schedule=dict(sessions=list, cadence_seconds=int, universe_evaluation_interval_seconds=int,
                   no_new_entries_minutes_before_close=int),
@@ -85,7 +91,9 @@ _SECTIONS = dict(
 # Every allowed key per section, required and optional. Unknown keys are still rejected, never ignored.
 _ALLOWED = {section: set(fields) for section, fields in _SECTIONS.items()}
 _ALLOWED['schedule'] = set(_SECTIONS['schedule']) | set(_SCHEDULE_OPTIONAL)
+_ALLOWED['risk'] = set(_SECTIONS['risk']) | set(_RISK_OPTIONAL)
 _INT_BOUNDS = dict(
+    max_overnight_positions=(0, 5), max_overnight_exposure_minor=(0, 2_500_000), max_hold_sessions=(1, 5),
     cadence_seconds=(60, 3600), universe_evaluation_interval_seconds=(300, 86400),
     no_new_entries_minutes_before_close=(0, REGULAR_SESSION_MINUTES),
     universe_max_age_seconds=(300, 86400), universe_max_runs_per_day=(1, 100),
@@ -101,8 +109,14 @@ def required_fields():
 
 
 def optional_fields():
-    """Owner decisions that enable adaptive scheduling. Omitting one is a choice, never a default."""
-    return sorted(f'schedule.{field}' for field in _SCHEDULE_OPTIONAL)
+    """Owner decisions that enable adaptive scheduling or overnight holds. Omitting one is a choice, never a default."""
+    return ['scopes', *sorted(f'schedule.{field}' for field in _SCHEDULE_OPTIONAL),
+            *sorted(f'risk.{field}' for field in _RISK_OPTIONAL)]
+
+
+def universe_scopes(policy):
+    """Explicit asset-specific scopes; old policies keep their exact content and identity."""
+    return policy.get('scopes') or [dict(scope=policy['scope'], sessions=policy['schedule']['sessions'])]
 
 
 def build_policy(body, *, account_id, experiment_id, initial_capital_minor, ledger_policy):
@@ -111,7 +125,7 @@ def build_policy(body, *, account_id, experiment_id, initial_capital_minor, ledg
     Missing fields are named together (``AUTOMATION_POLICY_INCOMPLETE:a,b``) so the
     owner is asked once. Unknown fields are rejected, not ignored.
     """
-    if not isinstance(body, dict) or set(body) - {'scope', *_SECTIONS}:
+    if not isinstance(body, dict) or set(body) - {'scope', 'scopes', *_SECTIONS}:
         raise ValueError('AUTOMATION_POLICY_INVALID')
     if not account_id or not experiment_id:
         raise ValueError('AUTOMATION_PAPER_EXPERIMENT_REQUIRED')
@@ -145,7 +159,21 @@ def build_policy(body, *, account_id, experiment_id, initial_capital_minor, ledg
         if field in _INT_BOUNDS and not _INT_BOUNDS[field][0] <= value <= _INT_BOUNDS[field][1]:
             raise ValueError('AUTOMATION_POLICY_FIELD_OUT_OF_RANGE:' + f'schedule.{field}')
         policy['schedule'][field] = value
+    overnight = [field for field in _RISK_OPTIONAL if field in body['risk']]
+    if overnight and len(overnight) != len(_RISK_OPTIONAL):
+        raise ValueError('AUTOMATION_POLICY_INCOMPLETE:' + ','.join(f'risk.{field}' for field in _RISK_OPTIONAL
+                                                                    if field not in body['risk']))
+    for field in overnight:
+        value = body['risk'][field]
+        if type(value) is not int:
+            raise ValueError('AUTOMATION_POLICY_FIELD_INVALID:' + f'risk.{field}')
+        if not _INT_BOUNDS[field][0] <= value <= _INT_BOUNDS[field][1]:
+            raise ValueError('AUTOMATION_POLICY_FIELD_OUT_OF_RANGE:' + f'risk.{field}')
+        policy['risk'][field] = value
     schedule, risk, ai = policy['schedule'], policy['risk'], policy['ai']
+    if overnight and (risk['max_overnight_positions'] > risk['max_open_positions']
+                      or risk['max_overnight_exposure_minor'] > risk['max_aggregate_exposure_minor']):
+        raise ValueError('AUTOMATION_OVERNIGHT_LIMIT_EXCEEDS_PORTFOLIO_LIMIT')
     for field, allowed, code in (('sessions', SUPPORTED_SESSIONS, 'AUTOMATION_SESSION_UNSUPPORTED'),):
         if not schedule[field] or len(set(schedule[field])) != len(schedule[field]) or set(schedule[field]) - set(allowed):
             raise ValueError(code)
@@ -155,6 +183,31 @@ def build_policy(body, *, account_id, experiment_id, initial_capital_minor, ledg
             raise ValueError(code)
     if policy['scope'].get('universe') not in risk['allowed_universes']:
         raise ValueError('AUTOMATION_SCOPE_OUTSIDE_ALLOWED_INSTRUMENTS')
+    if 'scopes' in body:
+        scopes = body['scopes']
+        if not isinstance(scopes, list) or not scopes or len(scopes) > len(SUPPORTED_UNIVERSES):
+            raise ValueError('AUTOMATION_SCOPES_INVALID')
+        seen, admitted = set(), []
+        for item in scopes:
+            if not isinstance(item, dict) or set(item) != {'scope', 'sessions'} or not isinstance(item['scope'], dict):
+                raise ValueError('AUTOMATION_SCOPES_INVALID')
+            universe, sessions = item['scope'].get('universe'), item['sessions']
+            if universe in seen:
+                raise ValueError('AUTOMATION_DUPLICATE_UNIVERSE_SCOPE')
+            if universe not in risk['allowed_universes']:
+                raise ValueError('AUTOMATION_SCOPE_OUTSIDE_ALLOWED_INSTRUMENTS')
+            if not isinstance(sessions, list) or not sessions or len(set(sessions)) != len(sessions) \
+                    or set(sessions) - set(UNIVERSE_SESSIONS.get(universe, ())):
+                raise ValueError('AUTOMATION_SCOPE_SESSION_UNSUPPORTED')
+            if item['scope'].get('method') == 'STAGED_LOCAL_FIRST_EXPERIMENTAL':
+                raise ValueError('EXPERIMENTAL_METHOD_UNAPPROVED')
+            seen.add(universe)
+            admitted.append(dict(scope=dict(item['scope']), sessions=list(sessions)))
+        if admitted[0]['scope'] != policy['scope'] or admitted[0]['sessions'] != schedule['sessions']:
+            raise ValueError('AUTOMATION_PRIMARY_SCOPE_MISMATCH')
+        policy['scopes'] = admitted
+    elif policy['scope'].get('universe') not in ('US_EQUITIES', 'US_ETFS'):
+        raise ValueError('AUTOMATION_EXPLICIT_ASSET_SESSIONS_REQUIRED')
     if policy['scope'].get('method') == 'STAGED_LOCAL_FIRST_EXPERIMENTAL':
         raise ValueError('EXPERIMENTAL_METHOD_UNAPPROVED')  # separately gated; never reachable from automation
     if risk['allow_short'] and not ledger_policy.get('allow_short', False):
@@ -213,17 +266,31 @@ def exposure_minor(positions):
     """Gross marked exposure. None when any open position has no mark: an unknown is never zero."""
     total = 0
     for position in positions:
-        if not position.get('quantity'):
+        try:
+            quantity = Decimal(str(position.get('quantity', 0)))
+            multiplier = Decimal(str(position.get('contract_multiplier', '1')))
+            scale = Decimal(str(position.get('price_scale', 100)))
+        except (ValueError, InvalidOperation):
+            return None
+        if not quantity.is_finite() or not multiplier.is_finite() or multiplier <= 0 or not scale.is_finite() or scale <= 0:
+            return None
+        if not quantity:
             continue
         mark = position.get('mark_minor')
         if not isinstance(mark, int) or mark <= 0:
             return None
-        total += abs(int(position['quantity'])) * mark
+        total += int((abs(quantity) * mark * multiplier * 100 / scale).to_integral_value(rounding=ROUND_CEILING))
     return total
 
 
-def entry_risk_blockers(policy, *, positions, valuation, day_start_equity_minor, pending_orders, minutes_to_close):
-    """Portfolio-level reasons a new entry may not be attempted now. Exits are never gated here."""
+def entry_risk_blockers(policy, *, positions, valuation, day_start_equity_minor, pending_orders, minutes_to_close,
+                        session_label='REGULAR', carry_pending=False, close_guard_minutes=0):
+    """Portfolio-level reasons a new entry may not be attempted now. Exits are never gated here.
+
+    ``carry_pending``: an automation position was left open over a close it was not approved to carry; nothing is
+    added until it is closed. ``close_guard_minutes``: the controller's own end-of-day close-out window, so an entry
+    can never land where it would be closed again minutes later, whatever the owner's entry cutoff.
+    """
     risk, blockers = policy['risk'], []
     if not risk['allow_entries']:
         blockers.append('AUTOMATION_ENTRIES_DISABLED')
@@ -240,14 +307,60 @@ def entry_risk_blockers(policy, *, positions, valuation, day_start_equity_minor,
         blockers.append('DAY_START_EQUITY_UNAVAILABLE')
     elif equity is not None and day_start_equity_minor - equity >= risk['max_daily_loss_minor']:
         blockers.append('MAX_DAILY_LOSS_REACHED')
+    if valuation.get('maintenance_breached'):
+        blockers.append('SHORT_MAINTENANCE_MARGIN_BREACH')  # nothing is added while shorts are under-margined
     if pending_orders:
         blockers.append('WORKING_ORDERS_PRESENT')
-    if minutes_to_close is None or minutes_to_close <= policy['schedule']['no_new_entries_minutes_before_close']:
+    if carry_pending:
+        blockers.append('UNPLANNED_CARRY_PENDING')
+    cutoff = max(policy['schedule']['no_new_entries_minutes_before_close'], int(close_guard_minutes))
+    if session_label not in ('CONTINUOUS', 'TRADING') and (minutes_to_close is None or minutes_to_close <= cutoff):
         blockers.append('ENTRY_WINDOW_CLOSED')
     return blockers
 
 
-def size_entry(policy, *, price_minor, positions, buying_power_minor, ledger_policy):
+def overnight_limits(policy):
+    """The owner's overnight-hold limits, or None when this policy carries nothing over the close."""
+    risk = policy['risk']
+    if not risk.get('max_overnight_positions'):
+        return None
+    return dict(max_positions=int(risk['max_overnight_positions']),
+                max_exposure_minor=int(risk['max_overnight_exposure_minor']),
+                max_hold_sessions=int(risk['max_hold_sessions']))
+
+
+def sessions_held(entry_date, session_date, is_trading_day):
+    """Trading sessions a position has been open in, the entry session counted as 1 (ISO dates, ET)."""
+    from datetime import date, timedelta
+    start, end = date.fromisoformat(entry_date), date.fromisoformat(session_date)
+    if end < start:
+        return 1
+    count, day = 0, start
+    while day <= end:
+        count += 1 if is_trading_day(day) else 0
+        day += timedelta(days=1)
+    return max(count, 1)
+
+
+def select_overnight_carry(candidates, limits):
+    """Deterministic choice of what is carried: best unrealized return first, inside both owner caps.
+
+    ``candidates`` are dicts with ``instrument_id``, ``exposure_minor`` and ``return_bps``. A candidate that does not
+    fit the remaining position count or exposure is refused with its reason and the next one is tried.
+    """
+    kept, refused, exposure = [], [], 0
+    for candidate in sorted(candidates, key=lambda c: (-int(c['return_bps']), str(c['instrument_id']))):
+        if len(kept) >= limits['max_positions']:
+            refused.append(dict(candidate, reason='OVERNIGHT_POSITION_LIMIT_REACHED'))
+        elif exposure + int(candidate['exposure_minor']) > limits['max_exposure_minor']:
+            refused.append(dict(candidate, reason='OVERNIGHT_EXPOSURE_LIMIT_REACHED'))
+        else:
+            kept.append(candidate)
+            exposure += int(candidate['exposure_minor'])
+    return kept, refused
+
+
+def size_entry(policy, *, price_minor, positions, buying_power_minor, ledger_policy, instrument=None):
     """Largest whole quantity inside every owner and Paper-account bound, and which bound binds.
 
     ``max_per_trade_risk_minor`` bounds the loss of an adverse move of the owner's
@@ -261,6 +374,32 @@ def size_entry(policy, *, price_minor, positions, buying_power_minor, ledger_pol
     exposure = exposure_minor(positions)
     if exposure is None:
         return dict(quantity=0, binding='PORTFOLIO_VALUATION_NOT_CURRENT', bounds={})
+    if instrument and instrument.get('instrument_kind') in ('CRYPTO_PAIR', 'FUTURE_CONTRACT', 'OPTION_CONTRACT'):
+        try:
+            step = Decimal(str(instrument.get('quantity_step', '1' if instrument['instrument_kind'] != 'CRYPTO_PAIR' else 'NaN')))
+            minimum = Decimal(str(instrument.get('minimum_quantity', step)))
+            multiplier = Decimal(str(instrument.get('contract_multiplier', 'NaN')))
+            scale = Decimal(str(instrument.get('price_scale', 100)))
+            if any(not value.is_finite() or value <= 0 for value in (step, minimum, multiplier, scale)):
+                raise ValueError('invalid economics')
+        except (ValueError, InvalidOperation):
+            return dict(quantity=0, binding='INSTRUMENT_QUANTITY_RULES_UNAVAILABLE', bounds={})
+        unit_cost = Decimal(price_minor) * multiplier * int(ledger_policy.get('price_scale', 100)) / scale
+        amounts = dict(MAX_POSITION_NOTIONAL=risk['max_position_notional_minor'],
+                       MAX_PER_TRADE_RISK=Decimal(risk['max_per_trade_risk_minor']) * 10000 / risk['assumed_adverse_move_bps'],
+                       MAX_AGGREGATE_EXPOSURE=max(0, risk['max_aggregate_exposure_minor'] - exposure),
+                       BUYING_POWER=max(0, int(buying_power_minor)))
+        # Share-count caps remain upper bounds in base units/contracts; no allowance is multiplied per scope.
+        bounds = {name: (Decimal(value) / unit_cost / step).to_integral_value(rounding=ROUND_FLOOR) * step
+                  for name, value in amounts.items()}
+        bounds.update(PAPER_ACCOUNT_MAX_ORDER_SHARES=Decimal(ledger_policy['max_order_shares']),
+                      PAPER_ACCOUNT_MAX_POSITION_SHARES=Decimal(ledger_policy['max_position_shares']))
+        binding = min(bounds, key=lambda name: (bounds[name], name))
+        quantity = (bounds[binding] / step).to_integral_value(rounding=ROUND_FLOOR) * step
+        quantity = quantity if quantity >= minimum else Decimal(0)
+        fractional = instrument['instrument_kind'] == 'CRYPTO_PAIR'
+        return dict(quantity=format(quantity, 'f') if fractional else int(quantity), binding=binding,
+                    bounds={key: format(value, 'f') for key, value in bounds.items()})
     bounds = dict(
         MAX_POSITION_NOTIONAL=risk['max_position_notional_minor'] // price_minor,
         MAX_PER_TRADE_RISK=(risk['max_per_trade_risk_minor'] * 10000 // risk['assumed_adverse_move_bps']) // price_minor,
@@ -394,6 +533,10 @@ def should_run_universe(facts):
 
     if facts.get('active_run_id'):
         return verdict(UniverseDecision.DEFER, ['UNIVERSE_RUN_ACTIVE'], run_id=facts['active_run_id'])
+    # Optional inference-only hours never change collection or legacy Paper session authority.
+    inference_hours = facts.get('inference_session')
+    if inference_hours is not None and inference_hours.get('allowed') is not True:
+        return verdict(UniverseDecision.DEFER, [inference_hours.get('reason') or 'INFERENCE_SESSION_NOT_VERIFIED'])
     if facts.get('session_label') not in (facts.get('sessions') or ()):
         return verdict(UniverseDecision.BLOCK, ['UNIVERSE_SESSION_NOT_ELIGIBLE'],
                        session_label=facts.get('session_label'))
@@ -439,3 +582,10 @@ def should_run_universe(facts):
                    next_eligible=float(complete['finished_at_epoch']) + int(max_age),
                    selection_age_seconds=int(age), max_age_seconds=int(max_age),
                    material_change=reasons or ['NO_MATERIAL_CHANGE_OBSERVED'])
+
+
+def plan_local_inference_dry_run(records, **facts):
+    """Optional offline local-record plan; retains existing adaptive/provider/budget boundaries."""
+    from ..scheduling.local_plan import plan_local_inference_dry_run as plan
+
+    return plan(records, **facts)

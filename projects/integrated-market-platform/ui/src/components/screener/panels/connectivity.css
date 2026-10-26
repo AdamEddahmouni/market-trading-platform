@@ -11,4 +11,4 @@
 .connectivity table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .connectivity th, .connectivity td { text-align: left; vertical-align: top; padding: 6px; border-bottom: 1px solid #435164; }
 .connectivity pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
-@media (max-width: 450px) { .connectivity-graph { height: 360px; } .connectivity-graph button { max-width: 90px; font-size: 10px; } }
+@media (max-width: 450px) { .connectivity-graph { height: 360px; } .connectivity-graph button { max-width: 90px; font-size: 11px; } }

@@ -1,6 +1,8 @@
 """OCT1-07 reevaluation core, cadence truth, lease/liveness and execution-safety boundaries."""
 import json
 import tempfile
+import threading
+import time
 import unittest
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,7 +16,7 @@ from market_platform_foundation.intelligence.inference.reevaluation import (
 from market_platform_foundation.local_state.action_decisions import ActionDecisionRepository
 from market_platform_foundation.local_state.connection import LocalStateConnection
 from market_platform_foundation.local_state.reevaluation import ReevaluationRepository
-from tests.intelligence.test_action_decision import proposal
+from tests.intelligence.test_action_decision import proposal, wire
 
 T0 = 1791208800.0  # 2026-10-05T14:00:00Z, Monday 10:00 ET (regular session)
 SCOPE = dict(universe='US_EQUITIES', search='', sort='symbol', descending=False, filters=[], result_set=None, view='Overview', screen='')
@@ -53,7 +55,7 @@ class FixtureProvider:
             value = proposal('ENTER') if change > 0 else proposal('NO_ACTION', None)
         else:
             value = proposal('HOLD' if (change > 0) == (held == 'LONG') else 'EXIT')
-        return ProviderInferenceResponse(json.dumps(value), self.provider_id, self.model_id, simulated=True,
+        return ProviderInferenceResponse(wire(value, packet.candidates[0]), self.provider_id, self.model_id, simulated=True,
                                          tokens_input=250, tokens_output=120, latency_ms=1)
 
 
@@ -144,6 +146,40 @@ class Harness:
 
     def wait(self, seconds):
         self.clock.value += seconds
+
+
+class Pacer:
+    """Paces the in-cycle lease keeper by hand: each tick lets exactly one renewal through."""
+
+    def __init__(self):
+        self.go, self.parks, self.thread, self.intervals = threading.Semaphore(0), 0, None, []
+
+    def wait(self, seconds):  # the keeper's side
+        self.thread = threading.current_thread()
+        self.intervals.append(seconds)
+        self.parks += 1
+        self.go.acquire()
+
+    @staticmethod
+    def _until(done):
+        deadline = time.monotonic() + 5
+        while not done() and time.monotonic() < deadline:
+            time.sleep(0.001)
+        return done()
+
+    def tick(self):
+        """True once the renewal went through and the keeper waits again; False once it stopped instead."""
+        if not self._until(lambda: self.parks > 0):
+            raise AssertionError('the lease keeper never started')
+        parks = self.parks
+        self.go.release()
+        self._until(lambda: self.parks > parks or not self.thread.is_alive())
+        return self.parks > parks
+
+    def close(self):  # a keeper still waiting after its cycle wakes, sees the cycle over and exits
+        self.go.release()
+        if self.thread:
+            self.thread.join(5)
 
 
 def only(receipt, classification):
@@ -856,6 +892,121 @@ class WorkerTests(unittest.TestCase):
         worker.run(max_cycles=2)  # 600 s between slots, lease 180 s
         status = self.h.service.status()
         self.assertEqual((status['worker_state'], status['liveness']['owner']), ('RUNNING', 'THIS_PROCESS'))
+
+    def paced(self):
+        pacer = Pacer()
+        self.addCleanup(pacer.close)
+        self.h.service.lease_wait = pacer.wait
+        return pacer
+
+    def observer(self):
+        """Another process reading the same local state, as the status route of a second server would."""
+        other = Harness(clock=self.h.clock, owner='other-process', provider=self.h.provider, ai=self.h.ai, ledger=self.h.ledger)
+        other.service.repository = self.h.repo
+        return other
+
+    def test_lease_holds_through_a_model_call_longer_than_the_lease(self):
+        pacer = self.paced()
+        self.h.hold()
+        worker = self.start()
+        other, seen = self.observer(), []
+
+        def long_call():  # one local-model call of 7 x 70 s = 490 s against a 180 s lease
+            self.h.provider.hook = None
+            for _ in range(7):
+                self.h.clock.value += 70
+                self.assertTrue(pacer.tick())
+                status = other.service.status()
+                seen.append((status['worker_state'], status['liveness']['owner'], self.h.service.status()['liveness']['owner']))
+        self.h.provider.hook = long_call
+        worker.run(max_cycles=1)
+        self.assertEqual(pacer.intervals[0], 60)  # lease / 3
+        self.assertEqual(seen, [('RUNNING_ELSEWHERE', 'OTHER_PROCESS', 'THIS_PROCESS')] * 7)
+        last = self.cycles()[-1]
+        self.assertNotEqual(last['cycle_status'], 'FAILED')
+        self.assertEqual(last['reason_codes'], ['CYCLE_EXCEEDED_CADENCE'])
+        self.assertTrue(worker.alive())
+        self.assertFalse(pacer.tick())  # the cycle is over: its keeper renews nothing more
+
+    def test_a_worker_that_dies_after_a_long_call_reads_interrupted_once_its_lease_runs_out(self):
+        pacer = self.paced()
+        self.h.hold()
+        worker = self.start()
+        other = self.observer()
+
+        def long_call():
+            self.h.provider.hook = None
+            for _ in range(4):
+                self.h.clock.value += 70
+                self.assertTrue(pacer.tick())
+        self.h.provider.hook = long_call
+        with patch.object(self.h.repo, 'put_cycle', side_effect=RuntimeError('disk full')):
+            worker.run(max_cycles=1)  # the worker thread dies as the cycle ends
+        self.assertFalse(worker.alive())
+        self.assertFalse(pacer.tick())
+        self.assertEqual(other.service.status()['worker_state'], 'RUNNING_ELSEWHERE')  # the last renewal still runs
+        self.h.clock.value += 181
+        self.assertEqual(other.service.status()['worker_state'], 'INTERRUPTED')
+        self.assertFalse(self.h.repo.get_loop(self.h.service._loop()['loop_id'])['lease_until'] > self.h.clock())
+
+    def test_the_keeper_never_renews_after_an_operator_stop(self):
+        pacer = self.paced()
+        self.h.hold()
+        self.start()
+        loop_id = self.h.service._loop()['loop_id']
+        renewed = []
+
+        def call_then_stop():
+            self.h.provider.hook = None
+            self.h.clock.value += 70
+            renewed.append(pacer.tick())
+            self.h.service.stop()  # the lease is released while the call is still running
+            self.h.clock.value += 70
+            renewed.append(pacer.tick())
+        self.h.provider.hook = call_then_stop
+        receipt = self.h.service.evaluate_cycle('SCHEDULED_CADENCE', T0, loop_id=loop_id)
+        stored = self.h.repo.get_loop(loop_id)
+        self.assertEqual(renewed, [True, False])
+        self.assertEqual((stored['owner_id'], stored['lease_until'], stored['desired_state']), (None, None, 'STOPPED'))
+        self.assertEqual((receipt['cycle_status'], receipt['reason_codes']), ('MATERIAL_CHANGE', ['CYCLE_EXCEEDED_CADENCE']))  # it still finishes
+
+    def test_the_keeper_never_takes_back_a_lease_another_process_holds(self):
+        pacer = self.paced()
+        self.h.hold()
+        self.start()
+        loop_id = self.h.service._loop()['loop_id']
+        renewed = []
+
+        def takeover():  # the host stalls past the lease, another process takes the loop, then the keeper wakes
+            self.h.provider.hook = None
+            self.h.clock.value += 200
+            self.h.repo.acquire_lease(loop_id, 'other-process', now=self.h.clock(), lease_seconds=180)
+            renewed.append(pacer.tick())
+        self.h.provider.hook = takeover
+        with self.assertRaisesRegex(ValueError, 'REEVALUATION_LEASE_LOST'):
+            self.h.service.evaluate_cycle('SCHEDULED_CADENCE', T0, loop_id=loop_id)
+        self.assertEqual(renewed, [False])
+        self.assertEqual(self.h.repo.get_loop(loop_id)['owner_id'], 'other-process')
+
+    def test_a_manual_cycle_holds_no_lease_and_starts_no_keeper(self):
+        pacer = self.paced()
+        self.h.hold()
+        self.h.configure()
+        self.h.service.run_once()
+        self.assertEqual((pacer.thread, self.h.service.status()['liveness']['lease_until']), (None, None))
+
+    def test_another_process_cannot_add_a_second_loop_for_the_account(self):
+        worker = self.start()
+        worker.run(max_cycles=1)
+        first = self.h.service._loop()['loop_id']
+        other = self.observer()
+        with self.assertRaisesRegex(ValueError, 'REEVALUATION_LOOP_ALREADY_OWNED'):
+            other.service.configure(dict(scope=dict(SCOPE, sort='price'), requested_cadence_seconds=60))
+        worker.run(max_cycles=1)
+        self.assertEqual((other.service.status()['loop_id'], other.service.status()['worker_state']), (first, 'RUNNING_ELSEWHERE'))
+        self.h.clock.value += 181  # the owner died; its lease ran out
+        other.service.configure(dict(scope=dict(SCOPE, sort='price'), requested_cadence_seconds=60))
+        self.assertNotEqual(other.service._loop()['loop_id'], first)
 
     def test_reconfigure_requires_stop_and_persist_off_is_ephemeral(self):
         self.start()

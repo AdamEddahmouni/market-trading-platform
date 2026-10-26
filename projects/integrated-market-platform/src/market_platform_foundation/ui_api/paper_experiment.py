@@ -15,6 +15,7 @@ from ..local_state.paper_experiments import MAX_PAGE, paper_experiment_repositor
 from ..operating_modes import PAPER_EXECUTION_AUTHORITIES, resolve_execution_authority
 from ..paper import experiment as contract
 from ..paper.ledger import PaperExecutionLedger
+from ..risk.policy import SHORT_POLICY_DEFAULTS
 
 if TYPE_CHECKING:
     from .store import ReplayStore
@@ -138,6 +139,9 @@ def create_experiment(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any
         raise ValueError("PAPER_EXPERIMENT_ACTIVE: close the active experiment before creating another")
     name = str(body.get("name") or DEFAULT_NAME).strip()[:120] or DEFAULT_NAME
     notes = str(body.get("notes") or "")[:500]
+    allow_short = body.get("allow_short", False)
+    if type(allow_short) is not bool:
+        raise ValueError("EXPERIMENT_ALLOW_SHORT_INVALID: allow_short must be true or false")
 
     authority = resolve_execution_authority(requested_mode=contract.EXPERIMENT_EXECUTION_MODE)
     if authority not in PAPER_EXECUTION_AUTHORITIES:
@@ -152,7 +156,7 @@ def create_experiment(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any
         persist_ledger(previous)
     created_at_ns = monotonic_wall_ns()
     experiment_id = contract.new_experiment_id(name=name, created_at_ns=created_at_ns)
-    policy = contract.build_experiment_policy()
+    policy = contract.build_experiment_policy(allow_short=allow_short)
     data_provider = "MOOMOO" if store.data_mode == "LIVE_OBSERVATIONAL" else store.data_provider
     ledger = PaperExecutionLedger.open_session(
         replay_session_id=store.session_id,
@@ -244,7 +248,10 @@ def experiment_view(store: ReplayStore, record: dict[str, Any] | None) -> dict[s
         "max_order_shares": policy["max_order_shares"],
         "max_position_shares": policy["max_position_shares"],
         "policy_version": policy["policy_version"],
+        "allow_short": bool(policy.get("allow_short", False)),
     }
+    if policy.get("allow_short"):
+        view["risk_limits"]["short_terms"] = {key: policy[key] for key in SHORT_POLICY_DEFAULTS}
     view["bound_to_running_account"] = store.paper_ledger.experiment_id == record["experiment_id"]
     return view
 

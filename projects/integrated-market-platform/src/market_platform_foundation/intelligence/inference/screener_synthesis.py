@@ -37,7 +37,7 @@ MAX_STORIES = 12
 CACHE_SIZE = 64
 CACHE_TTL_S = 30 * 60
 FAILURE_TTL_S = 60
-_STABLE_REASON_PREFIXES = ("LOCAL_", "ANTHROPIC_", "OPENAI_", "GEMINI_", "SYNTHESIS_")
+_STABLE_REASON_PREFIXES = ("LOCAL_", "ANTHROPIC_", "OPENAI_", "GEMINI_", "SYNTHESIS_", "PAID_AI_", "PAID_MODEL_")
 _LIST_FIELDS = ("observed_facts", "derived_context", "conflicting_evidence", "potential_market_relevance")
 # Recommendation/certainty forms only. Attributed analyst actions in prose ("upgraded to Buy") and
 # market vocabulary ("sell-off", "buyback") are not recommendations.
@@ -280,7 +280,7 @@ class ScreenerSynthesizer:
                       else response.error_code.value)
             state = "NOT_CONFIGURED" if message == "API_KEY_MISSING" else "UNAVAILABLE"
             # A paid failure is held briefly so repeated clicks do not re-bill; a budget refusal cost nothing.
-            ttl = FAILURE_TTL_S if paid and not message.startswith("SYNTHESIS_") else 0
+            ttl = FAILURE_TTL_S if paid and not message.startswith(("SYNTHESIS_", "PAID_AI_", "PAID_MODEL_")) else 0
             return {**base, "state": state, "reason": reason}, ttl
         synthesis, reason = parse_synthesis(response.raw_text, {story.story_id for story in stories})
         if synthesis is None:

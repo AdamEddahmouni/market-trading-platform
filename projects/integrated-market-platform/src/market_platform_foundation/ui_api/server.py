@@ -223,7 +223,19 @@ class UiApiHandler(BaseHTTPRequestHandler):
             return
         try:
             if path == "/provider/health":
-                self._send_json(live_projections.build_provider_health_payload(self.store))
+                from ..news.collection import collection_status
+
+                health = live_projections.build_provider_health_payload(self.store)
+                health["raw_collection"] = collection_status()
+                from ..market_data.persistence import persistence_status
+
+                health["market_persistence"] = persistence_status()
+                from ..market_data.headless_supply import supply_status
+
+                health["market_supply"] = supply_status()
+                from ..news.supervision import supervision_status
+                health["collection_supervision"] = supervision_status()
+                self._send_json(health)
                 return
             if path == "/provider/finviz/health":
                 from .discovery_projections import build_finviz_diagnostics_payload
@@ -450,6 +462,42 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 self._send_json(setup_checklist())
                 return
+            if path == "/screener/setup/ai":
+                # Which AI decides: engine, dollar caps, spend, prices, benchmark. Calls no model; no key leaves.
+                from .setup_ai import setup_ai_status
+
+                self._send_json(setup_ai_status(engine_lock=self._engine_lock()))
+                return
+            if path.startswith("/evaluation/paper-performance/"):
+                try:
+                    from .paper_performance import performance_service
+                    service = performance_service(self.store)
+                    base = "/evaluation/paper-performance/runs"
+                    if path == base:
+                        self._send_json({"runs": service.repository.runs(service.account)})
+                        return
+                    parts = path.removeprefix(base + "/").split("/")
+                    report_id = (query.get("report_id") or [None])[0]
+                    if len(parts) == 1 and path.startswith(base + "/"):
+                        self._send_json(service.read(parts[0], report_id))
+                        return
+                    if len(parts) == 2 and parts[1] == "export" and path.startswith(base + "/"):
+                        mime, text = service.export(parts[0], (query.get("format") or ["html"])[0], report_id)
+                        body = text.encode("utf-8")
+                        self.send_response(HTTPStatus.OK)
+                        self.send_header("Content-Type", mime)
+                        self.send_header("Content-Length", str(len(body)))
+                        extension = "html" if mime.startswith("text/html") else "csv"
+                        self.send_header("Content-Disposition", 'attachment; filename="paper-performance.' + extension + '"')
+                        self.send_header("X-Content-Type-Options", "nosniff")
+                        self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'")
+                        self.end_headers()
+                        self.wfile.write(body)
+                        return
+                    raise ValueError("PERFORMANCE_ROUTE_NOT_FOUND")
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("PAPER_PERFORMANCE_UNAVAILABLE", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
             if path.startswith("/evaluation/prospective/"):
                 try:
                     from .prospective_evaluation import evaluation_service
@@ -474,6 +522,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
                             raise ValueError("EVALUATION_ROUTE_NOT_FOUND")
                 except (ValueError, TypeError, KeyError) as exc:
                     self._send_error_json("PROSPECTIVE_EVALUATION_UNAVAILABLE", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
+            if path.startswith("/evaluation/evidence/"):
+                try:
+                    from .evidence_review import read_evidence
+                    payload = read_evidence(self.store, path, query)
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("EVIDENCE_REVIEW_UNAVAILABLE", str(exc), status=HTTPStatus.BAD_REQUEST)
                     return
                 self._send_json(payload)
                 return
@@ -602,6 +659,24 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 run_id = path.removeprefix("/screener/ai-screener/runs/")
                 if run_id == "active":
                     self._send_json(ai_screener_runs().current(account))
+                    return
+                if run_id == "history":
+                    # Stored candidate runs, newest first, with the change against the previous run of the same query.
+                    from ..local_state.action_decisions import action_repository
+                    from ..local_state.ai_screener_coverage import coverage_ledger
+                    from .screener_ai_runs import run_history
+
+                    def query_of(record: dict) -> dict | None:
+                        # A full-universe record's query is on its coverage terminal, not on the reduction result.
+                        coverage_run_id = (record.get("universe_coverage") or {}).get("coverage_run_id")
+                        terminal = coverage_ledger().terminal(coverage_run_id) if coverage_run_id else None
+                        return (terminal or {}).get("scope")
+
+                    try:
+                        self._send_json(run_history(action_repository(), limit=int((query.get("limit") or ["20"])[0]), scope_for=query_of))
+                    except (ValueError, TypeError) as exc:
+                        self._send_error_json("SCREENER_AI_INVALID", str(exc) if str(exc) == "INVALID_HISTORY_LIMIT" else "INVALID_HISTORY_LIMIT",
+                                              status=HTTPStatus.BAD_REQUEST)
                     return
                 if run_id.endswith("/coverage"):
                     # One run's receipts and per-row accounting, from the ledger. Reads only.
@@ -1718,6 +1793,23 @@ class UiApiHandler(BaseHTTPRequestHandler):
             return
         if not self._authorize_request("POST", path, parse_qs(parsed.query), body):
             return
+        if path.startswith("/evaluation/paper-performance/runs/") and path.endswith("/refresh-benchmark"):
+            try:
+                from .paper_performance import performance_service
+                run_id = path.removeprefix("/evaluation/paper-performance/runs/").removesuffix("/refresh-benchmark")
+                if body or "/" in run_id:
+                    raise ValueError("INVALID_BENCHMARK_REFRESH")
+                self._send_json(performance_service(self.store).request_benchmark_refresh(run_id))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PAPER_PERFORMANCE_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/evaluation/paper-performance/runs":
+            try:
+                from .paper_performance import performance_service
+                self._send_json(performance_service(self.store, initialize=True).enroll(body))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PAPER_PERFORMANCE_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
         if path in ("/evaluation/prospective/runs", "/evaluation/prospective/rerun"):
             try:
                 from .prospective_evaluation import evaluation_service
@@ -1911,7 +2003,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_error_json("SCREENER_REEVALUATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path.startswith("/screener/ai-screener/runs/") and path.endswith("/stop"):
-            # Operator Stop: no further model call starts. A call already sent is not cancelled and stays charged.
+            # Stop reaches owned local generation; hosted calls have no confirmed cancellation and stay charged.
             from .screener_ai_runs import ai_screener_runs
 
             stopped = ai_screener_runs().stop(self.store.paper_ledger.paper_account_id,
@@ -2091,6 +2183,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
         if path == "/paper/orders/preview":
             try:
+                if any(str(body.get(field) or '').strip().startswith('PAI-') for field in ('client_order_id', 'idempotency_key')):
+                    raise ValueError('CLIENT_ORDER_ID_RESERVED')
                 self._send_json(paper_projections.preview_paper_order(self.store, body))
             except ValueError as exc:
                 self._send_error_json("PAPER_ORDER_PREVIEW_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
@@ -2098,6 +2192,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
         if path == "/paper/orders":
             try:
+                if any(str(body.get(field) or '').strip().startswith('PAI-') for field in ('client_order_id', 'idempotency_key')):
+                    raise ValueError('CLIENT_ORDER_ID_RESERVED')
                 with LEDGER_ROUTE_LOCK:
                     payload = paper_projections.submit_paper_order(self.store, body)
                 self._send_json(payload)

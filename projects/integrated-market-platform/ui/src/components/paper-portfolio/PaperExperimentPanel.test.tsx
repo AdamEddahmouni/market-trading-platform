@@ -94,6 +94,41 @@ describe("PaperExperimentPanel", () => {
     expect(mocks.create).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Create $100,000 Paper experiment" }));
     expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(mocks.create).toHaveBeenCalledWith(false);
+  });
+
+  it("creates a short-enabled account only when the owner ticks the box", () => {
+    render(<PaperExperimentCreate />);
+    const box = screen.getByRole("checkbox", { name: "Allow short selling (Paper only)" });
+    expect(box).not.toBeChecked();
+    fireEvent.click(box);
+    fireEvent.click(screen.getByRole("button", { name: "Create $100,000 Paper experiment" }));
+    expect(mocks.create).toHaveBeenCalledWith(true);
+  });
+
+  it("shows what open shorts hold back and a maintenance breach", () => {
+    const payload = experimentPortfolio();
+    Object.assign(payload.valuation, {
+      buying_power_basis: "CASH_LESS_WORKING_ORDER_RESERVATIONS_SHORT_MARGIN_RESERVED",
+      short_market_value_minor: 500_000,
+      short_margin_reserved_minor: 750_000,
+      maintenance_requirement_minor: 150_000,
+      maintenance_breached: true,
+      total_borrow_fees_minor: 7,
+      borrow_basis: "SIMULATED_EASY_TO_BORROW",
+    });
+    renderPanel(payload);
+    expect(metric("Short value")).toHaveTextContent("$5,000.00");
+    expect(metric("Held for shorts")).toHaveTextContent("$7,500.00");
+    expect(metric("Borrow fees")).toHaveTextContent("$0.07");
+    expect(screen.getByTestId("experiment-quality")).toHaveTextContent("sale proceeds plus 50% margin");
+    expect(screen.getByTestId("experiment-maintenance-breach")).toHaveTextContent("maintenance margin breached");
+  });
+
+  it("shows no short lines on an account without shorts", () => {
+    renderPanel(experimentPortfolio());
+    expect(within(screen.getByTestId("experiment-summary")).queryByText("Held for shorts")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("experiment-maintenance-breach")).not.toBeInTheDocument();
   });
 
   it("shows the backend refusal when Paper simulation is not authorized", () => {

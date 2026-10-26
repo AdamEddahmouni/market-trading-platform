@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -57,6 +58,12 @@ def provider_symbol_for(instrument_id: str) -> str:
     return f"US.{key}"
 
 
+# A long-lived process re-reads and re-ages the capability probe at most this often: the probe's 24 h freshness
+# is decided when it is asked, not only when the process started, and a renewed report takes effect without a
+# restart.
+PROBE_RECHECK_SECONDS = 30.0
+
+
 @dataclass
 class LiveObservationalRuntime:
     state: ObservationalStateStore = field(default_factory=ObservationalStateStore)
@@ -72,6 +79,7 @@ class LiveObservationalRuntime:
     ibkr_transport: Any | None = field(default=None, repr=False)
     ibkr_adapter_config: Any | None = field(default=None, repr=False)
     feed: Any | None = field(default=None, repr=False)
+    feed_watchdog: Any | None = field(default=None, repr=False)
     feed_metrics: dict[str, Any] = field(default_factory=dict)
     shadow_recorder: Any | None = field(default=None, repr=False)
     observation_ingress_router: Any | None = field(default=None, repr=False)
@@ -87,6 +95,10 @@ class LiveObservationalRuntime:
     _stop_event: threading.Event = field(default_factory=threading.Event, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
     _fresh_event_count: int = 0
+    # Set once this runtime loaded its registry from the probe report; registries supplied directly are kept.
+    _probe_loaded: bool = field(default=False, repr=False)
+    _probe_checked: float | None = field(default=None, repr=False)
+    probe_refusals: int = 0
 
     def attach_observation_ingress(self, router: Any | None) -> None:
         """Attach production ``ObservationIngressRouter`` for admitted live → EventV1.
@@ -226,13 +238,13 @@ class LiveObservationalRuntime:
             lookup=get_registry(),
         )
 
-    def _load_verified_capabilities(self) -> None:
+    def _registry_from_probe(self) -> VerifiedCapabilityRegistry:
         receiving = self._fresh_event_count > 0
         healthy = self.lifecycle.connection_state in {
             ProviderConnectionState.CONNECTED,
             ProviderConnectionState.CONNECTED_DEGRADED,
         }
-        self.capability_registry = VerifiedCapabilityRegistry.from_probe_file(
+        return VerifiedCapabilityRegistry.from_probe_file(
             probe_report_path(),
             max_staleness_seconds=probe_staleness_seconds(),
             moomoo_configured=moomoo_live_enabled(),
@@ -240,6 +252,32 @@ class LiveObservationalRuntime:
             runtime_receiving=receiving,
             runtime_healthy=healthy and receiving,
         )
+
+    def refresh_capabilities(self, *, force: bool = False) -> None:
+        """Re-read and re-age the probe report, at most every ``PROBE_RECHECK_SECONDS``.
+
+        A report past its freshness limit fails closed here even if the process loaded it fresh. A renewed report
+        (published atomically by the collector) takes effect without a restart. A report older than the one loaded
+        never replaces it while the loaded one is still fresh. The subscription quota set at startup is unchanged."""
+        if not self._probe_loaded:
+            return
+        now = time.monotonic()
+        if not force and self._probe_checked is not None and now - self._probe_checked < PROBE_RECHECK_SECONDS:
+            return
+        self._probe_checked = now
+        current, candidate = self.capability_registry, self._registry_from_probe()
+        if _verified_epoch(candidate.verified_at) < _verified_epoch(current.verified_at):
+            still_fresh = _verified_epoch(current.verified_at) >= time.time() - probe_staleness_seconds()
+            if still_fresh:
+                self.probe_refusals += 1
+                return
+        self.capability_registry = candidate
+        self.capability_probe = dict(candidate.capabilities)
+        self.lifecycle.entitlement_state = "PROBE_VERIFIED" if not candidate.is_stale else "PROBE_STALE"
+
+    def _load_verified_capabilities(self) -> None:
+        self.capability_registry = self._registry_from_probe()
+        self._probe_loaded, self._probe_checked = True, time.monotonic()
         self.capability_probe = dict(self.capability_registry.capabilities)
         from .live_config import subscription_quota_override
 
@@ -268,6 +306,12 @@ class LiveObservationalRuntime:
             on_overflow=self._on_feed_overflow,
         )
         self.feed.start()
+        if os.environ.get("IMP_MOOMOO_WATCHDOG", "1") != "0":
+            from .feed_watchdog import MoomooDataFlowWatchdog
+
+            # Outside the feed thread: a session blocked inside the SDK cannot judge itself.
+            self.feed_watchdog = MoomooDataFlowWatchdog(self)
+            self.feed_watchdog.start()
 
     def _on_feed_connected(self) -> None:
         generation = self.feed.provider_generation if self.feed else 0
@@ -276,10 +320,19 @@ class LiveObservationalRuntime:
             provider_generation_id=generation,
         )
         self.admission.on_connect()
+        self._feed_session_open = True
         self.execution_buffer.on_generation_change(generation)
         self._update_execution_use()
 
     def _on_feed_disconnected(self, reason: str) -> None:
+        from .persistence import active_writer
+
+        writer = active_writer()
+        # Once per lost session. The feed also reports every failed retry; a gap for each would
+        # renew an idle writer's ownership for the whole outage and add nothing to the record.
+        lost, self._feed_session_open = getattr(self, '_feed_session_open', False), False
+        if lost and writer is not None and 'moomoo' in writer.sources:
+            writer.gap('MOOMOO_DISCONNECT_NO_REPLAY')
         self.state.flow_history.interrupt(monotonic_wall_ns())
         self.lifecycle.mark_disconnected(reason)
         self.admission.on_disconnect()
@@ -292,6 +345,11 @@ class LiveObservationalRuntime:
         self._update_execution_use()
 
     def _on_feed_overflow(self) -> None:
+        from .persistence import active_writer
+
+        writer = active_writer()
+        if writer is not None and 'moomoo' in writer.sources:
+            writer.gap('MOOMOO_INGEST_QUEUE_OVERFLOW')
         self.state.flow_history.interrupt(monotonic_wall_ns())
         self.lifecycle.mark_degraded("INGEST_QUEUE_OVERFLOW")
         self._update_execution_use()
@@ -317,6 +375,7 @@ class LiveObservationalRuntime:
         self._update_execution_use()
 
     def _update_execution_use(self) -> None:
+        self.refresh_capabilities()
         gate = evaluate_internal_simulation_gates(
             runtime=self,
             probe_stale=self.capability_registry.is_stale,
@@ -384,6 +443,19 @@ class LiveObservationalRuntime:
                 self.ingress_metrics["skipped_not_admitted"] += 1
             if self.recorder is not None and result.get("envelope"):
                 self.recorder.append(record, result)
+            from .persistence import active_writer
+
+            writer = active_writer()
+            if writer is not None and writer.selects(record):
+                if result.get("envelope"):
+                    writer.submit(record, {"quality_flags": result.get("quality_flags") or [],
+                                           "admission": result.get("admission") or {}})
+                else:
+                    writer.gap('INGRESS_REJECTED', stream=f"{record.get('provider')}:{record.get('instrument_id')}:{record.get('capability')}")
+                for observation in result.get("observations") or []:
+                    if observation.get("state") in {"GAP", "REGRESSION"}:
+                        writer.gap('PROVIDER_SEQUENCE_' + observation['state'],
+                                   stream=f"{record.get('provider')}:{record.get('instrument_id')}:{record.get('capability')}")
             if self.shadow_recorder is not None:
                 self.shadow_recorder.on_admitted(self.state, result.get("envelope") or {}, result)
             complete_ingest_spans(
@@ -538,6 +610,7 @@ class LiveObservationalRuntime:
         return rows
 
     def instrument_capabilities(self, instrument_id: str) -> list[dict[str, Any]]:
+        self.refresh_capabilities()
         symbol = instrument_id.upper()
         configured = moomoo_live_enabled()
         stale = self.capability_registry.is_stale
@@ -694,6 +767,7 @@ class LiveObservationalRuntime:
             if fresh is not None:
                 freshness_values.append(int(fresh))
         max_freshness = max(freshness_values) if freshness_values else None
+        self.refresh_capabilities()
         dimensions = self.capability_registry.dimensions
         return classify_observational_market_data_liveness(
             live_enabled=live_observational_enabled(),
@@ -713,6 +787,7 @@ class LiveObservationalRuntime:
         )
 
     def health_payload(self) -> dict[str, Any]:
+        self.refresh_capabilities()
         gate = evaluate_internal_simulation_gates(
             runtime=self,
             probe_stale=self.capability_registry.is_stale,
@@ -727,6 +802,8 @@ class LiveObservationalRuntime:
             "scope_symbols": list(self.scope_symbols),
             "service_liveness": self.observational_liveness_view(),
         }
+        if self.feed_watchdog is not None:
+            report["data_flow"] = self.feed_watchdog.status()
         if self.shadow_recorder is not None:
             report["shadow"] = self.shadow_recorder.health()
         else:
@@ -735,10 +812,23 @@ class LiveObservationalRuntime:
 
     def stop(self) -> None:
         self._stop_event.set()
+        if self.feed_watchdog is not None:
+            self.feed_watchdog.stop()  # before the feed, so a stopping feed is not judged silent
         if self.composition is not None:
             self.composition.shutdown()
         if self.feed is not None:
             self.feed.stop()
+
+
+def _verified_epoch(value: str | None) -> float:
+    """A probe's ``verified_at`` as epoch seconds; an unreadable one is the oldest possible."""
+    from datetime import datetime, timezone
+
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return float("-inf")
+    return (parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)).timestamp()
 
 
 def get_live_runtime(*, create: bool = True) -> LiveObservationalRuntime | None:

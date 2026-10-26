@@ -7,7 +7,8 @@ import io
 import time
 from typing import Any
 
-from .config import FINVIZ_OPTIONS_URL, OPTIONS_CACHE_TTL_S, finviz_api_key
+from .config import FINVIZ_OPTIONS_URL, OPTIONS_CACHE_TTL_S, finviz_api_key, finviz_feed_disabled
+from .http_client import FinvizLiveDisabled
 from .request_manager import FinvizRequestManager, RequestPriority, get_finviz_request_manager, redact_text
 
 
@@ -43,13 +44,18 @@ class FinvizOptionsClient:
         if force:
             self._manager.clear_cache()
         params = {"t": needle, "auth": self._api_key}
-        status, body, meta = self._manager.get(
-            FINVIZ_OPTIONS_URL,
-            params=params,
-            priority=RequestPriority.OPTIONS_CONTEXT,
-            cache_ttl_s=None if force else OPTIONS_CACHE_TTL_S,
-            api_key=self._api_key,
-        )
+        if finviz_feed_disabled("OPTIONS"):
+            return {"success": False, "error": "LIVE_DISABLED", "contracts": [], "columns": []}
+        try:
+            status, body, meta = self._manager.get(
+                FINVIZ_OPTIONS_URL,
+                params=params,
+                priority=RequestPriority.OPTIONS_CONTEXT,
+                cache_ttl_s=None if force else OPTIONS_CACHE_TTL_S,
+                api_key=self._api_key,
+            )
+        except FinvizLiveDisabled:
+            return {"success": False, "error": "LIVE_DISABLED", "contracts": [], "columns": []}
         available_ns = time.time_ns()
         # A cached export keeps the clock of the request that fetched it.
         fetched_ns = available_ns - int(float(meta.get("cache_age_s") or 0.0) * 1_000_000_000)

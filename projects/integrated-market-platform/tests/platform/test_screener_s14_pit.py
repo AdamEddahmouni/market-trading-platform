@@ -106,6 +106,13 @@ class SenatePitTests(unittest.TestCase):
         self.assertEqual(len(normalized.visible_as_of(items, utc(2026, 2, 1))), 4)   # the amendment is not yet known
         self.assertEqual(len(normalized.visible_as_of(items, utc(2026, 2, 10, 15))), 5)
 
+    def test_versioned_rows_pass_the_response_secret_audit(self):
+        # Rows with version state go straight into API responses; a credential-shaped field name blocks the whole panel.
+        from market_platform_foundation.platform.security.leak_audit import assert_no_secrets_in_payload
+        rows = normalized.to_rows(self.original + self.amendment, now=utc(2026, 2, 10, 15))
+        self.assertTrue(any("version" in row for row in rows))
+        assert_no_secrets_in_payload({"transactions": rows})
+
 
 class ThirteenFPitTests(unittest.TestCase):
     """Scenario B: period Jun 30, filed Aug 14 — through the managed index."""

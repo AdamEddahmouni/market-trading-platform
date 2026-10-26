@@ -7,9 +7,9 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Mutable current program state and material limitations |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.85` |
-| Last Verified | `2026-10-11` (portable workstation and performance/organization source-base audit; protected integration tip/checks belong to its PR/task ledger) |
-| **CURRENT_MAIN** (`origin/main` mutable tip; alias **CURRENT_GIT_MAIN**) | `a1f9a3a1bfcfcd21e5407f48b2c1c2feb8c99bcd` — verified 2026-10-11 source base, portable live-startup merge [#493](https://github.com/AdamEddahmouni/market-trading-platform/pull/493) (after [#490](https://github.com/AdamEddahmouni/market-trading-platform/pull/490)–[#492](https://github.com/AdamEddahmouni/market-trading-platform/pull/492)). The earlier OCT1-10 source base `42088bcbb3fbebc98af7d317df03dc5ea565d7cf` ([#465](https://github.com/AdamEddahmouni/market-trading-platform/pull/465)) is a historical checkpoint. Later integration tips/checks are recorded in their PR/task ledgers; verify with `git rev-parse origin/main`. Frozen campaign runtimes below are unchanged. |
+| Version | `1.87` |
+| Last Verified | `2026-10-26` (Step 10 Phase A local integration and offline validation; the operating state was otherwise last verified 2026-10-23 against the stopped workstation, its state store, logs and GitHub; see [Current operating state](#current-operating-state-2026-10-23)). Rows below that cite 2026-10-11 were not re-verified. |
+| **CURRENT_MAIN** (`origin/main` mutable tip; alias **CURRENT_GIT_MAIN**) | Verified 2026-10-23: `origin/main` = `b4743f68` ([#498](https://github.com/AdamEddahmouni/market-trading-platform/pull/498), 2026-10-12). The workstation's running release is **not** on main; see [Current operating state](#current-operating-state-2026-10-23). Earlier record: `a1f9a3a1bfcfcd21e5407f48b2c1c2feb8c99bcd` — verified 2026-10-11 source base, portable live-startup merge [#493](https://github.com/AdamEddahmouni/market-trading-platform/pull/493) (after [#490](https://github.com/AdamEddahmouni/market-trading-platform/pull/490)–[#492](https://github.com/AdamEddahmouni/market-trading-platform/pull/492)). The earlier OCT1-10 source base `42088bcbb3fbebc98af7d317df03dc5ea565d7cf` ([#465](https://github.com/AdamEddahmouni/market-trading-platform/pull/465)) is a historical checkpoint. Later integration tips/checks are recorded in their PR/task ledgers; verify with `git rev-parse origin/main`. Frozen campaign runtimes below are unchanged. |
 | **CURRENT_SOFTWARE_IMPLEMENTATION** | Accepted source base `a1f9a3a1bfcfcd21e5407f48b2c1c2feb8c99bcd` ([#493](https://github.com/AdamEddahmouni/market-trading-platform/pull/493)); it contains the OCT1-10 lifecycle view (base `42088bcb…`, [#465](https://github.com/AdamEddahmouni/market-trading-platform/pull/465)) and later accepted increments whose integration receipts are linked below. Software does not establish empirical evidence. Live execution remains **OFF**; calibration **not** executed. |
 | **RTH_OBS_NEWS_20260923_FROZEN_RUNTIME** / frozen observational SHA | `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` — campaign `RTH-OBS-NEWS-20260923` armed `2026-09-23 13:03:32.789458 -04:00`; status **`PARTIAL_LATE_ARM`** (pre-arm window **`NOT_OBSERVED`**, no backfill). Closed `RTH_CLOSE_SHUTDOWN` `2026-09-23 17:40:52 -04:00` (`LATE_GOVERNED_CLOSE`). **Not** **CURRENT_MAIN**; do **not** retarget; do **not** re-arm this freeze. |
 | **RTH_OBS_NEWS_20260924_FROZEN_RUNTIME** | `1cbc8b0551179e1724033ee0036fb3366174daca` (tree `c673ada98b7f3dc56f1073fe65854984259a800d`). Campaign `RTH-OBS-NEWS-20260924`. Cash session `2026-09-24` `09:30`–`16:00` America/New_York **closed unarmed**. State remains **`FROZEN_NOT_ARMED`**. Evidence class **`OPERATIONAL_ONLY`** / **`NO_EMPIRICAL_CAMPAIGN`**. Not `EMPIRICALLY_PROVEN`. Do not retarget this SHA. State namespace `.local/rth-campaign-20260924` was absent. |
@@ -22,14 +22,203 @@
 This is the current program-state authority. It summarizes accepted state and
 links to evidence; it does not redefine architecture or executable behavior.
 
+## Current operating state (2026-10-23)
+
+Verified read-only on Friday 2026-10-23 after the owner shut the workstation
+down (about 19:30 ET). Owner answers to the open questions are in
+[Owner decisions 2026-10-23](OWNER_DECISIONS_20261023.md).
+
+**Where it runs.** The owner's installation now lives on the PC's D: drive at
+`D:\IMP\IMP-PORTABLE-20261010-112922-939c2b57` (moved from the external E: SSD
+on 2026-10-21; the sibling `IMP-MIGRATION-BACKUP-*` folder is a runtime
+dependency). Everything is **stopped**: no platform, collector, OpenD or model
+process is running, and all six `IMP-*` scheduled tasks are disabled. The owner
+decided to keep it off until the rebuild below is ready.
+
+**What code it runs.** The deployed copy matches release R12 `e8892eb3`
+byte-for-byte (1,946 `src/` files), plus one orphan file
+`market_data/delayed_futures_bridge.py`. R13 `7f0a07e4` is committed and
+validated but was never deployed. None of this is on `main`: the whole Paper
+release line (88 commits on `claude/paper-ai-direct-20261023`) exists only on
+the workstation until pushed as a backup.
+
+| Release | Commit | Date | What it did |
+|---|---|---|---|
+| R1–R8 | `a3c0432e` … `211823e6` | 10-16 → 10-18 | Paper AI throughput, timeout/plan-stop, shared run slot |
+| R9 | `01b02c6c` | 10-19 | Decision closure; provider rows get an instrument universe |
+| R10 | `388dbda7` | 10-20 | Moomoo re-subscribe after OpenD relaunch; in-thread 120 s poll-stall reconnect |
+| R11 | `762c7e96` | 10-20 | A waiting in-session universe gets the shared run slot next |
+| R12 | `e8892eb3` | 10-23 | AI-direct entries (Paper only, `IMP_PAPER_AI_DIRECT=1`) and end-of-day equity flatten |
+| R13 (not deployed) | `7f0a07e4` | 10-23 | Reclaims a model-runtime lock left by a dead process; comparisons sized to fit the local model window (5 new regression tests) |
+
+**What the Paper account has done.** $100,000 internal simulation. **Zero
+orders and zero fills, ever.** 96 automation intents were recorded and all were
+blocked: 40 for no governed opportunity, 30 because the AI wanted to short
+(not permitted), 26 for an instrument outside the allowed universe. On
+2026-10-23 the full-universe equity run overflowed the model window (2,524
+eligible), but two later crypto runs completed; their entry was a short and was
+blocked. After 18:00 ET the local model failed to start
+(`LOCAL_RUNTIME_START_TIMEOUT`). The last policy (`PAP-8b83faf0…`, arming
+`PAA-58e40323…`) was all US equities plus crypto, $5k per position, 15
+positions, $75k total, $2k daily loss stop, long only, SMA stop 20 × 1m
+(regular hours only). The controller ended `STOPPED` with a clean stop.
+
+**Known problems (verified).**
+
+- **Moomoo equity data barely arrived all week.** `market_stream_records`
+  holds no Moomoo rows in the regular session on 10-19, 10-21 or 10-23, and
+  long gaps on 10-20 and 10-22, while the connection still read CONNECTED.
+  Cause found 10-24, and fixed on `claude/feed-watchdog-20261024`, which is
+  **not deployed**:
+  - **10-19 to 10-22:** each time OpenD froze, the vendor SDK's failed
+    reconnect left the context CONNECTED-but-not-READY. The feed thread then
+    blocked forever inside a snapshot call, so the in-thread stall check (which
+    runs only after a call returns) never fired.
+  - **10-23:** a slow capability probe was recorded as "not entitled", and the
+    collector kept Moomoo out all session.
+  - **Fix:** bounded SDK calls, an out-of-thread data-flow watchdog, and
+    inconclusive probe results that never replace an answered report. See
+    [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#moomoo-data-flow-watchdog).
+- **`database is locked`** recurred: 17 events on 10-22 and 5 on 10-23
+  (22:31–22:37Z), the same minutes that Kraken, news and market-stream
+  collection all stopped. Cause found 10-24, and fixed on
+  `claude/db-lock-20261024`, which is **not deployed**:
+  - **No process held the lock on purpose.** The store moved to D:, a SATA
+    hard drive, on 10-21. Heavy disk work then saturated that drive: bulk
+    copies, whole-tree searches and builds, model loads, and the evidence
+    capture's full-table scans.
+  - **The market writer flushed the disk inside every commit**
+    (`synchronous=FULL`), holding the only write lock for seconds. It then
+    gave up for good after about 30 s of lock waits, which stopped the child.
+  - **Fix:**
+    - the writer no longer flushes inside the commit (`NORMAL`, like every
+      other connection);
+    - lock contention is retried for 10 minutes instead of six attempts;
+    - supervised child connections skip the whole-store integrity scan;
+    - child output can be logged.
+  - **The disk is still the limit.** Measured on D: under a bulk write, single
+    commits still hold the lock for 5–9 s and drop observations. The
+    collector now waits instead of quitting. Heavy disk work during
+    collection stays off-limits, and moving the store to a faster disk is an
+    open owner decision for the release.
+  - See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#storage-contention).
+- **AI Journal paid guard fixed locally, not yet live-verified**: the disabled
+  `IMP-AI-Journal` operator script no longer treats the local engine's absent
+  paid budget as zero requests left. An available local engine proceeds; a paid
+  engine keeps the six-request reserve and fails closed on missing, malformed or
+  unknown evidence. The script is outside Git and the task remains disabled and
+  was not re-registered. A live local-engine journal run and completion within
+  the 600-second per-symbol wait and 45-minute task limit remain release
+  acceptance.
+- **End-of-day flatten gaps**: it is skipped when the provider is unhealthy,
+  and it flattens every long equity position, including ones opened by hand.
+- **Forecast not trained**: 10 of the 60 holdout samples needed per symbol;
+  most corpus refusals are `SOURCE_EVENT_STALE`.
+- **Local model quality**: news-heavy crypto rows had 19–77% of answers
+  rejected on 10-23 (equity 4.6%); slices take 15–30 minutes.
+- **Launcher readiness** waits 60–300 s depending on how the API fails, and
+  the Moomoo probe expires after 24 h.
+- **Held pull requests**: #456, #479, #501, #502, #503, #504, #505, #506 and
+  #507 are folded into the local Step 10 release candidate. Their individual
+  branches stay open and unchanged; #504 and #506 still show two failing UI
+  tests on their own PRs, while the integrated head passed the complete UI
+  suite. They stay open until the release is accepted and the owner decides
+  their disposition. These are **not** fold inputs and must not be merged:
+  #508 is a draft backup/base PR; #500 is an older draft that fails Python
+  validation; #509 is a draft backup of rebuild steps 1-6 at `a550c22c`
+  (steps 7-9 were never pushed to it). #509 becomes superseded after Step 10;
+  closing it is a later owner-approved remote action.
+
+**Rebuild step 3 (2026-10-24).** The AI no longer sees the whole market by
+default. A numeric
+[opportunity shortlist](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md#opportunity-shortlist)
+ranks every eligible row and sends the top 20 (local) or 50 (paid) to the model.
+It is on `claude/opportunity-shortlist-20261024`, **not deployed**, and carries
+R13.
+
+**Rebuild step 4 (2026-10-24).** A keeper program brings back Moomoo OpenD, the
+collector and the platform after a reboot or a frozen feed. Its restarts are
+bounded and it logs every one of them; the Paper controller resumes only if it
+was armed and running
+([Automatic restart](../operations/AUTO_RESTART.md)). It is on
+`claude/auto-restart-20261024`, **not deployed**. Its scheduled task and
+operator-file changes are staged for the release, not applied. The OpenD
+program folder, which an earlier session had moved by mistake on 10-23, was
+put back; its shortcut `%APPDATA%\moomoo_OpenD` still has to be recreated
+from an ordinary Command Prompt (staged as `FIX_OPEND_SHORTCUT.cmd`). OpenD
+was not started.
+
+**Rebuild step 5 (2026-10-24).** One Setup card now chooses which AI decides: the
+free local model or one paid model under hard daily and monthly dollar caps. Paid
+AI is off unless the owner chooses it and sets both caps; a saved key alone turns
+nothing on, and the Assistant follows the same choice
+([AI engine switch](../operations/AI_ENGINE_SWITCH.md)). A test on 60 real past
+decisions kept Qwen3-4B as the local model and preselected Claude Haiku 5.5 as the
+paid one ([benchmark](../reports/AI_ENGINE_BENCHMARK_20261024.md)); the paid test
+cost $0.38. It is on `claude/switchable-ai-20261024`, **not deployed**.
+
+**Rebuild step 8 (2026-10-26).** The owner approved implementation of the continuous Paper evaluation report: fixed and covered-session day 10/day 20 scorecards, completed position episodes, SPY total return, gap reporting, cost accounting and immutable exports. See [Paper performance evaluation](../architecture/PAPER_PERFORMANCE_EVALUATION.md). Offline verification is recorded in the current work-log entry. Not deployed or activated; services, tasks and paid AI remain off by instruction.
+
+**Rebuild step 9 (2026-10-26).** The AI Journal budget guard is engine-aware: an available free local model is no longer blocked by the zero paid-request budget, while a paid engine keeps the existing six-request reserve and fails closed on a missing, malformed or unknown budget/runtime. Receipts record the guard basis. The documentation is committed at `05378947`. The operator files remain outside Git and are preserved by hash; the disabled `IMP-AI-Journal` task was not re-registered or started, and its schedule, action, 45-minute limit and timeout behavior are unchanged. Offline validation (42/42 cases, including full `main()` simulations) is recorded in the current work-log entry and the external `destination-tests/20261026-ai-journal-guard` evidence. No live run, service, paid call or real state-database access; not deployed.
+
+**Rebuild step 10 (2026-10-26, Phase A only).** The nine held pull requests
+were folded into the local integration branch `claude/step10-release-20261026`
+at merge commits `63d3ae75` (#507) and `8bd88485` (#503), from verified step-9
+base `05378947`. The merge preserves shorts, selective overnight holds,
+automation ownership, risk controls, close-out, and the multi-scope Paper
+controller; #503's renewal now follows the loop bound to each scope rather than
+the account's latest loop. Offline validation found no new regressions; the
+changed and full suites remain red only for the three recorded baseline issues.
+The release candidate is built from serving delta `e8892eb3..final HEAD` and
+rehearsed only in throwaway trees. Proposed label: `rebuild-step10-20261026`,
+pending owner confirmation. Nothing is pushed, deployed, started, registered,
+armed or traded; Phase B and Phase C remain unauthorized.
+
+**Rebuild step 7 (2026-10-25).** Selective overnight holds and close-out fixes
+are implemented on `claude/overnight-holds-20261025`, based on `a550c22c`.
+The owner's caps are 5 positions / $25,000 / 5 trading sessions, including
+shorts; omitted settings disable overnight holds. Close-out preserves manual
+ownership, runs despite unhealthy provider input through the canonical price
+gates, retries unfilled orders, and closes unplanned carry before new entries.
+The daily loss anchor preserves overnight gaps. Software validation and
+limitations are recorded in the step 7 work-log entry and external evidence.
+Not deployed; operational services and scheduled tasks remain off by instruction.
+
+**Rebuild step 6 (2026-10-25).** A new Paper account can be created with short
+selling allowed (off by default, fixed for the life of the account). A short
+sets aside its sale proceeds plus 50% of its value, must stay above 30%
+maintenance (below it, automation buys back the largest-loss short), pays a
+simulated borrow fee when held overnight, and is refused below $5, in a stock
+down 10% or more on the day, or when the day change is unknown. Buying a short
+back is never blocked by the risk limits or by cash, and the end-of-day
+close-out now buys shorts back. Three bugs found on the way are fixed: a short
+was read back as a long, a cover could be cut by the entry limits, and the
+close-out skipped shorts
+([Paper short selling](../architecture/PAPER_DECISION_LIFECYCLE.md#paper-short-selling)).
+Live stays off. It is on `claude/short-selling-20261025`, **not deployed**, and
+needs a new short-enabled Paper account at the release.
+
+**Next.** Step 9 is committed (`05378947`); its operator files are preserved
+outside Git by hash and the disabled task was not re-registered. Step 10 Phase A
+is complete locally: both fold heads are merged, offline validation is recorded,
+and the release candidate is packaged for rehearsal. Phase B (remote backup,
+draft PR, CI and disposition of the nine held PRs) and Phase C (deployment,
+task registration, restart and any trading activation) require separate owner
+approval. The rebuild order agreed with the owner (data-flow watchdog, database
+locking, opportunity-engine shortlist, automatic restart, switchable AI, short
+selling, selective overnight holds, evaluation report, journal fix, then one
+approved release) is in
+[Owner decisions 2026-10-23](OWNER_DECISIONS_20261023.md#build-order-agreed-for-the-rebuild).
+Live execution remains **OFF**.
+
 ## Current accepted state
 
 | Subject | Current state | Truth class | Controlling evidence |
 |---|---|---|---|
 | Performance baseline comparability and import boundary (2026-10-11) | Declared FAST/FULL reference test and skip counts are workload identity: a changed selection reports `INSUFFICIENT_DATA` with raw timings instead of a regression ratio. The inherited FULL baseline (4,528 tests) is not comparable with the current selection; it is preserved, not replaced. Intelligence and opportunity package facades defer non-contract exports with unchanged public names and object identity. Tests no longer overwrite tracked evidence artifacts during routine validation. Timings are workstation observations under `OBSERVE_ONLY`; no product behavior, Screener methodology, or execution authority changed. | `CURRENT_CANONICAL_TRUTH` | [P8 evidence](../audits/performance-engineering-p8/README.md) |
-| Portable SSD workstation (2026-10-11) | The owner's installation runs from an external SSD: a deployed application copy, a separate Git development repository with short-path worktrees, and a preserved sibling migration backup. Normal startup is live data with Paper internal simulation only; replay is a separate profile. A merged PR does not update the running copy. Different-PC remount is unproven. | `CURRENT_CANONICAL_TRUTH` | [Portable workstation runbook](../engineering/PORTABLE_WORKSTATION.md), PRs [#490](https://github.com/AdamEddahmouni/market-trading-platform/pull/490)–[#493](https://github.com/AdamEddahmouni/market-trading-platform/pull/493) |
+| Portable SSD workstation (2026-10-11) | The owner's installation runs from an external SSD: a deployed application copy, a separate Git development repository with short-path worktrees, and a preserved sibling migration backup. Normal startup is live data with Paper internal simulation only; replay is a separate profile. A merged PR does not update the running copy. Different-PC remount is unproven. 2026-10-21: the installation was copied off the SSD to `D:\IMP` on the owner's PC and runs from there (see [Current operating state](#current-operating-state-2026-10-23)). | `CURRENT_CANONICAL_TRUTH` | [Portable workstation runbook](../engineering/PORTABLE_WORKSTATION.md), PRs [#490](https://github.com/AdamEddahmouni/market-trading-platform/pull/490)–[#493](https://github.com/AdamEddahmouni/market-trading-platform/pull/493) |
 | AI Screener full-universe coverage (2026-10-07) | An operator Run enumerates every row of the active Screener query from one pinned result set, classifies each with the existing evidence gates, sends each eligible row to the model in bounded batches ordered by identity rather than sort, and compares batch finalists until one request holds them all (`ai-screener-coverage/1.0.0`). Only a completed global selection is stored as a candidate run; anything less is reported as partial with provisional finalists and no Action Decision. The whole plan is held against the shared daily budget before the first call and a plan that does not fit calls no model; token estimates are now below the provider's measured bytes per token; a local model has no cap. Stop, restart closure as `INTERRUPTED`, and per-row receipts are implemented. Measured limit: under the default allowance only a query with about 50 eligible rows (Sonnet/Opus) or about 100 (Haiku) completes. Automatic reevaluation passes keep the single-request method. No paid generation was made under this method; no Paper, Live or execution authority change; no market-validation claim. | `SOFTWARE_CONTROLLED` | [Coverage contract](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md), [acceptance receipt](../../artifacts/ai-screener-full-universe-acceptance.json) |
-| AUTO-01 autonomous Paper operations (2026-10-12) | One server-owned controller runs the existing full-universe AI run, reevaluation cycle, Action Decision gate, stop monitor and canonical Paper preview/risk/submit unattended, under a complete owner policy and a separate recorded arming. Internal simulation only; refused when any Live or broker-paper gate is set. Nothing is armed or configured by the software. Entries still require a governed Opportunity; no liquidation rule exists. Regular-session behaviour against live providers `NOT_OBSERVED`. | `SOFTWARE_CONTROLLED` | [Autonomous Paper operations](../architecture/PAPER_AUTOMATION.md) |
+| AUTO-01 autonomous Paper operations (2026-10-12) | One server-owned controller runs the existing full-universe AI run, reevaluation cycle, Action Decision gate, stop monitor and canonical Paper preview/risk/submit unattended, under a complete owner policy and a separate recorded arming. Internal simulation only; refused when any Live or broker-paper gate is set. Nothing is armed or configured by the software. Entries still require a governed Opportunity; no liquidation rule exists. Regular-session behaviour against live providers `NOT_OBSERVED`. Superseded on the unmerged Paper line by R12 (2026-10-23): AI-direct entries without a governed Opportunity behind `IMP_PAPER_AI_DIRECT`, and an end-of-day equity flatten; regular sessions 10-19 → 10-23 were observed with zero fills (see [Current operating state](#current-operating-state-2026-10-23)). | `SOFTWARE_CONTROLLED` | [Autonomous Paper operations](../architecture/PAPER_AUTOMATION.md) |
 | OCT1-12 scheduled reevaluation hardening (2026-10-07) | Held Paper positions are evaluated every cycle whether or not they remain in the intake or selection, keep their own quote subscription without a page, and keep their SMA stop monitor when the evidence read fails (`REEVALUATION_BLOCKED`). Scheduled cycles are lease-fenced; model-call caps are per Paper account; quote recovery is dwelled. Cycle exercised on the real Screener row/cache evidence path under a controlled clock. No execution authority change; regular-session behaviour `NOT_OBSERVED`. | `SOFTWARE_CONTROLLED` | [Reevaluation contract](../architecture/SCREENER_REEVALUATION.md), [acceptance](../../artifacts/oct1-12-acceptance.json) |
 | SMA position epoch scoping repair (2026-10-07) | Instrument-scoped ledger transitions reuse canonical account/experiment/instrument/opening-fill episode identity. Stop reads, deterministic EXIT lineage and lifecycle history isolate simultaneous instruments and close/reopen episodes; SQLite restart preserves identity. Verified legacy state migrates without loosening; ambiguous lineage fails closed. Controlled AAPL/NVDA acceptance and validation evidence are in the repair receipt. No execution authority change or market-validation claim. | `SOFTWARE_CONTROLLED` | [Repair report](../superpowers/plans/2026-10-07-sma-position-epoch-scoping.md), [acceptance](../../artifacts/sma-position-epoch-scoping-acceptance.json) |
 | OCT1-10 AI-selected trade lifecycle Screener | Derived candidate/evidence → decision → Paper fill/position → SMA stop → exit → episode P&L/history view. Opening-fill/account/experiment identities isolate same-symbol episodes; active positions survive newer candidate runs. ENTER is not a fill; EXIT is not closed; historical evidence is frozen; marks, stops and P&L reuse canonical authorities. No automatic submit or Live authority. Local focused 42/42, UI 1,370/1,370, recovered FULL 8,113 run/53 skipped/zero failures/errors, browser 39+6; timing flags retained as observe-only. Separate `position_epoch()` scoping limitation unchanged. OCT1-11 not started. | `SOFTWARE_CONTROLLED` | [Contract](../architecture/SCREENER_TRADE_LIFECYCLE.md), [report](../superpowers/plans/2026-10-06-oct1-10-trade-lifecycle-screener.md), [acceptance](../../artifacts/oct1-10-acceptance.json); protected integration receipt in OCT1-10 PR/task ledger |

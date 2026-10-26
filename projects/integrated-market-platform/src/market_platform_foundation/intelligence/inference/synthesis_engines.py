@@ -4,7 +4,9 @@ The catalog names every engine the Screener can run synthesis on — the free lo
 and the paid Anthropic, OpenAI, and Gemini APIs — with the models offered for each. The
 operator's choice (engine + model) is saved in the IMP cache
 (``settings/synthesis-engine.json``) and wins over ``IMP_SYNTHESIS_PROVIDER``; with
-neither, selection stays automatic (Anthropic when its key is set, else local).
+neither, selection stays automatic, and automatic is always the free local model. A paid
+engine is offered (and can be saved) only once both dollar caps are set and its model has
+a pinned price (``paid_spend``): a saved key alone never turns paid AI on.
 
 Only catalog models are accepted, so a UI request cannot name an arbitrary model. A
 model set in ``IMP_SYNTHESIS_<ENGINE>_MODEL`` joins its engine's list as the default.
@@ -49,6 +51,12 @@ ENGINE_SPECS: dict[str, EngineSpec] = {spec.engine: spec for spec in (
 )}
 ENGINES = tuple(ENGINE_SPECS)
 
+
+def resolved_engine(engine: str) -> str:
+    """The engine a choice runs on: automatic is always the free local model."""
+
+    return "local" if engine == AUTO else engine
+
 Value = Callable[[str], str | None]
 
 
@@ -79,6 +87,36 @@ def claude_model_contracts(models: list[str]) -> list[dict[str, Any]]:
                      "required_contract": status["required_contract"],
                      "unsupported_capability": status["unsupported_capability"]})
     return rows
+
+
+def offline_model_route(engine: str, model: str, *, configured: bool, available: bool | None,
+                        budget_allowed: bool = True) -> dict[str, Any]:
+    """Registry/request-shape evidence, independently from supplied availability and budget facts.
+
+    Reads no credentials, starts no runtime, and probes no endpoint. A catalog identifier alone
+    cannot prove account access, endpoint health, or provider availability.
+    """
+    spec = ENGINE_SPECS.get(engine)
+    supported = spec is not None and model in dict(spec.models)
+    if supported and engine == 'anthropic':
+        from .anthropic_models import contract_status
+        from .contracts import IntelligenceTaskType
+
+        supported = contract_status(model, IntelligenceTaskType.NEWS_SCREENER_SYNTHESIS)['supported']
+    # The local engine has no static catalog: no invented support for arbitrary local identifiers.
+    if not supported:
+        state, reason = 'UNSUPPORTED', 'MODEL_REQUEST_CONTRACT_UNSUPPORTED'
+    elif configured is not True or available is False:
+        state, reason = 'CONFIGURED_UNAVAILABLE', 'PROVIDER_NOT_CONFIGURED' if configured is not True else 'PROVIDER_UNAVAILABLE'
+    elif not budget_allowed:
+        state, reason = 'BUDGET_BLOCKED', 'INFERENCE_BUDGET_BLOCKED'
+    elif available is not True:
+        state, reason = 'NOT_VERIFIED', 'MODEL_AVAILABILITY_NOT_VERIFIED'
+    else:
+        state, reason = 'SUPPORTED', None
+    return dict(engine=engine, model=model, state=state, reason=reason,
+                request_contract_supported=bool(supported), availability_verified=available is True,
+                evidence='OFFLINE_REGISTRY_AND_SUPPLIED_FACTS', provider_calls=0)
 
 
 def local_model(value: Value, cache_dir: Path) -> tuple[str | None, str | None]:
@@ -124,9 +162,13 @@ def engine_options(value: Value, cache_dir: Path) -> list[dict[str, Any]]:
             models = [model] if model else []
             context = local_context_window(value, cache_dir) if model else None
         else:
+            from .paid_spend import paid_gate
+
             models = [model for model, _ in engine_models(spec.engine, value)]
             configured = bool((value(spec.credential_env or "") or "").strip())
             reason = None if configured else f"{spec.credential_env}_NOT_SET"
+            # A key alone is not enough: paid AI needs both dollar caps and a pinned price for its default model.
+            reason = reason or (paid_gate(value, models[0]) if models else "PAID_MODEL_PRICE_UNKNOWN")
         options.append({"id": spec.engine, "label": spec.label, "runtime": spec.runtime, "models": models,
                         "default_model": models[0] if models else None, "context_window": context,
                         # Stated only for Claude, whose request shape IMP records per model.
@@ -194,6 +236,13 @@ class SynthesisSettings:
             allowed = (engine_options(self._value, self._cache_dir)[ENGINES.index(engine)]["models"])
             if model not in allowed:
                 raise ValueError("SYNTHESIS_MODEL_INVALID")
+        if ENGINE_SPECS[engine].runtime == "PAID_API":
+            from .paid_spend import paid_gate
+
+            # Paid AI is never saved as the engine before the operator has set both dollar caps.
+            refused = paid_gate(self._value, model or engine_models(engine, self._value)[0][0])
+            if refused is not None:
+                raise ValueError(refused)
         write_json_atomic(self.path, {"engine": engine, "model": model or None})
         with self._lock:
             self._options = None
@@ -209,4 +258,5 @@ class SynthesisSettings:
 
 
 __all__ = ["AUTO", "ENGINES", "ENGINE_SETTINGS_RELATIVE", "ENGINE_SPECS", "EngineSpec", "SynthesisSettings",
-           "claude_model_contracts", "engine_models", "engine_options", "local_context_window", "local_model"]
+           "claude_model_contracts", "engine_models", "engine_options", "local_context_window", "local_model",
+           "offline_model_route", "resolved_engine"]

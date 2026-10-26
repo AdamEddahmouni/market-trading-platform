@@ -28,8 +28,11 @@ from market_platform_foundation.ui_api.screener_ai_runs import AiScreenerRuns  #
 from tests.intelligence.test_paper_automation_policy import policy  # noqa: E402
 from tests.intelligence.test_reevaluation import SCOPE as LOOP_SCOPE, Harness  # noqa: E402
 from tests.support.coverage_universe import (  # noqa: E402
-    NOW, SCOPE, GatedProvider, News, PagingReader, RankingProvider, instrument_id, universe,
+    NOW, SCOPE, GatedProvider, News, PagingReader, RankingProvider, full_tournament, instrument_id, universe,
 )
+
+# Slice and epoch accounting over the full tournament; the shortlisted slice is tested in test_screener_ai_shortlist.
+setUpModule, tearDownModule = full_tournament()
 
 SHA = "0" * 40
 _SEQUENCE = [0]

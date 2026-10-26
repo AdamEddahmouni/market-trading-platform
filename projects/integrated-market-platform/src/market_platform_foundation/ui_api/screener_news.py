@@ -43,6 +43,7 @@ from ..news.instrument_matching import (
     profile_for_row,
 )
 from ..news.normalize import normalize_raw_item
+from ..news.provider_linkage_quality import FLAG_TICKER_NOT_IN_TEXT
 from ..news.rss_feeds import RssNewsSource, aggregate_state
 from ..news.sec_filings_news import SecFilingNews
 from ..news.story_clusters import METHOD as CLUSTER_METHOD
@@ -65,6 +66,9 @@ MAX_ACTIVITY_INSTRUMENTS = 200
 ACTIVITY_SCHEMA_VERSION = "screener-news-activity/1.0.0"
 MAX_INSTRUMENT_STORIES, COMPACT_STORIES = 50, 5
 MAX_SCORED_STORIES = 400
+# One instrument's panel is opened by a click and must answer promptly: the newest stories are scored
+# (local CPU inference), older ones in the 72h window are reported as not scored rather than waited for.
+MAX_INSTRUMENT_SCORED_STORIES = 120
 PER_SYMBOL_TTL_S = {"newsapi": 900.0, "finnhub": 600.0, "sec_filings": 600.0}
 RSS_TTL_S = 300.0
 INDEX_TTL_S = 600.0
@@ -309,8 +313,8 @@ def _default_chart(instrument_id: str, universe: str) -> dict[str, Any] | None:
 
 
 def _default_synthesizer(settings: Any = None):
-    """Production synthesis provider: the operator's saved engine and model, else automatic (Anthropic when its key
-    is configured, else a configured local model)."""
+    """Production synthesis provider: the operator's saved engine and model, else automatic (always the configured
+    local model; paid AI only when chosen with both dollar caps set)."""
 
     from ..intelligence.inference.screener_synthesis import ScreenerSynthesizer
 
@@ -336,6 +340,17 @@ class _UniverseIndex:
     cusips: dict[str, tuple[str, str]]
     # Matches depend only on the event and this index, so they are computed once per event per index build.
     matches: dict[str, list[MatchResult]] = field(default_factory=dict)
+
+
+def _tag_only_unnamed(record: "NewsRecord") -> bool:
+    """A provider's ticker tag on an article whose text never names the instrument is not that instrument's news.
+
+    Company-news endpoints tag broad market pieces with many tickers. The linkage-quality flag already
+    records that the text does not corroborate the tag; such a record stays out of the instrument panel
+    unless some match rests on the text itself."""
+
+    return (FLAG_TICKER_NOT_IN_TEXT in record.event.quality_flags
+            and all(match.basis == "PROVIDER_TICKER" for match in record.matches))
 
 
 class ScreenerNewsService:
@@ -384,6 +399,38 @@ class ScreenerNewsService:
     # -------------------------------------------------------------- providers
     def sentiment_model(self) -> FinbertSentiment:
         return self._sentiment or finbert_sentiment()
+
+    def collect_raw(self, provider: str, query: str, universe: str) -> tuple[list[NewsRecord], dict[str, Any]]:
+        """PF-01 acquisition only: reuse adapters/cache, never universe discovery or AI."""
+        if provider == "finviz":
+            items, status = self._finviz_items()
+            key = ("finviz",)
+        elif provider == "rss" and query:
+            items, status = self._rss_feed_items(query)
+            key = ("rss_feed", query)
+        elif provider == "rss":
+            items, status = self._rss_items(universe)
+            key = ("rss", universe)
+        elif provider in PER_SYMBOL_TTL_S:
+            items, status = self._per_symbol(provider, query)
+            key = (provider, query.upper())
+        else:
+            raise ValueError("COLLECTION_PROVIDER_INVALID")
+        entry = self._cache.peek(key)
+        if entry is not None and (entry.expires_at <= self._clock() or entry.reason):
+            status = {**status, "state": "PENDING" if not entry.reason else "ERROR",
+                      "reason": "REFRESH_PENDING" if not entry.reason else "REFRESH_FAILED"}
+        if len(items) > 1000 or any(not isinstance(item, dict) for item in items):
+            raise ValueError("COLLECTION_PAYLOAD_INVALID_OR_TOO_LARGE")
+        received = status.get("fetched_at") or (entry.fetched_at if entry else None)
+        raw = [(provider, {**item, "received_time": item.get("received_time") or item.get("received_at") or received})
+               for item in items]
+        rejected: list[str] = []
+        records = self._records(raw, universe, rejected=rejected)
+        status = {**status, "rejected_count": len(rejected)}
+        if status.get("reason") and str(status["reason"]).startswith("PARTIAL_FEEDS:"):
+            status["state"] = "PARTIAL"
+        return records, status
 
     def candidate_evidence(self, *, universe: str, rows: list[dict[str, Any]], refresh: bool = False) -> dict[str, Any]:
         """Bounded S11 projection; no per-instrument acquisition."""
@@ -439,6 +486,34 @@ class ScreenerNewsService:
                   "feeds": entry.value["feeds"]}
         return entry.value["items"], status
 
+    def _rss_feed_items(self, feed_id: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """One catalog feed with its own state, so a failing feed backs off without the others."""
+        from ..news.rss_feeds import FEEDS_BY_ID
+
+        feed = FEEDS_BY_ID.get(feed_id)
+        if feed is None:
+            raise ValueError("COLLECTION_FEED_INVALID")
+
+        def job() -> Any:
+            self.provider_requests["rss"] += 1
+            return self._rss.fetch(feed)
+
+        entry = self._await(("rss_feed", feed_id), job, ttl_s=RSS_TTL_S)
+        if entry is None:
+            return [], provider_status("rss", None, scope="FEED", pending=True)
+        if not entry.ok:
+            return [], provider_status("rss", {"success": False, "error": entry.reason}, scope="FEED")
+        result = entry.value
+        # STALE means this refresh failed and the items are the previous good fetch. Keep the
+        # failure's own class so a rate limit or rejected credential is not treated as an outage.
+        state = result.state
+        if state == "STALE":
+            state = {"HTTP_429": "RATE_LIMITED", "HTTP_401": "AUTH_FAILED", "HTTP_403": "AUTH_FAILED"}.get(
+                str(result.reason), "ERROR")
+        return list(result.items), {"id": "rss", "label": PROVIDER_LABELS["rss"], "kind": "NEWS", "scope": "FEED",
+                                    "feed_id": feed_id, "state": state, "reason": result.reason,
+                                    "fetched_at": result.fetched_at, "item_count": len(result.items)}
+
     def _newsapi_guard(self) -> bool:
         today = datetime.fromtimestamp(self._clock(), tz=UTC).date().isoformat()
         with self._lock:
@@ -455,7 +530,7 @@ class ScreenerNewsService:
                 try:
                     write_json_atomic(self._newsapi_quota_path, {"day": day, "count": count + 1, "limit": NEWSAPI_DAILY_GUARD})
                 except OSError:
-                    pass  # the in-memory guard still applies
+                    return False  # refuse the request if restart-safe quota accounting failed
             return True
 
     def _per_symbol(self, provider_id: str, query: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -482,7 +557,7 @@ class ScreenerNewsService:
         return list(result.get("items") or []), provider_status(provider_id, result, scope="INSTRUMENT")
 
     # ------------------------------------------------------------ normalizing
-    def _records(self, raw: list[tuple[str, dict[str, Any]]], universe: str) -> list[NewsRecord]:
+    def _records(self, raw: list[tuple[str, dict[str, Any]]], universe: str, *, rejected: list[str] | None = None) -> list[NewsRecord]:
         ingested = _iso(datetime.fromtimestamp(self._clock(), tz=UTC)) or ""
         events: list[NewsArticleEvent] = []
         meta: dict[str, tuple[str, dict[str, Any]]] = {}
@@ -493,8 +568,12 @@ class ScreenerNewsService:
                                            provider_id=provider_id, source_id=str(item.get("feed_id") or provider_id),
                                            retrieved_time=retrieved)
             except ValueError:
+                if rejected is not None:
+                    rejected.append("NEWS_IDENTITY_INVALID")
                 continue  # fail closed: no identity material
             if not event.headline.strip():
+                if rejected is not None:
+                    rejected.append("NEWS_HEADLINE_MISSING")
                 continue
             extra = tuple(str(flag) for flag in item.get("quality_flags") or ())
             if extra:
@@ -618,17 +697,18 @@ class ScreenerNewsService:
                                     for record in records])
         return [Story(cluster.cluster_id, [by_key[key] for key in cluster.member_keys]) for cluster in clusters]
 
-    def _score(self, stories: list[Story]) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    def _score(self, stories: list[Story], *, limit: int | None = None) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
         model = self.sentiment_model()
         status = model.status()
         if status["state"] == "NOT_CONFIGURED" or not stories:
             state = {"state": status["state"] if status["state"] != "CURRENT" else "NOT_SCORED", "label": None,
                      "probabilities": None, "model_id": None}
             return {story.story_id: dict(state) for story in stories}, status
-        bounded = stories[:MAX_SCORED_STORIES]
+        limit = MAX_SCORED_STORIES if limit is None else limit
+        bounded = stories[:limit]
         scores = model.score([story.representative.event.headline for story in bounded])
         result = {story.story_id: score for story, score in zip(bounded, scores)}
-        for story in stories[MAX_SCORED_STORIES:]:
+        for story in stories[limit:]:
             result[story.story_id] = {"state": "NOT_SCORED", "label": None, "probabilities": None, "model_id": None}
         return result, model.status()
 
@@ -931,11 +1011,11 @@ class ScreenerNewsService:
             if record.source_type == "OFFICIAL_FILING" and profile.symbol.upper() in record.tickers:
                 record.matches = [MatchResult(profile.instrument_id, profile.symbol, "EXACT_ENTITY", EXACT,
                                               f"CIK {record.cik}" if record.cik else profile.symbol), *record.matches]
-        relevant = [record for record in records if is_relevant(record.matches)]
+        relevant = [record for record in records if is_relevant(record.matches) and not _tag_only_unnamed(record)]
         start = now - timedelta(seconds=WINDOWS[INSTRUMENT_WINDOW])
         stories = self._sorted([story for story in self._stories(relevant) if self._in_window(story, start, now)], "newest")
         shown = stories[:COMPACT_STORIES if compact else MAX_INSTRUMENT_STORIES]
-        sentiments, model_status = self._score(stories)
+        sentiments, model_status = self._score(stories, limit=MAX_INSTRUMENT_SCORED_STORIES)
         summary = summarize([sentiments[story.story_id] for story in stories], model_status=model_status)
         latest_scored = next((story for story in stories if sentiments[story.story_id].get("state") == "SCORED"), None)
         summary["latest"] = ({"story_id": latest_scored.story_id, "label": sentiments[latest_scored.story_id]["label"],
@@ -1209,11 +1289,20 @@ class ScreenerNewsService:
         reason = "STARTS_ON_REQUEST" if server is not None and not server.running() else None
         # A paid provider states today's usage against its hard daily limits.
         budget = provider.budget_status() if callable(getattr(provider, "budget_status", None)) else None
+        # ... and what it has cost today and this month against the operator's dollar caps.
+        spend = provider.spend_status() if callable(getattr(provider, "spend_status", None)) else None
         state = "AVAILABLE"
         if budget is not None and (budget["requests"] >= budget["max_requests"] or budget["tokens"] >= budget["max_tokens"]):
             state, reason = "UNAVAILABLE", "SYNTHESIS_DAILY_BUDGET_EXHAUSTED"
+        elif spend is not None and spend.get("state") != "AVAILABLE":
+            state, reason = "UNAVAILABLE", spend.get("reason")
+        elif spend is not None and spend["spent_month_usd"] >= spend["monthly_cap_usd"]:
+            state, reason = "UNAVAILABLE", "PAID_AI_MONTHLY_DOLLAR_CAP"
+        elif spend is not None and spend["spent_today_usd"] >= spend["daily_cap_usd"]:
+            # Resets at the UTC day like the token budget, so it reads as the same "waiting for budget" state.
+            state, reason = "UNAVAILABLE", "SYNTHESIS_DAILY_BUDGET_EXHAUSTED"
         return {"state": state, "reason": reason, "provider_id": getattr(provider, "provider_id", None),
-                "model_id": getattr(provider, "model_id", None), "runtime": runtime, "budget": budget}
+                "model_id": getattr(provider, "model_id", None), "runtime": runtime, "budget": budget, "spend": spend}
 
     def _synthesis_inputs(self, universe: str, scope: str, instrument_id: str | None, window: str
                           ) -> tuple[dict[str, Any], list[Any], tuple[str, ...]] | None:

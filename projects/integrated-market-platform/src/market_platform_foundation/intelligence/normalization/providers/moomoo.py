@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+from dataclasses import replace
 from typing import Any
 
 from ....market_data.normalization import (
@@ -206,6 +207,8 @@ def normalize_moomoo_capture(
         quality_state=QualityState.GOOD if not raw.get("quality_flags") else QualityState.DEGRADED,
         quality_flags=tuple(str(f) for f in (raw.get("quality_flags") or ())),
     )
+    basis = raw.get("source_time_basis") or ("EXPLICIT_CAPTURE_CLOCK" if clocks.event_time_ns or clocks.provider_time_ns else "RECEIPT_FALLBACK")
+    event = replace(event, metadata={**event.metadata, "source_time_basis": basis})
     return NormalizationResult(event=event, provenance=provenance)
 
 

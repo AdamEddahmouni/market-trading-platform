@@ -136,7 +136,7 @@ class PromptSchemaAgreementTests(unittest.TestCase):
         return set(re.findall(r'\b[a-z]+(?:_[a-z0-9]+)+\b', prose))
 
     def test_production_prompt_is_v3_and_declares_exactly_the_wire_schema_fields(self):
-        self.assertEqual((self.prompt.prompt_id, self.prompt.version), ('screener.ai_candidate_reduction.v3', '3.0.0'))
+        self.assertEqual((self.prompt.prompt_id, self.prompt.version), ('screener.ai_candidate_reduction.v3', '3.4.1'))
         top, item = self.schema_fields()
         self.assertEqual(self.declared(self.prompt.template, 'Output'), top)
         self.assertEqual(self.declared(self.prompt.template, 'Candidate'), item)
@@ -316,7 +316,7 @@ class RequestConstructionTests(unittest.TestCase):
     def test_a_saved_model_outside_the_catalog_selects_no_provider(self):
         import tempfile
         from pathlib import Path
-        values = {'ANTHROPIC_API_KEY': 'controlled'}
+        values = {'ANTHROPIC_API_KEY': 'controlled', 'IMP_PAID_AI_DAILY_USD': '1', 'IMP_PAID_AI_MONTHLY_USD': '5'}
         with tempfile.TemporaryDirectory() as directory:
             chosen = select_synthesis_provider(values.get, cache_dir=Path(directory), engine='anthropic', model='claude-retired-1')
             self.assertEqual((chosen.provider, chosen.reason), (None, 'SYNTHESIS_MODEL_NOT_IN_CATALOG'))
@@ -489,7 +489,7 @@ class FullIntakeRoundTripTests(unittest.TestCase):
                 result, _ = reduce_with(model, Claude(wire_output(candidates, keys)), candidates)
                 self.assertEqual((result['state'], result['reason'], result['coverage']['candidate_intake']), ('CURRENT', None, MAX_INTAKE))
                 self.assertEqual((result['schema_version'], result['wire_schema_version'], result['prompt_id'], result['prompt_version']),
-                                 (SCHEMA_VERSION, WIRE_SCHEMA_VERSION, PROMPT_ID, '3.0.0'))
+                                 (SCHEMA_VERSION, WIRE_SCHEMA_VERSION, PROMPT_ID, '3.4.1'))
                 self.assertEqual(len(result['candidates']), MAX_SELECTED)
                 for pick, key in zip(result['candidates'], keys):
                     c = candidates[key]
@@ -611,7 +611,7 @@ class LineageTests(unittest.TestCase):
         from market_platform_foundation.intelligence.inference.hashing import input_hash_from_dict
         self.assertEqual(result['wire_schema_version'], WIRE_SCHEMA_VERSION)
         self.assertEqual(result['output_schema_hash'], input_hash_from_dict(output_schema(candidates)))
-        self.assertEqual((result['prompt_id'], result['prompt_version'], result['prompt_hash']), (PROMPT_ID, '3.0.0', prompt.content_hash))
+        self.assertEqual((result['prompt_id'], result['prompt_version'], result['prompt_hash']), (PROMPT_ID, '3.4.1', prompt.content_hash))
         identity = reducer.estimate({}, candidates, NEWS_ISO)['input_hash']
         self.assertEqual(identity, result['input_hash'])
         with patch.object(candidate_reduction, 'WIRE_SCHEMA_VERSION', 'ai-screener-wire/next'):

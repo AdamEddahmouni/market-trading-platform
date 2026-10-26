@@ -53,7 +53,7 @@ export function ConnectButton({ provider, label }: { provider: string; label: st
   </span>;
 }
 
-function CopyCommand({ command }: { command: string }) {
+export function CopyCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -73,6 +73,36 @@ const OPEND_DOWN = new Set(["OPEND_UNAVAILABLE", "OPEN_D_NOT_RUNNING"]);
 /** Start OpenD from wherever a live panel says it is unreachable. Renders nothing for any other reason. */
 export function OpenDConnect({ reason }: { reason: string | null | undefined }) {
   return reason && OPEND_DOWN.has(reason) ? <> <ConnectButton provider="opend" label="Start OpenD" /></> : null;
+}
+
+/**
+ * Sources switched on only by an API environment setting, by the reason code that reports them off. Messages name the
+ * source in words; the setting itself appears only inside "How to turn it on". Finviz live stays here on purpose: the
+ * path-A preflight treats it as a blocker, so it is never a Setup switch.
+ */
+export const ENV_SWITCHES: Readonly<Record<string, { source: string; setting: string }>> = {
+  FINVIZ_LIVE_DISABLED: { source: "Finviz Elite", setting: "IMP_FINVIZ_LIVE" },
+};
+
+/** Keyless public sources switched on in Setup (`operator_config` switchable providers), by the reason that reports them off. */
+export const SETUP_SWITCHES: Readonly<Record<string, string>> = {
+  IMP_TREASURY_LIVE_NOT_SET: "treasury",
+  TREASURY_NOT_CONFIGURED: "treasury",
+  CRYPTO_NOT_CONFIGURED: "kraken",
+  IMP_OPENFIGI_LIVE_NOT_SET: "openfigi",
+  IMP_PUBLIC_RECORDS_LIVE_NOT_SET: "public_records",
+  IMP_NEWS_RSS_LIVE_NOT_SET: "rss",
+};
+
+/** The fix for a switched-off source: its Setup switch, or (Finviz) the collapsed environment how-to. */
+export function HowToTurnOn({ reason }: { reason: string | null | undefined }) {
+  const provider = reason ? SETUP_SWITCHES[reason] : undefined;
+  if (provider) return <ConfigureButton provider={provider} label="Turn on in Setup" />;
+  const entry = reason ? ENV_SWITCHES[reason] : undefined;
+  if (!entry) return null;
+  return <details className="setup-howto"><summary>How to turn it on</summary>
+    <span>Add this line to the API environment (or <code>.private/providers.env</code>), then restart the API:</span>{" "}
+    <CopyCommand command={`${entry.setting}=1`} /></details>;
 }
 
 /** What a degraded state means and the one step that clears it. The raw reason code stays available on hover. */

@@ -39,8 +39,10 @@ def decide(**overrides):
 class AdaptivePolicyFieldTests(unittest.TestCase):
     def test_the_adaptive_fields_are_optional_and_are_named_apart_from_the_required_ones(self):
         self.assertNotIn('schedule.universe_max_age_seconds', required_fields())
-        self.assertEqual(optional_fields(), ['schedule.universe_material_change_trigger', 'schedule.universe_max_age_seconds',
-                                             'schedule.universe_max_runs_per_day'])
+        self.assertNotIn('scopes', required_fields())
+        self.assertEqual(optional_fields(), ['scopes', 'schedule.universe_material_change_trigger', 'schedule.universe_max_age_seconds',
+                                             'schedule.universe_max_runs_per_day', 'risk.max_hold_sessions',
+                                             'risk.max_overnight_exposure_minor', 'risk.max_overnight_positions'])
         legacy = policy()
         self.assertEqual([key for key in ADAPTIVE if key in legacy['schedule']], [])
         # A policy that supplies no adaptive field is byte-identical to one written before they existed, and so

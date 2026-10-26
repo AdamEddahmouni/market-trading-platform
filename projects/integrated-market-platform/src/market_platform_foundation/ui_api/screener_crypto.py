@@ -465,3 +465,64 @@ def crypto_screener_service() -> CryptoScreener:
         if _SERVICE is None:
             _SERVICE = CryptoScreener()
     return _SERVICE
+
+
+def cached_execution_economics(instrument_id: str, *, venue: str) -> dict[str, Any]:
+    """Verified current catalog rules only; admission never fetches a provider."""
+    from ..paper.contracts import exact_quantity, order_quantity, quantity_wire
+
+    source = _SERVICE
+    if source is None or source._env.get("IMP_CRYPTO_LIVE") != "1":
+        raise ValueError("CRYPTO_ECONOMICS_REQUIRED")
+    with source._lock:
+        cache = source._catalog_cache
+        if not cache or cache[3] or source._clock() - cache[0] >= CATALOG_TTL_S:
+            raise ValueError("CRYPTO_ECONOMICS_STALE")
+        matches = [row for row in cache[2] if (row.get("instrument") or {}).get("instrument_id") == instrument_id
+                   and row.get("venue") == venue and row.get("status") == "ONLINE"]
+        if len(matches) != 1 or venue != VENUE:
+            raise ValueError("CRYPTO_ECONOMICS_REQUIRED")
+        row = matches[0]
+        decimals = row.get("price_decimals")
+        if type(decimals) is not int or not 0 <= decimals <= 18:
+            raise ValueError("CRYPTO_ECONOMICS_INVALID")
+        try:
+            step = exact_quantity(row["base_increment"])
+            minimum = exact_quantity(row["min_order_size"])
+            tick = exact_quantity(row["price_increment"])
+            notional = exact_quantity(row["min_order_notional"])
+            if notional <= 0:
+                raise ValueError("invalid minimum")
+            economics = dict(instrument_kind="CRYPTO_PAIR", venue=venue, currency=row["quote_asset"],
+                quantity_step=quantity_wire(step), minimum_quantity=quantity_wire(minimum), tick_size=quantity_wire(tick),
+                price_scale=10**decimals, minimum_notional=quantity_wire(notional), contract_multiplier="1",
+                status="ONLINE", product_type="SPOT", provider_symbol=row["provider_symbol"])
+            order_quantity(minimum, economics)
+        except (KeyError, ValueError):
+            raise ValueError("CRYPTO_ECONOMICS_INVALID") from None
+        return economics
+
+
+def crypto_supply_health() -> tuple[str, tuple[str, ...], dict[str, Any]]:
+    """Supply-health verdict for controllers: each probe is one cached read, at most one REST hit.
+
+    ``CONNECTED`` means the catalog is admitted and the ticker snapshot covered it (the same ingest
+    contract the Screener rows use, so this can never contradict what a candidate read would see).
+    All failures carry the upstream's own error code verbatim as the reason, so the operator reads the
+    exact origin and never an invented one.
+    """
+    source = crypto_screener_service()
+    rows, catalog_as_of, catalog_error = source._catalog()
+    if catalog_error == "CRYPTO_NOT_CONFIGURED":
+        return ("UNAVAILABLE", ("CRYPTO_NOT_CONFIGURED",),
+                dict(catalog_as_of=catalog_as_of, instruments=0))
+    if catalog_error or not rows:
+        return ("UNAVAILABLE", (catalog_error or "CRYPTO_CATALOG_UNAVAILABLE",),
+                dict(catalog_as_of=catalog_as_of, instruments=len(rows)))
+    snapshot_as_of, values, snapshot_error = source._snapshot(rows)
+    if snapshot_error:
+        return ("UNAVAILABLE", (snapshot_error,),
+                dict(catalog_as_of=catalog_as_of, snapshot_as_of=snapshot_as_of, instruments=len(rows), priced=0))
+    return ("CONNECTED", (),
+            dict(catalog_as_of=catalog_as_of, snapshot_as_of=snapshot_as_of, instruments=len(rows),
+                 priced=len(values)))

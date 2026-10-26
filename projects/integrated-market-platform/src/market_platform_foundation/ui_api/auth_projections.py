@@ -81,9 +81,11 @@ def handle_auth_logout(token: str | None) -> dict[str, Any]:
 
 
 def build_security_readiness_payload() -> dict[str, Any]:
+    import os
+
     from ..platform.security.readiness import build_readiness_payload, collect_default_gates
 
-    gates = collect_default_gates()
+    gates = collect_default_gates(os.environ)
     checks = {
         "auth_enforcement_mode": load_auth_config().enforcement_mode.value,
         "role_enforcement_status": role_enforcement_status(),

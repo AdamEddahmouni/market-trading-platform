@@ -165,6 +165,21 @@ deterministic IDs and content are idempotent, while changed content for an
 existing ID is an immutable conflict. Missing, expired, future, mismatched,
 or unauthorized inputs stop before downstream Paper mutation.
 
+## Exact spot trade-history projection
+
+Crypto spot fills use the canonical Decimal accounting path rather than the
+legacy equity fill projection. `PaperExecutionLedger.project_trades()` replays
+those immutable fills through the same canonical accounting function on a fresh
+read-only portfolio. Trade rows preserve exact native quantities as decimal
+strings and use the instrument's price scale; legacy equity quantities remain
+integers. Closed crypto realized P&L remains in the account projection after the
+open position disappears and after restart. Integer minor-unit trade deltas use
+cumulative conversion so subminor gains are retained in the account total.
+
+This reporting contract does not change order admission, preview authority,
+BUILD 22 minimum size, owner limits, or forecast requirements. It is not proof
+that the autonomous fractional crypto admission path is complete.
+
 ## Stages
 
 ### 1. Attention / lane origin
@@ -231,6 +246,40 @@ stop, exit and P&L, joined to the decision that authorized the order through the
 - Order-history query invalidates on submit so the new durable order is
   readable immediately after navigation to Portfolio
 
+## Paper short selling
+
+Rebuild step 6 (owner decision 2, 2026-10-23; 50% margin chosen 2026-10-25). Paper only, internal simulation
+only; Live stays off and the live canary refuses shorts on its own policy.
+
+- **Account term.** `allow_short` is chosen once when an experiment account is created
+  (`POST /paper/experiments` body `allow_short`, Portfolio checkbox "Allow short selling") and frozen in its risk
+  policy with the short terms (`risk/policy.py` `SHORT_POLICY_DEFAULTS`). An account without shorts carries none of
+  these keys, so its policy hash and every id derived from it are unchanged. `PaperExecutionLedger.allows_short()` is
+  true only for that term on a portfolio-scoped `INTERNAL_SIMULATION` ledger, never broker paper.
+- **Short-sale gate** (`paper/short_gate.py`, at preview and at submit). A sell that only reduces a long passes
+  unchanged. A short open must be an admitted security (equity or ETF; never crypto, options or futures), priced at
+  or above $5.00, not in a name down 10% or more on the day (`SHORT_SALE_RESTRICTION`), with a known day change
+  (`SHORT_SALE_RESTRICTION_UNKNOWN` otherwise; the day change comes from the Action decision's own admitted
+  TECHNICALS evidence and is recorded on the intent as `short_sale_facts`), and with 50% initial margin available
+  (`INSUFFICIENT_SHORT_MARGIN`). Long-to-short and short-to-long in one order are refused
+  (`POSITION_REVERSAL_NOT_ALLOWED`).
+- **Buying power.** Short proceeds are credited to cash and held back again with the margin: buying power is cash
+  less working-order reservations less 150% of open short value (and of working short sales). Longs stay cash-only.
+- **Covers.** A buy against a short, up to its size, is never refused for cash and never cut by the BUILD 22
+  exposure, concentration, cash or daily-loss caps. A cover that costs more than the cash leaves negative cash: the
+  honest record of that loss.
+- **Maintenance.** With complete marks, equity below 30% of open short value is a breach
+  (`SHORT_MAINTENANCE_MARGIN_BREACH`): the controller buys back the largest-loss short, one per cycle, and new
+  entries are blocked until it clears.
+- **Borrow.** Shares are assumed borrowable (`SIMULATED_EASY_TO_BORROW`); there is no locate feed. A short held over
+  a session close pays 0.50% a year on its value (actual/360, rounded up), as an append-only
+  `ShortBorrowFeeAccrued` ledger event that lowers cash and realized P&L.
+- **Close-out.** The end-of-day flatten buys shorts back as well as selling longs.
+- **AI.** Prompt `screener.action_decision.v4` states that a SHORT entry needs `context.allow_short` and that EXIT
+  on a short covers it. The server gate decides either way.
+- **Not changed here.** Legacy single-instrument sessions keep their existing sell rule (it can still sell from
+  flat without a short check); the close-out's provider-health and manual-position rules are step 7.
+
 ## Key identifiers
 
 | Field | Role |
@@ -283,3 +332,69 @@ See [DATA_CONTRACTS.md](DATA_CONTRACTS.md) for timestamp and ID rules.
 | Cockpit | `ui/src/components/paper-workspace/` |
 | Backend intent | `src/market_platform_foundation/paper/` |
 | Projections | `ui_api/projections.py`, `paper_projections.py` |
+
+
+## Paper evaluation reporting
+
+The separately enrolled [day 10/day 20 performance report](PAPER_PERFORMANCE_EVALUATION.md)
+reads canonical fills and costs with original cutoff marks. Its passive observer
+and immutable reports grant no order or execution authority. Manual trades
+remain part of account equity and mark the result mixed. Fixed and covered
+milestones retain one baseline and all intervening returns.
+
+## Overnight holds and end-of-day close-out
+
+Owner-approved rebuild step 7 (2026-10-25), internal Paper simulation only.
+Overnight holds are disabled when the three optional risk settings are omitted.
+When supplied, all three are required: `max_overnight_positions` (0–5),
+`max_overnight_exposure_minor` (0–2,500,000 cents), and `max_hold_sessions`
+(1–5 trading sessions). The entry session counts as day 1; day 5 closes at
+the usual ten-minute close-out window. These limits also cannot exceed the
+portfolio limits. Legacy policies retain their exact identity when fields
+are absent. The release settings remain an owner action.
+
+Review starts 45 minutes before the regular close, with at most ten distinct
+positions reviewed per trading day, ordered by unrealized percentage return
+then instrument ID. The controller adds server-owned review context to the
+hashed Action Decision input. Prompt v5 retains the existing proposal wire
+format. `OVERNIGHT_THESIS_SUPPORTED` can qualify a HOLD only when the server
+supplies the review and the thesis continues before the holding-period cap.
+
+The final carry gate requires a current, same-day review for the unchanged
+position, an explicit overnight HOLD, an `EVIDENCE_SUFFICIENT` assessment,
+and supporting admissible non-quote evidence. It also requires current
+valuation, healthy feed, no stop breach, no maintenance-margin breach and no
+daily loss stop. Qualifying positions compete within both overnight caps;
+one that does not fit is skipped so a smaller qualifying position can fit.
+A position selected for closure cannot become a hold later that day.
+Each approval records its decision, evidence, quantity, entry identity,
+session age, exposure and percentage return. Each new trading day needs a
+new reason. Weekends and holidays do not count as holding sessions.
+
+Automation ownership is reconstructed from immutable fills whose order IDs
+begin `PAI-`. Manual and automation buckets share the net position; reducing
+fills consume their own owner's bucket first, then the other bucket, and a
+reversal remainder belongs to the fill's owner. Automatic AI exits and
+end-of-day/morning closes are limited to the automation's remaining shares.
+Manual HTTP preview and submit routes reserve both `PAI-` client order IDs
+and idempotency keys. Internal automation still uses the canonical Paper
+preview and submit functions, with all authority and price gates intact.
+
+Deterministic close-out runs before provider-health withholding. No price is
+fabricated: a refused preview is reported once per instrument/reason/day and
+retried; submitted closes use distinct keys for at most six attempts per
+instrument and session. Working remainders are cancelled. Pending close-out
+shortens the next worker tick to at most 60 seconds. One bad symbol does not
+abort other closes. Anything unapproved that remains after the bell, or is
+discovered at the next session after downtime, is recorded as unplanned carry.
+It is closed first during the next regular session; new entries are blocked
+account-wide until it is resolved. There are no fabricated after-hours fills.
+
+Carry/review state persists across restarts and is shared across instrument
+scopes. With any open position, the next session's loss anchor is the previous
+session's last saved CURRENT equity, including manual holdings because the
+daily loss stop is account-wide. Missing prior equity keeps entries blocked;
+it is not silently replaced with post-gap equity. Short borrow fees retain
+step 6's idempotent rollover accrual. These rules are software-tested, not
+live-session evidence. No service, scheduled task, paid engine or deployment
+is activated by this change.

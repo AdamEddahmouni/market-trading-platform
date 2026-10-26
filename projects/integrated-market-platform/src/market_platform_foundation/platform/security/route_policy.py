@@ -79,10 +79,16 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
     if path == "/security/readiness":
         return RoutePolicy(capability="security.config.read")
 
+    if path.startswith("/evaluation/paper-performance/"):
+        return RoutePolicy(capability="audit.read" if method_upper == "GET" else "state.write",
+                           account_scope=AccountScopeKind.PAPER_LEDGER)
     if path.startswith("/evaluation/prospective/"):
         # Evaluation artifacts have state-write authority only; never order authority.
         return RoutePolicy(capability="audit.read" if method_upper == "GET" or path.endswith("/rerun") else "state.write",
                            account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path.startswith("/evaluation/evidence/") and method_upper == "GET":
+        # Stored news, the inference dry-run plan, the decision journal and the as-of replay. Reads only.
+        return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
     if path == "/screener/action-decisions" and method_upper == "GET":
         return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
     if path == "/screener/action-decision/preview" and method_upper == "POST":
@@ -126,6 +132,7 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             "/operator/investigations",
             "/operator/readiness",
             "/operator/config",
+            "/screener/setup/ai",
             "/operator/diagnostics",
             "/operator/lifecycle/status",
             "/accounts",

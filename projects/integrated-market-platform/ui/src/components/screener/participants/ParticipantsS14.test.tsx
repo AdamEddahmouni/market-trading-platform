@@ -21,7 +21,7 @@ describe("S14 13F index status", () => {
     render(<Holdings13F compact={false} section={{ state: "CURRENT_AS_FILED", reason: null, period: "2026-06-30", holder_count: 3,
       change_counts: {}, holders: [], index }} />);
     const status = screen.getByLabelText("13F index status");
-    expect(status).toHaveTextContent("13F index: data sets indexed through 2026-08-31 (2 data sets) · generated 2026-09-02 10:00 UTC · refresh: update available.");
+    expect(status).toHaveTextContent("13F index: data sets indexed through 2026-08-31 (2 data sets) · generated Sep 2 06:00 ET · refresh: update available.");
     expect(status).toHaveAttribute("title", "A newer SEC data set is published");
     expect(status.textContent).not.toMatch(/\blive\b/i);
     expect(document.body.textContent).toContain("is not a live position");   // the S12 boundary text stays

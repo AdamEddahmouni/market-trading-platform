@@ -111,8 +111,11 @@ class AnthropicInference:
         fallback: ProviderNeutralInferenceBoundary | None = None,
         api_key: str | None = None,
         model: str | None = None,
+        ledger: Any = None,
     ) -> None:
         self.fallback = fallback or GroundedEvidenceInference()
+        # paid_spend.DollarLedger: each call's worst case is set aside first and refused past either dollar cap.
+        self.ledger = ledger
         self.api_key = (api_key if api_key is not None else os.environ.get("ANTHROPIC_API_KEY", "")).strip()
         self.model = (model if model is not None else os.environ.get("ANTHROPIC_MODEL", DEFAULT_MODEL)).strip()
 
@@ -155,6 +158,19 @@ class AnthropicInference:
             "Respond in plain language with bracketed citation refs from allowed_citation_refs."
         )
 
+        reserved = 0
+        if self.ledger is not None:
+            from ..intelligence.inference.anthropic_synthesis import estimate_tokens
+
+            reserved, refused = self.ledger.reserve(
+                self.model, estimate_tokens(SYSTEM_PROMPT + user_prompt, self.model) + 64, DEFAULT_MAX_TOKENS)
+            if refused is not None:
+                # Over a dollar cap (or no caps): the grounded answer, never an uncapped call.
+                return self.fallback.infer(
+                    prompt,
+                    context_citations=context_citations,
+                    evidence_context=evidence_context,
+                )
         try:
             payload = call_anthropic_messages(
                 api_key=self.api_key,
@@ -163,11 +179,16 @@ class AnthropicInference:
                 user_prompt=user_prompt,
             )
         except (ConnectionError, ValueError):
+            if self.ledger is not None:
+                # The request may have been billed: the worst case stays charged.
+                self.ledger.settle(reserved, self.model, None, None)
             return self.fallback.infer(
                 prompt,
                 context_citations=context_citations,
                 evidence_context=evidence_context,
             )
+        if self.ledger is not None:
+            self.ledger.settle(reserved, self.model, *_usage_tokens(payload))
 
         content = _response_text(payload)
         if not content:

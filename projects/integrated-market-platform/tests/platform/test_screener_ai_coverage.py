@@ -20,8 +20,11 @@ from market_platform_foundation.platform.security.leak_audit import assert_no_se
 from market_platform_foundation.ui_api.screener_ai import ScreenerAiService  # noqa: E402
 from market_platform_foundation.ui_api.screener_ai_coverage import ScreenerAiCoverage, interrupt_open_runs  # noqa: E402
 from tests.support.coverage_universe import (  # noqa: E402
-    NOW, SCOPE, FailingProvider, News, PagingReader, RankingProvider, answer, instrument_id, row, universe,
+    NOW, SCOPE, FailingProvider, News, PagingReader, RankingProvider, answer, full_tournament, instrument_id, row, universe,
 )
+
+# These tests cover the full tournament itself; the opportunity shortlist is tested in test_screener_ai_shortlist.
+setUpModule, tearDownModule = full_tournament()
 
 SHA = "a" * 40
 _SEQUENCE = [0]
@@ -40,9 +43,9 @@ class Harness:
         self.ledger = CoverageLedger()
         self.run_id = run_id()
 
-    def run(self, *, should_stop=lambda: False, scope=SCOPE):
+    def run(self, *, should_stop=lambda: False, scope=SCOPE, slice_plan=None):
         self.result = ScreenerAiCoverage(self.service, ledger=self.ledger, software_sha=SHA).run(
-            scope, run_id=self.run_id, account_id="PAPER-1", should_stop=should_stop)
+            scope, run_id=self.run_id, account_id="PAPER-1", should_stop=should_stop, slice_plan=slice_plan)
         self.block = self.result["universe_coverage"]
         return self.result
 
@@ -463,6 +466,25 @@ class FailureTests(unittest.TestCase):
         self.assertTrue(h.result["provisional"])
         self.assertTrue(all(item["batch"] in (1, 2) for item in h.result["provisional"]))
 
+    def test_an_oversized_first_batch_gates_only_that_batch_and_the_rest_still_run(self):
+        """The exact-fit gate is per request: one batch rendering over the window must not cancel the
+        remaining planned batches, which each carry their own gate when they are sent."""
+        h = Harness(universe(260, strong={index: 90.0 for index in range(0, 260, 9)}),
+                    FailingProvider(fail_on=1, reason="LOCAL_CONTEXT_EXCEEDED"))
+        h.run()
+        self.partial(h, 260)
+        # Six planned batches: the failed leading batch is isolated, the remaining five still run.
+        self.assertEqual(h.block["batches_completed"], 5)
+        self.assertEqual(len(h.provider.seen), 6)
+        self.assertEqual(h.block["counts"]["evaluated"], 210)
+        reasons = h.block["counts"]["reasons"]
+        self.assertEqual(reasons["UNPROCESSED:BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED"], 50)
+        self.assertNotIn("UNPROCESSED:NOT_STARTED_AFTER_BATCH_FAILURE", reasons)
+        self.assertEqual(h.block["reason"], "BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED")
+        # Finalists from the finished batches are shown as provisional and are not a selection.
+        self.assertTrue(h.result["provisional"])
+        self.assertTrue(all(item["batch"] >= 2 for item in h.result["provisional"]))
+
     def test_a_timeout_is_an_unknown_provider_outcome_and_is_not_retried(self):
         h = Harness(universe(150), FailingProvider(fail_on=2, reason="ANTHROPIC_TIMEOUT", timeout=True))
         h.run()
@@ -543,6 +565,42 @@ class FailureTests(unittest.TestCase):
 
 
 class StopTests(unittest.TestCase):
+    def test_generation_receives_the_run_stop_signal_and_cancelled_rows_are_not_evaluated(self):
+        stop = [False]
+        provider = RankingProvider()
+        def cancel_during_generation(call, packet):
+            stop[0] = True
+            return provider.failure('STOPPED_BY_OPERATOR') if packet.should_stop() else provider.respond(packet)
+        provider.on_call = cancel_during_generation
+        h = Harness(universe(120), provider)
+        h.run(should_stop=lambda: stop[0])
+        self.assertEqual(h.calls()[0]['reason'], 'STOPPED_BY_OPERATOR')
+        self.assertEqual(h.block['status'], 'STOPPED')
+        self.assertEqual(h.block['counts']['evaluated'], 0)
+        self.assertEqual(h.block['counts']['by_class'].get('UNPROCESSED'), 120)
+        self.assertNotIn('ELIGIBLE', h.block['counts']['by_class'])
+        self.assertEqual(provider.calls, 1)
+        self.assertEqual(h.ledger.open_runs(), [])
+        self.assertIsNone(action_repository().get('candidate_run', 'CU-' + h.run_id))
+
+    def test_stop_inside_global_comparison_reaches_the_provider_and_never_stores_selection(self):
+        stop = [False]
+        provider = RankingProvider()
+        def cancel_comparison(call, packet):
+            if call == 4:
+                stop[0] = True
+                if packet.should_stop():
+                    return provider.failure('STOPPED_BY_OPERATOR')
+            return provider.respond(packet)
+        provider.on_call = cancel_comparison
+        h = Harness(universe(120, strong={119: 95.0}), provider)
+        h.run(should_stop=lambda: stop[0])
+        self.assertEqual(h.calls()[-1]['reason'], 'STOPPED_BY_OPERATOR')
+        self.assertEqual(h.block['status'], 'STOPPED')
+        self.assertEqual(h.block['counts']['evaluated'], 120)
+        self.assertFalse(h.block['selection_complete'])
+        self.assertIsNone(action_repository().get('candidate_run', 'CU-' + h.run_id))
+
     def test_stop_during_the_last_inflight_call_prevents_finalization(self):
         for size, final_call in ((40, 1), (120, 4)):
             with self.subTest(size=size):
@@ -604,6 +662,119 @@ class StopTests(unittest.TestCase):
         self.assertEqual(h.provider.calls, 0)
         self.assertEqual(h.block["counts"]["unprocessed"], 120)
         self.assertEqual(h.block["status"], "STOPPED")
+
+    def test_stop_before_a_local_request_is_a_stop_not_a_provider_rejection(self):
+        # Local planning makes no count (the exact gate runs at send); a Stop still ends STOPPED, never FAILED.
+        h = Harness(universe(120), LocalCount())
+        h.run(should_stop=lambda: True)
+        self.assertEqual((h.provider.counts, h.provider.calls), (0, 0))
+        self.assertEqual(h.block["status"], "STOPPED")
+        self.assertEqual(h.block["reason"], "STOPPED_BY_OPERATOR")
+        self.assertEqual(h.block["counts"]["by_class"], {"UNPROCESSED": 120})
+        self.assertEqual(h.block["counts"]["reasons"], {"UNPROCESSED:STOPPED_BY_OPERATOR": 120})
+        self.assertEqual(h.ledger.open_runs(), [])
+
+
+class LocalCount(RankingProvider):
+    """A local engine whose exact count is observable; with ``refuse`` it refuses every send before generation."""
+
+    runtime = "LOCAL_MODEL"
+
+    def __init__(self, *, refuse=False, window=None) -> None:
+        super().__init__()
+        self.counts, self.refuse = 0, refuse
+        if window is not None:
+            from types import SimpleNamespace
+            self._server = SimpleNamespace(manifest=SimpleNamespace(context=window, revision="r", runtime_version="b1"))
+
+    def preflight(self, packet, *, rendered_prompt, config):
+        self.counts += 1
+        return {"accepted": True, "input_tokens": 1000, "context_window": 8192, "context_fit": True, "reason": None}
+
+    def on_call(self, call, packet):
+        if not self.refuse:
+            return self.respond(packet)
+        from dataclasses import replace
+        return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+
+
+class LocalSendTimeCountTests(unittest.TestCase):
+    def test_local_planning_counts_nothing_and_plans_one_row_per_request(self):
+        h = Harness(universe(120, strong={7: 90.0}), LocalCount())
+        h.run()
+        self.assertEqual(h.provider.counts, 0)
+        self.assertEqual(h.block["plan"]["batch_optimizer"], "LOCAL_ONE_ROW_EXACT_AT_SEND")
+        self.assertEqual(h.block["plan"]["token_basis"], "EXACT_AT_SEND_ONLY")
+        self.assertEqual(h.block["batches_planned"], 120)
+        self.assertTrue(all(len(seen) == 1 for seen in h.provider.seen[:120]))
+        self.assertEqual(h.block["ai_evaluated_count"], 120)
+        reconciled(self, h.block, 120)
+        # The run read route audits the whole result; a local plan's enum fields must pass it.
+        assert_no_secrets_in_payload(h.result)
+        assert_no_secrets_in_payload({"result": h.result})
+
+    def test_a_request_refused_before_generation_is_not_model_input(self):
+        h = Harness(universe(3), LocalCount(refuse=True))
+        h.run()
+        efficiency = h.block["efficiency"]
+        self.assertEqual(efficiency["actual_input_tokens"], 0)
+        self.assertEqual(efficiency["counted_not_sent_tokens"], 3 * 9000)
+        self.assertEqual(h.block["model_calls"], 0)
+        self.assertEqual(h.block["budget"]["tokens_input"], 0)
+
+    def test_a_packet_thinning_cannot_change_is_never_resent(self):
+        # These rows carry no story, so thinning changes nothing: one refused send per row, one receipt each.
+        h = Harness(universe(2), LocalCount(refuse=True, window=8192))
+        h.run()
+        self.assertEqual(h.provider.calls, 2)
+        records = h.calls()
+        self.assertEqual(len(records), 2)
+        self.assertFalse(any(r.get("superseded_by") for r in records))
+        self.assertEqual(h.ledger.unfinished_batches(h.run_id), [])
+        self.assertEqual(h.block["counts"]["reasons"], {"UNPROCESSED:BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED": 2})
+
+    def test_a_thinned_packet_is_resent_once_and_both_attempts_keep_receipts(self):
+        from unittest.mock import patch
+
+        class RefuseUnthinned(LocalCount):
+            def on_call(inner, call, packet):
+                if all(c["instrument"].get("thinned") for c in packet.candidates):
+                    return inner.respond(packet)
+                from dataclasses import replace
+                return replace(inner.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+
+        def thin(scope, candidates, projections, *, now, max_bytes=None):
+            if max_bytes is None:
+                return  # the ordinary MAX_PACKET_BYTES fit before the first send
+            for candidate in candidates:
+                candidate["instrument"]["thinned"] = True
+
+        h = Harness(universe(1, strong={0: 90.0}), RefuseUnthinned(window=8192))
+        with patch("market_platform_foundation.ui_api.screener_news_evidence.fit_news", thin):
+            h.run()
+        self.assertEqual(h.provider.calls, 2)
+        records = h.calls()
+        self.assertEqual([r.get("superseded_by") for r in records], ["CONTEXT_FIT_THINNING", None])
+        self.assertEqual(records[0]["outcome"], "NOT_SENT")
+        self.assertEqual(records[1]["call_id"], records[0]["call_id"] + ":fit1")
+        self.assertEqual(h.ledger.unfinished_batches(h.run_id), [])
+        self.assertEqual(h.block["ai_evaluated_count"], 1)
+        self.assertEqual(h.block["efficiency"]["counted_not_sent_tokens"], 9000)
+
+    def test_context_fit_target_removes_the_counted_excess(self):
+        from market_platform_foundation.ui_api.screener_ai_coverage import CONTEXT_FIT_BYTES_PER_TOKEN
+        h = Harness(universe(1), LocalCount(window=8192))
+        coverage = ScreenerAiCoverage(h.service, ledger=h.ledger, software_sha=SHA)
+        coverage._provider, coverage._reducer = h.provider, h.service._provider_reducer()
+        refused = {"reason": "LOCAL_CONTEXT_EXCEEDED", "inference_dispatched": False, "tokens_input": 6000,
+                   "packet_bytes": 11374, "evidence": [{}]}
+        # 6,000 counted + the one-candidate floor of 768 exceeds 8,192 by nothing; 7,600 exceeds it by 176.
+        self.assertIsNone(coverage._context_fit_target(refused, []))
+        target = coverage._context_fit_target({**refused, "tokens_input": 7600}, [])
+        self.assertEqual(target, 11374 - int(176 * CONTEXT_FIT_BYTES_PER_TOKEN))
+        self.assertIsNone(coverage._context_fit_target({**refused, "tokens_input": 7600, "inference_dispatched": True}, []))
+        self.assertIsNone(coverage._context_fit_target({**refused, "tokens_input": 7600},
+                                                       [{"packet_bytes": 11374}]))  # no shrink since the last attempt
 
 
 class BudgetTests(unittest.TestCase):
@@ -960,6 +1131,363 @@ class ActionBoundaryTests(unittest.TestCase):
         self.assertEqual(legacy["matched_count"], 200)
         self.assertNotIn("universe_coverage", legacy)
         self.assertEqual(legacy["candidates"], [])
+
+
+class Ticking(RankingProvider):
+    """A local engine whose every request takes ``step`` seconds of the run's clock; ``raw`` answers every call."""
+
+    runtime = "LOCAL_MODEL"
+
+    def __init__(self, clock, *, step=10.0, raw=None) -> None:
+        super().__init__()
+        self.clock, self.step, self.raw = clock, step, raw
+
+    def on_call(self, call, packet):
+        self.clock[0] += self.step
+        if self.raw is None:
+            return self.respond(packet)
+        from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
+        return ProviderInferenceResponse(self.raw, self.provider_id, self.model_id, tokens_input=1000, tokens_output=100,
+                                         latency_ms=1, simulated=True)
+
+
+def ticking(rows, **kwargs):
+    clock = [NOW]
+    return Harness(rows, Ticking(clock, **kwargs), clock=lambda: clock[0]), clock
+
+
+class RowLevelRejectionTests(unittest.TestCase):
+    def test_a_rejected_answer_is_that_rows_outcome_and_later_batches_still_run(self):
+        h = Harness(universe(120, strong={110: 90.0}), FailingProvider(fail_on=1, raw="{not json"))
+        h.run()
+        reconciled(self, h.block, 120)
+        first = [r for r in h.calls() if r["stage"] == "BATCH_INFERENCE"]
+        self.assertEqual(len(first), 3, "a rejection ended the run")
+        self.assertEqual(first[0]["state"], "INVALID_OUTPUT")
+        self.assertEqual(h.block["ai_rejected_count"], len(first[0]["instrument_ids"]))
+        self.assertEqual(h.block["counts"]["by_class"]["AI_REJECTED"], len(first[0]["instrument_ids"]))
+        # Never a global result: the rejected rows were not compared.
+        self.assertEqual(h.block["status"], "PROVISIONAL_PARTIAL_COVERAGE")
+        self.assertEqual(h.block["reason"], "BATCH_FAILED:MALFORMED_JSON")
+        self.assertFalse(h.block["selection_complete"])
+        self.assertEqual(h.result["candidates"], [])
+
+    def test_a_rejection_rate_above_half_after_ten_requests_ends_the_run(self):
+        h, _ = ticking(universe(14), step=0.0, raw="{not json")
+        h.run()
+        reconciled(self, h.block, 14)
+        self.assertEqual(h.provider.calls, 10)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "AI_REJECTION_RATE_EXCEEDED"))
+        self.assertEqual(h.block["counts"]["reasons"]["UNPROCESSED:NOT_STARTED_AFTER_REJECTION_RATE"], 4)
+
+    def test_a_provider_failure_still_ends_the_run(self):
+        h = Harness(universe(120), FailingProvider(fail_on=1))
+        h.run()
+        self.assertEqual(len([r for r in h.calls() if r["stage"] == "BATCH_INFERENCE"]), 1)
+        self.assertEqual(h.block["reason"], "BATCH_FAILED:ANTHROPIC_OVERLOADED_ERROR")
+
+
+class RollingSliceTests(unittest.TestCase):
+    def test_the_deadline_defers_the_rest_and_the_slice_is_labelled_a_slice(self):
+        h, _ = ticking(universe(12, strong={index: 90.0 + index for index in range(12)}))
+        h.run(slice_plan={"deadline_epoch": NOW + 25, "epoch": 3, "last_evaluated": {}})
+        reconciled(self, h.block, 12)
+        self.assertEqual(len([r for r in h.calls() if r["stage"] == "BATCH_INFERENCE"]), 3)
+        self.assertEqual(h.block["counts"]["reasons"], {"UNPROCESSED:DEFERRED_TO_NEXT_SLICE": 9})
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertTrue(h.block["slice_complete"])
+        self.assertFalse(h.block["coverage_complete"] or h.block["selection_complete"])
+        self.assertEqual(h.block["slice"]["deferred_count"], 9)
+        self.assertEqual(h.block["slice"]["epoch"], 3)
+        self.assertEqual(h.result["state"], "CURRENT")
+        self.assertEqual(len(h.result["candidates"]), 3)
+        terminal = h.ledger.terminal(h.run_id)
+        self.assertEqual(terminal["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertEqual(terminal["candidate_run_id"], h.result["run_id"])
+
+    def test_rows_not_yet_evaluated_in_the_epoch_go_first_then_the_oldest(self):
+        rows = universe(6, strong={index: 90.0 for index in range(6)})
+        last = {instrument_id(0): NOW - 100, instrument_id(1): NOW - 900, instrument_id(2): NOW - 50, instrument_id(3): NOW - 400}
+        h, _ = ticking(rows)
+        h.run(slice_plan={"deadline_epoch": NOW + 35, "epoch": 1, "last_evaluated": last})
+        first = [seen[0] for seen in h.provider.seen[:4]]
+        self.assertEqual(sorted(first[:2]), [instrument_id(4), instrument_id(5)])
+        self.assertEqual(first[2:], [instrument_id(1), instrument_id(3)])
+        self.assertEqual(h.block["plan"]["slice"]["evaluated_in_epoch"], 4)
+
+    def test_a_slice_that_selects_nothing_says_so_and_stores_nothing(self):
+        h, _ = ticking(universe(8))
+        h.run(slice_plan={"deadline_epoch": NOW + 25, "epoch": 1, "last_evaluated": {}})
+        self.assertEqual(h.block["status"], "SLICE_COMPLETE_NO_SELECTION")
+        self.assertTrue(h.block["slice_complete"])
+        self.assertIsNone(h.ledger.terminal(h.run_id)["candidate_run_id"])
+        self.assertEqual(h.result["state"], "NO_GROUNDED_CANDIDATES")
+
+    def test_a_slice_that_reaches_every_row_is_a_global_selection(self):
+        h, _ = ticking(universe(4, strong={1: 95.0}))
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {}})
+        self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
+        self.assertTrue(h.block["coverage_complete"] and h.block["selection_complete"])
+        self.assertEqual(h.selected(), [instrument_id(1)])
+
+    def test_a_rejected_row_in_a_slice_is_not_evaluated_for_the_epoch(self):
+        class OneBad(Ticking):
+            def on_call(self, call, packet):
+                self.raw = "{not json" if call == 1 else None
+                return super().on_call(call, packet)
+
+        clock = [NOW]
+        h = Harness(universe(3, strong={0: 90.0, 1: 91.0, 2: 92.0}), OneBad(clock), clock=lambda: clock[0])
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {}})
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertEqual(h.block["counts"]["by_class"]["AI_REJECTED"], 1)
+        self.assertEqual(h.block["slice"]["rejected_requests"], 1)
+        self.assertEqual(len(h.result["candidates"]), 2)
+
+    def test_in_a_slice_a_high_rejection_rate_does_not_end_dispatch_before_the_time_box(self):
+        # October 17-18: the epoch's remaining rows were news-heavy and about two thirds were rejected
+        # (UNGROUNDED_NEWS_CLAIM), so every slice stopped after 14 requests on the half-rejected breaker and adopted
+        # nothing. In a slice the time box already bounds the cost; each rejection stays that row's outcome.
+        class MostlyBad(Ticking):
+            def on_call(self, call, packet):
+                self.raw = "{not json" if call <= 15 and call % 3 else None  # first pass only
+                return super().on_call(call, packet)
+
+        clock = [NOW]
+        h = Harness(universe(15, strong={index: 90.0 + index for index in range(15)}), MostlyBad(clock, step=1.0),
+                    clock=lambda: clock[0])
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {}})
+        reconciled(self, h.block, 15)
+        self.assertEqual(len([r for r in h.calls() if r["stage"] == "BATCH_INFERENCE"]), 15)
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertEqual(h.block["slice"]["rejected_requests"], 10)
+        self.assertEqual(h.block["counts"]["by_class"]["AI_REJECTED"], 10)
+
+    def test_in_a_slice_only_a_systemic_rejection_stops_dispatch(self):
+        h, _ = ticking(universe(24), step=0.0, raw="{not json")
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {}})
+        reconciled(self, h.block, 24)
+        self.assertEqual(h.provider.calls, 20)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "AI_REJECTION_SYSTEMIC"))
+        self.assertEqual(h.block["counts"]["reasons"]["UNPROCESSED:NOT_STARTED_AFTER_REJECTION_RATE"], 4)
+
+    def test_a_slice_orders_rows_by_their_last_turn_so_a_rejected_row_waits_its_turn(self):
+        rows = universe(4, strong={index: 90.0 for index in range(4)})
+        # Row 0 was rejected a moment ago; row 1 was evaluated long ago; rows 2 and 3 have had no turn.
+        turns = {instrument_id(0): NOW - 10, instrument_id(1): NOW - 900}
+        h, _ = ticking(rows)
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {instrument_id(1): NOW - 900},
+                          "last_turn": turns})
+        first = [seen[0] for seen in h.provider.seen[:4]]
+        self.assertEqual(sorted(first[:2]), [instrument_id(2), instrument_id(3)])
+        self.assertEqual(first[2:], [instrument_id(1), instrument_id(0)])
+        self.assertEqual(h.block["plan"]["slice"]["order"], "NO_RECENT_TURN_FIRST_THEN_OLDEST_TURN_THEN_FAIR_ORDER")
+
+    def test_a_manual_run_without_a_slice_plan_never_defers(self):
+        h, _ = ticking(universe(5))
+        h.run()
+        self.assertEqual(h.block["status"], "COMPLETE_NO_SELECTION")
+        self.assertIsNone(h.block["slice"])
+
+
+class ReductionSplitTests(unittest.TestCase):
+    def test_a_comparison_over_the_window_is_split_and_a_union_within_the_cap_is_labelled(self):
+        class Wide(Ticking):
+            def on_call(self, call, packet):
+                if len(packet.candidates) > 2:
+                    from dataclasses import replace
+                    return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+                return super().on_call(call, packet)
+
+        clock = [NOW]
+        h = Harness(universe(4, strong={0: 90.0, 1: 91.0, 2: 92.0, 3: 93.0}), Wide(clock, step=1.0), clock=lambda: clock[0])
+        h.run()
+        reconciled(self, h.block, 4)
+        self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
+        self.assertEqual(len(h.result["candidates"]), 4)
+        self.assertEqual([pick["rank"] for pick in h.result["candidates"]], [1, 2, 3, 4])
+        self.assertEqual(h.result["composition"]["method"], "UNION_OF_GROUP_ANSWERS_WITHIN_SELECTION_CAP")
+        self.assertEqual(len(h.result["composition"]["member_reduction_run_ids"]), 2)
+        reductions = [r for r in h.calls() if r["stage"] == "GLOBAL_REDUCTION"]
+        self.assertEqual(len({r["call_id"] for r in reductions}), len(reductions), "call ids repeat across a split")
+
+    def test_once_a_comparison_size_is_refused_larger_groups_are_split_before_sending(self):
+        class Narrow(Ticking):
+            refused = 0
+
+            def on_call(self, call, packet):
+                if len(packet.candidates) > 2:
+                    from dataclasses import replace
+                    Narrow.refused += 1
+                    return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+                self.clock[0] += self.step
+                if len(packet.candidates) == 2:
+                    # A discriminating comparison: only the stronger of two advances.
+                    from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
+                    from tests.support.coverage_universe import strength
+                    best = max(packet.candidates, key=lambda c: (strength(c), c["instrument"]["instrument_id"]))
+                    return ProviderInferenceResponse(answer(packet.candidates, [best]), self.provider_id, self.model_id,
+                                                     tokens_input=1000, tokens_output=100, latency_ms=1, simulated=True)
+                return self.respond(packet)
+
+        clock = [NOW]
+        h = Harness(universe(8, strong={index: 90.0 + index for index in range(8)}), Narrow(clock, step=1.0),
+                    clock=lambda: clock[0])
+        h.run()
+        reconciled(self, h.block, 8)
+        self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
+        self.assertEqual(h.selected(), [instrument_id(7)])
+        # 8 is refused, then 4; the other group of 4 in round 1 is split without a request. Round 2 is planned one
+        # smaller, in a group of 3, which is refused once; nothing of 3 or more is sent again.
+        self.assertEqual(Narrow.refused, 3)
+        self.assertEqual((h.block["reduction"]["smallest_refused_group"], h.block["reduction"]["presplit_groups"]), (3, 1))
+
+    def _rejecting(self, bad):
+        class RejectsOne(Ticking):
+            def on_call(self, call, packet):
+                ids = [c["instrument"]["instrument_id"] for c in packet.candidates]
+                if bad in ids and len(packet.candidates) > 1 or ids == [bad] and call > 4:
+                    self.clock[0] += self.step
+                    from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
+                    return ProviderInferenceResponse("{not json", self.provider_id, self.model_id, tokens_input=1000,
+                                                     tokens_output=100, latency_ms=1, simulated=True)
+                return super().on_call(call, packet)
+        return RejectsOne
+
+    def test_in_a_slice_a_rejected_comparison_is_split_and_a_rejected_finalist_is_deferred(self):
+        bad = instrument_id(2)
+        clock = [NOW]
+        h = Harness(universe(4, strong={0: 90.0, 1: 91.0, 2: 92.0, 3: 93.0}), self._rejecting(bad)(clock, step=1.0),
+                    clock=lambda: clock[0])
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {}})
+        reconciled(self, h.block, 4)
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertTrue(h.block["slice_complete"])
+        self.assertNotIn(bad, h.selected())
+        self.assertEqual(sorted(h.selected()), sorted(instrument_id(i) for i in (0, 1, 3)))
+        self.assertEqual(h.block["slice"]["comparison_rejected"], 1)
+        self.assertEqual(h.block["counts"]["reasons"]["AI_REJECTED:COMPARISON:MALFORMED_JSON"], 1)
+
+    def test_without_a_slice_a_rejected_comparison_still_ends_the_run_partial(self):
+        bad = instrument_id(2)
+        clock = [NOW]
+        h = Harness(universe(4, strong={0: 90.0, 1: 91.0, 2: 92.0, 3: 93.0}), self._rejecting(bad)(clock, step=1.0),
+                    clock=lambda: clock[0])
+        h.run()
+        self.assertEqual((h.block["status"], h.block["reason"]),
+                         ("PROVISIONAL_PARTIAL_COVERAGE", "GLOBAL_REDUCTION_INCOMPLETE:MALFORMED_JSON"))
+        self.assertEqual(h.result["candidates"], [])
+
+    def test_in_a_slice_a_finalist_not_comparable_at_its_cutoff_is_deferred_not_excluded(self):
+        from market_platform_foundation.ui_api.screener_ai_coverage import _Run
+        run = _Run("r", "a")
+        run.classes = {"X": ("AI_EVALUATED", []), "Y": ("AI_EVALUATED", [])}
+        run.excluded_finalists = [{"instrument_id": "X", "round": 1, "class": "EVIDENCE_STALE", "reasons": ["STALE"]}]
+        ScreenerAiCoverage._defer_finalists(run, {"X": ["EVIDENCE_STALE", ["STALE"]]})
+        self.assertEqual(run.excluded_finalists, [])
+        self.assertEqual(run.classes["X"], ("UNPROCESSED", ["DEFERRED_FROM_COMPARISON", "EVIDENCE_STALE_AT_COMPARISON_CUTOFF", "STALE"]))
+        self.assertEqual((run.deferred_finalists, run.sliced), (1, True))
+
+    def test_a_refused_comparison_of_several_finalists_is_split_not_thinned(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from market_platform_foundation.ui_api import screener_news_evidence
+
+        class Wide(Ticking):
+            def __init__(self, clock):
+                super().__init__(clock, step=1.0)
+                self._server = SimpleNamespace(manifest=SimpleNamespace(context=8192, revision="r", runtime_version="b1"))
+
+            def on_call(self, call, packet):
+                if len(packet.candidates) > 2:
+                    from dataclasses import replace
+                    return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+                return super().on_call(call, packet)
+
+        budgets, real = [], screener_news_evidence.fit_news
+
+        def recording(scope, candidates, news, *, now, max_bytes=None):
+            if max_bytes is not None:
+                budgets.append(len(candidates))
+            return real(scope, candidates, news, now=now, max_bytes=max_bytes)
+
+        clock = [NOW]
+        h = Harness(universe(4, strong={0: 90.0, 1: 91.0, 2: 92.0, 3: 93.0}), Wide(clock), clock=lambda: clock[0])
+        with patch("market_platform_foundation.ui_api.screener_news_evidence.fit_news", recording):
+            h.run()
+        self.assertEqual(budgets, [], "a multi-finalist comparison was thinned")
+        self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
+        self.assertEqual(h.block["reduction"]["finalists_excluded_count"], 0)
+
+    @staticmethod
+    def _local(refuse, *, keep_both=False, jump=0.0):
+        """A local engine whose first pass sends one row per request; comparisons are the requests of two or more.
+
+        ``refuse`` decides which comparison packets the exact count refuses; ``jump`` advances the clock once, at the
+        first refusal, so evidence observed only once goes stale before the halves are sent."""
+        from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
+        from tests.support.coverage_universe import strength
+        pending = [jump]
+
+        class Local(Ticking):
+            comparing = False
+
+            def on_call(self, call, packet):
+                ids = [c["instrument"]["instrument_id"] for c in packet.candidates]
+                self.comparing = self.comparing or len(ids) > 1
+                if self.comparing and refuse(ids):
+                    from dataclasses import replace
+                    self.clock[0] += pending.pop() if pending else 0.0
+                    return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+                if len(ids) == 2 and not keep_both:
+                    self.clock[0] += self.step
+                    best = max(packet.candidates, key=lambda c: (strength(c), c["instrument"]["instrument_id"]))
+                    return ProviderInferenceResponse(answer(packet.candidates, [best]), self.provider_id, self.model_id,
+                                                     tokens_input=1000, tokens_output=100, latency_ms=1, simulated=True)
+                return super().on_call(call, packet)
+        return Local
+
+    def test_in_a_slice_an_oversized_comparison_with_a_stale_finalist_is_still_split(self):
+        # 2026-10-23 equities: the first comparison group had four finalists stale at its cutoff and was over the
+        # window; the split rule skipped groups with a dropped finalist, so the run ended GLOBAL_REDUCTION_INCOMPLETE.
+        clock = [NOW]
+        provider = self._local(lambda ids: len(ids) > 2, jump=61.0)(clock, step=0.1)
+        rows = universe(100, strong={5: 90.0, 6: 91.0, 7: 92.0, 8: 92.5, 9: 92.7, 60: 93.0, 61: 93.5, 99: 95.0})
+        h = Harness([], provider, clock=lambda: clock[0], reader=ClockReader(rows, lambda: clock[0], frozen=(99,)))
+        h.run(slice_plan={"deadline_epoch": NOW + 10000, "epoch": 1, "last_evaluated": {}})
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertEqual(h.selected(), [instrument_id(61)])  # the strongest finalist still current at the comparison
+        self.assertEqual(h.block["slice"]["deferred_finalists"], 1)
+        failed = [r for r in h.calls() if r["stage"] == "GLOBAL_REDUCTION" and r["outcome"] == "FAILED"]
+        self.assertTrue(any(r["dropped"] and len(r["instrument_ids"]) > 2 for r in failed),
+                        "no oversized comparison had a dropped finalist")
+
+    def test_in_a_slice_a_finalist_too_large_to_compare_alone_is_deferred(self):
+        bad = instrument_id(60)
+        clock = [NOW]
+        provider = self._local(lambda ids: len(ids) > 2 or bad in ids)(clock, step=0.1)
+        h = Harness(universe(100, strong={5: 90.0, 6: 91.0, 60: 93.0, 99: 95.0}), provider, clock=lambda: clock[0])
+        h.run(slice_plan={"deadline_epoch": NOW + 10000, "epoch": 1, "last_evaluated": {}})
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertEqual(h.selected(), [instrument_id(99)])
+        self.assertEqual(h.block["slice"]["deferred_finalists"], 1)
+        self.assertEqual(h.block["counts"]["reasons"]["UNPROCESSED:COMPARISON_CONTEXT_EXCEEDED"], 1)
+
+    def test_a_round_that_advances_everyone_is_retried_with_new_pairs_a_bounded_number_of_times(self):
+        # 2026-10-23 crypto: one round in pairs and byes advanced all six finalists and the run ended at once.
+        from market_platform_foundation.ui_api.screener_ai_coverage import NO_PROGRESS_ROUNDS
+        clock = [NOW]
+        provider = self._local(lambda ids: len(ids) > 2, keep_both=True)(clock, step=0.1)
+        h = Harness(universe(100, strong={index: 90.0 + index / 10 for index in range(0, 100, 10)}), provider,
+                    clock=lambda: clock[0])
+        h.run()
+        self.assertGreater(h.block["finalist_count"], 5)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "GLOBAL_COMPARISON_NO_PROGRESS"))
+        self.assertEqual(h.block["reduction"]["rounds_completed"], 1 + NO_PROGRESS_ROUNDS)
+        rounds = [record for record in h.calls() if record["stage"] == "GLOBAL_REDUCTION" and record.get("outcome") == "COMPLETED"]
+        pairs = {(record["round"], frozenset(record["instrument_ids"])) for record in rounds if len(record["instrument_ids"]) == 2}
+        self.assertGreater(len({pair for _, pair in pairs}), len([1 for number, _ in pairs if number == 1]),
+                           "later rounds compared the same pairs again")
 
 
 if __name__ == "__main__":

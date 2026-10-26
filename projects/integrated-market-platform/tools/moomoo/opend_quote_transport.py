@@ -38,6 +38,129 @@ def load_vendor_sdk() -> Any | None:
     return _import_sdk()
 
 
+
+
+def fetch_spy_performance_day(session_date: str, *, host: str = "127.0.0.1", port: int = 11111,
+                              sdk: Any = None, enabled: bool | None = None,
+                              as_of_ns: int | None = None) -> dict[str, Any]:
+    """One bounded, quote-only SPY daily-price + full adjustment response.
+
+    Raw closes are deliberate: additive forward-adjustment factors are not a
+    dividend-reinvestment index. No subscription, trade context or SDK install.
+    """
+    from datetime import date
+    from decimal import Decimal
+    from fractions import Fraction
+    from market_platform_foundation.evaluation.performance_benchmark import decimal_string
+    from market_platform_foundation.evaluation.performance_calendar import session_bounds
+    from market_platform_foundation.market_data.live_config import moomoo_live_enabled
+
+    denied = lambda reason: dict(ready=False, reason=reason, actions=[], raw={})
+    if not (moomoo_live_enabled() if enabled is None else enabled):
+        return denied("MOOMOO_OBSERVATION_DISABLED")
+    if host not in _LOOPBACK_HOSTS:
+        return denied(OPEND_NON_LOOPBACK_BLOCKED)
+    try:
+        _opening, closing = session_bounds(date.fromisoformat(session_date))
+    except ValueError:
+        return denied("BENCHMARK_SESSION_INVALID")
+    if (as_of_ns if as_of_ns is not None else time.time_ns()) < closing:
+        return denied("BENCHMARK_SESSION_NOT_COMPLETE")
+    ft = sdk if sdk is not None else load_vendor_sdk()
+    if ft is None:
+        return denied(MOOMOO_SDK_MISSING)
+    ctx = None
+    raw = {}
+    try:
+        ctx = open_quote_context(ft, host=host, port=port)
+        if ctx is None:
+            return denied(OPEND_UNAVAILABLE)
+        bound_sync_queries(ctx)
+        ret, data, page = ctx.request_history_kline("US.SPY", start=session_date, end=session_date,
+            ktype=ft.KLType.K_DAY, autype=ft.AuType.NONE, max_count=2, extended_time=False)
+        prices = _snapshot_rows(data)
+        raw["prices"] = prices
+        if ret != ft.RET_OK or page is not None or len(prices) != 1:
+            return dict(denied("BENCHMARK_PRICES_INCOMPLETE"), raw=raw)
+        bar = prices[0]
+        if bar.get("code") != "US.SPY" or str(bar.get("time_key", "")).split(" ")[0] != session_date:
+            return dict(denied("BENCHMARK_IDENTITY_INVALID"), raw=raw)
+        ret, data = ctx.get_rehab("US.SPY")
+        if ret != ft.RET_OK or data is None:
+            return dict(denied("ADJUSTMENTS_UNVERIFIED"), raw=raw)
+        if not isinstance(data, (list, dict)) and not (hasattr(data, "to_dict") and hasattr(data, "columns")):
+            return dict(denied("ADJUSTMENTS_SCHEMA_INVALID"), raw=raw)
+        if hasattr(data, "columns") and not {"ex_div_date", "per_cash_div", "split_ratio"}.issubset(set(data.columns)):
+            return dict(denied("ADJUSTMENTS_SCHEMA_INVALID"), raw=raw)
+        source_records = data.to_dict(orient="records") if hasattr(data, "to_dict") else (data if isinstance(data, list) else [data])
+        if any(not isinstance(row, dict) for row in source_records):
+            return dict(denied("ADJUSTMENTS_SCHEMA_INVALID"), raw=raw)
+        # NaN is the SDK no-component sentinel; infinity is malformed, never no action.
+        if any(Decimal(str(row[key])).is_infinite() for row in source_records
+               for key in ("per_cash_div", "split_ratio", "split_base", "split_ert", "join_base", "join_ert",
+                           "per_share_div_ratio", "per_share_trans_ratio", "allotment_ratio", "stk_spo_ratio",
+                           "spin_off_ratio", "spin_off_base", "spin_off_ert") if row.get(key) is not None):
+            return dict(denied("ADJUSTMENTS_UNVERIFIED"), raw=raw)
+        adjustments = _snapshot_rows(data)
+        raw["adjustments"] = adjustments
+        if len(adjustments) > 4096:
+            return dict(denied("ADJUSTMENTS_TRUNCATED"), raw=raw)
+
+        def number(value, default=None):
+            if value is None:
+                return default
+            parsed = Decimal(str(value))
+            return parsed if parsed.is_finite() else default
+
+        opening, close = number(bar.get("open")), number(bar.get("close"))
+        if opening is None or close is None or opening <= 0 or close <= 0:
+            return dict(denied("BENCHMARK_PRICE_INVALID"), raw=raw)
+        actions = []
+        for action in adjustments:
+            when = str(action.get("ex_div_date", ""))[:10]
+            date.fromisoformat(when)
+            if when != session_date:
+                continue
+            unsupported = any(number(action.get(key), Decimal(0)) != 0 for key in (
+                "per_share_div_ratio", "per_share_trans_ratio", "allotment_ratio", "stk_spo_ratio",
+                "spin_off_ratio", "spin_off_base", "spin_off_ert"))
+            if "per_cash_div" not in action or "split_ratio" not in action:
+                return dict(denied("ADJUSTMENTS_UNVERIFIED"), raw=raw)
+            cash = number(action.get("per_cash_div"))
+            split = number(action.get("split_ratio"))
+            exact_split = Fraction(split) if split is not None else None
+            for numerator_key, denominator_key in (("split_base", "split_ert"), ("join_base", "join_ert")):
+                numerator, denominator = number(action.get(numerator_key)), number(action.get(denominator_key))
+                if numerator or denominator:
+                    if numerator is None or denominator is None or numerator <= 0 or denominator <= 0:
+                        return dict(denied("ADJUSTMENTS_UNVERIFIED"), raw=raw)
+                    pair = Fraction(numerator) / Fraction(denominator)
+                    if exact_split is not None and abs(exact_split - pair) > abs(pair) / 10**12:
+                        return dict(denied("ADJUSTMENTS_CONFLICT"), raw=raw)
+                    exact_split = pair
+            # Only a verified nontrivial component establishes the complementary
+            # NaN/null as a documented no-dividend/no-split value.
+            if cash is None and (exact_split is None or exact_split == 1):
+                return dict(denied("ADJUSTMENTS_UNVERIFIED"), raw=raw)
+            if exact_split is None and (cash is None or cash <= 0):
+                return dict(denied("ADJUSTMENTS_UNVERIFIED"), raw=raw)
+            cash = cash if cash is not None else Decimal(0)
+            exact_split = exact_split if exact_split is not None else Fraction(1)
+            if unsupported or cash < 0 or exact_split <= 0 or (cash and exact_split != 1):
+                return dict(denied("UNSUPPORTED_CORPORATE_ACTION"), raw=raw)
+            multiplier = 1 / exact_split
+            actions.append(dict(date=when, cash_dividend=str(cash), share_multiplier=decimal_string(multiplier),
+                                share_multiplier_ratio=[str(multiplier.numerator), str(multiplier.denominator)]))
+        return dict(ready=True, reason=None, bar=dict(date=session_date, open=str(opening), close=str(close)),
+                    actions=actions, adjustments_complete=True, raw=raw,
+                    source="MOOMOO_OPEND_RAW_DAY_AND_REHAB")
+    except (Exception,) as exc:  # no raw provider text, credentials or trade fallback
+        return dict(denied("BENCHMARK_PROVIDER_" + type(exc).__name__), raw=raw)
+    finally:
+        if ctx is not None:
+            _close_quote_context(ctx)
+
+
 def sdk_available() -> bool:
     """True when the vendor quote SDK imports. Never treated as a tick."""
 
@@ -216,10 +339,33 @@ def open_quote_context(ft: Any, *, host: str, port: int,
     deadline = time.monotonic() + ready_timeout
     while time.monotonic() < deadline:
         if str(ctx.status) == "READY":
+            bound_sync_queries(ctx)
             return ctx
         time.sleep(0.05)
     _close_quote_context(ctx)
     return None
+
+
+def bound_sync_queries(ctx: Any) -> None:
+    """Make synchronous calls fail instead of spinning forever on a connection that can no longer send.
+
+    After a failed reconnect the SDK closes its socket without resetting the status, which stays CONNECTED;
+    its own reconnect then refuses to run and every synchronous call waits, unbounded by default, for a
+    connection that never becomes READY. Observed 2026-10-19..22: the feed thread blocked inside
+    get_market_snapshot, so neither the poll-stall reconnect nor anything else ran again.
+    """
+
+    setter = getattr(ctx, "set_sync_query_connect_timeout", None)
+    if not callable(setter):
+        return
+    try:
+        from market_platform_foundation.market_data.live_config import moomoo_sync_query_timeout_seconds
+    except ImportError:  # standalone tool run without src on the path
+        import os
+
+        setter(float(os.environ.get("IMP_MOOMOO_SYNC_QUERY_TIMEOUT_SEC", "10")))
+        return
+    setter(moomoo_sync_query_timeout_seconds())
 
 
 class OpendQuoteKlineSession:
