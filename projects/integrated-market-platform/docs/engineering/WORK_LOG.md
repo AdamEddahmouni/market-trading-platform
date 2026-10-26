@@ -1,5 +1,46 @@
 # IMP Work Log
 
+## 2026-10-26 — Rebuild step 9: AI Journal budget-guard fix
+
+Owner approved the bounded step 9 plan on 2026-10-26 under the recorded rebuild
+order (owner decision 9). Scope is the journal guard only; timeout behavior,
+scheduling, backend/API/model/UI code and step 10 are unchanged.
+
+**Root cause.** `collector/RUN_JOURNAL.py` computed the paid-request reserve from
+`ai.budget` unconditionally. The local provider correctly reports no paid budget
+(`budget: null`, runtime `LOCAL_MODEL`), so the script read zero requests left and
+skipped every run with `BUDGET_GUARD_0_REQUESTS_LEFT` even while the engine was
+`AVAILABLE`.
+
+**Fix.** The guard is now engine-aware. An available `LOCAL_MODEL` proceeds
+without a paid-budget check. A `PAID_API` engine keeps the six-request reserve
+and fails closed on a missing, non-object or malformed budget; an unknown
+runtime fails closed. Receipts now record `guard` (`allowed`, `basis`,
+`requests_left`, `reason`). The three symbols, preview/run/action-decision
+endpoints, 600-second wait, receipt location, disable file and non-executing
+behavior are unchanged. For a local engine, `budget_before` and `budget_after`
+remain null.
+
+`collector/RUN_JOURNAL.py` and the description source in
+`collector/REGISTER_JOURNAL_TASK.ps1` are operator files outside Git. The
+disabled `IMP-AI-Journal` task was not re-registered, enabled or started; its
+live description and last-run metadata are unchanged until the approved release
+re-registration.
+
+**Validation.** Offline harness under
+`destination-tests/20261026-ai-journal-guard` (outside Git): 42/42 cases passed,
+covering every guard row, the 6/5 boundary, missing/non-object/malformed paid
+budgets, unknown runtime, and full `main()` simulations for local, paid-low,
+paid-sufficient, unavailable, invalid-budget and unknown-runtime. Receipts were
+written only under temporary SSD/HERE paths; no handoff, order or execution
+endpoint was called, and `urllib.request.urlopen` was never reached. The
+operator script compiled in memory and the registration script parsed without
+execution. No service, model, provider or real state database was used.
+
+No live local-engine journal run, no claim that a symbol completes within 600
+seconds or the 45-minute task limit, and no operational acceptance. Changes are
+uncommitted.
+
 ## 2026-10-26 — Rebuild step 8: continuous Paper evaluation report
 
 Owner explicitly approved the plan from step 7 base `59838c64`. Built explicit

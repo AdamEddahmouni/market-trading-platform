@@ -102,8 +102,14 @@ positions, $75k total, $2k daily loss stop, long only, SMA stop 20 × 1m
     collection stays off-limits, and moving the store to a faster disk is an
     open owner decision for the release.
   - See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#storage-contention).
-- **The AI Journal can never run**: its guard checks the paid request budget
-  (zero by owner choice) even when the free local engine is available.
+- **AI Journal paid guard fixed locally, not yet live-verified**: the disabled
+  `IMP-AI-Journal` operator script no longer treats the local engine's absent
+  paid budget as zero requests left. An available local engine proceeds; a paid
+  engine keeps the six-request reserve and fails closed on missing, malformed or
+  unknown evidence. The script is outside Git and the task remains disabled and
+  was not re-registered. A live local-engine journal run and completion within
+  the 600-second per-symbol wait and 45-minute task limit remain release
+  acceptance.
 - **End-of-day flatten gaps**: it is skipped when the provider is unhealthy,
   and it flattens every long equity position, including ones opened by hand.
 - **Forecast not trained**: 10 of the 60 holdout samples needed per symbol;
@@ -146,6 +152,8 @@ cost $0.38. It is on `claude/switchable-ai-20261024`, **not deployed**.
 
 **Rebuild step 8 (2026-10-26).** The owner approved implementation of the continuous Paper evaluation report: fixed and covered-session day 10/day 20 scorecards, completed position episodes, SPY total return, gap reporting, cost accounting and immutable exports. See [Paper performance evaluation](../architecture/PAPER_PERFORMANCE_EVALUATION.md). Offline verification is recorded in the current work-log entry. Not deployed or activated; services, tasks and paid AI remain off by instruction.
 
+**Rebuild step 9 (2026-10-26).** The AI Journal budget guard is engine-aware: an available free local model is no longer blocked by the zero paid-request budget, while a paid engine keeps the existing six-request reserve and fails closed on a missing, malformed or unknown budget/runtime. Receipts record the guard basis. The operator files are outside Git; the disabled `IMP-AI-Journal` task was not re-registered or started, and its schedule, action, 45-minute limit and timeout behavior are unchanged. Offline validation (42/42 cases, including full `main()` simulations) is recorded in the current work-log entry and the external `destination-tests/20261026-ai-journal-guard` evidence. No live run, service, paid call or real state-database access; not deployed.
+
 **Rebuild step 7 (2026-10-25).** Selective overnight holds and close-out fixes
 are implemented on `claude/overnight-holds-20261025`, based on `a550c22c`.
 The owner's caps are 5 positions / $25,000 / 5 trading sessions, including
@@ -170,10 +178,12 @@ close-out skipped shorts
 Live stays off. It is on `claude/short-selling-20261025`, **not deployed**, and
 needs a new short-enabled Paper account at the release.
 
-**Next.** The rebuild order agreed with the owner (data-flow watchdog,
-database locking, opportunity-engine shortlist, automatic restart, switchable
-AI, short selling, selective overnight holds, evaluation report, journal fix,
-then one approved release) is in
+**Next.** Rebuild step 9 is complete locally and remains uncommitted. Step 10
+is the existing documented next item: fold in the held pull requests, then one
+release with the owner's deploy approval and a restart. The rebuild order agreed
+with the owner (data-flow watchdog, database locking, opportunity-engine
+shortlist, automatic restart, switchable AI, short selling, selective overnight
+holds, evaluation report, journal fix, then one approved release) is in
 [Owner decisions 2026-10-23](OWNER_DECISIONS_20261023.md#build-order-agreed-for-the-rebuild).
 Live execution remains **OFF**.
 
