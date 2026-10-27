@@ -695,5 +695,67 @@ class LocalLauncherTests(unittest.TestCase):
                 self.assertIn(phrase, docs)
 
 
+class StoreVerifyReadinessTests(unittest.TestCase):
+    """2026-10-27: readiness ran out while the API read the whole store, the launcher rolled back, and the next
+    start began the same scan. A visibly running scan now pauses the readiness count, up to a cap."""
+
+    def controller(self, root: Path, fake: FakeSystem, verifying, clock=None, **kwargs) -> PlatformController:
+        return PlatformController(root=root, system=fake, environ={}, readiness_attempts=2,
+                                  python_runtime_probe=always_usable, store_verifying=verifying,
+                                  clock=clock or (lambda: 0.0), **kwargs)
+
+    def test_a_running_scan_pauses_the_readiness_count_until_the_platform_answers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            polls = {"count": 0}
+
+            def verifying() -> bool:
+                polls["count"] += 1
+                if polls["count"] == 50:  # the scan ends and the API answers
+                    fake.ready = {"http://127.0.0.1:8766/context": True, "http://127.0.0.1:5173/": True}
+                return True
+
+            controller = self.controller(root, fake, verifying)
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(controller.start(open_browser=False), 0)
+            self.assertEqual(fake.terminated, [])
+
+    def test_the_wait_is_capped_and_then_the_usual_rollback_applies(self) -> None:
+        from tools.platform.local_launcher import VERIFY_WAIT_CAP_SECONDS
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            now = {"value": 0.0}
+
+            def sleep(seconds: float) -> None:
+                now["value"] += 60.0
+
+            fake.sleep = sleep  # type: ignore[method-assign]
+            controller = self.controller(root, fake, lambda: True, clock=lambda: now["value"])
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(controller.start(open_browser=False), 1)
+            self.assertGreaterEqual(now["value"], VERIFY_WAIT_CAP_SECONDS)
+            self.assertEqual(fake.terminated, [1002, 1001, 1000])
+
+    def test_the_status_file_next_to_the_configured_store_is_what_counts(self) -> None:
+        from market_platform_foundation.local_state import integrity_receipt as receipts
+        import time as clock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Path(tmp) / "state" / "imp-state.sqlite3"
+            store.parent.mkdir()
+            controller = PlatformController(root=Path(tmp), system=FakeSystem(),
+                                            environ={"IMP_STATE_DIR": str(store.parent)})
+            self.assertFalse(controller._store_verification_running())
+            receipts.status_path(store).write_text(json.dumps(
+                {"state": receipts.VERIFYING, "heartbeat_epoch": clock.time()}), encoding="utf-8")
+            self.assertTrue(controller._store_verification_running())
+            receipts.status_path(store).write_text(json.dumps(
+                {"state": receipts.VERIFYING, "heartbeat_epoch": clock.time() - 600}), encoding="utf-8")
+            self.assertFalse(controller._store_verification_running())  # a dead checker's stale heartbeat
+
+
 if __name__ == "__main__":
     unittest.main()

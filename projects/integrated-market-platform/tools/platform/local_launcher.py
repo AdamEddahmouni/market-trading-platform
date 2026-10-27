@@ -38,6 +38,10 @@ BACKEND_RUNTIME_IMPORT = "import sklearn"
 PLATFORM_PORTS = ((API_HOST, API_PORT), (UI_HOST, UI_PORT), (CONTROL_HOST, CONTROL_PORT))
 PORT_RELEASE_ATTEMPTS = 40
 PORT_RELEASE_INTERVAL_SECONDS = 0.25
+# While the API's whole-store integrity check is visibly running (a fresh heartbeat in
+# <store>.verify-status.json), readiness polls are not spent; the wait is capped here instead. A slow disk then
+# delays the start rather than ending in a rollback that starts the same check again (2026-10-27).
+VERIFY_WAIT_CAP_SECONDS = 3 * 3600
 
 
 class LauncherError(RuntimeError):
@@ -374,6 +378,8 @@ class PlatformController:
         readiness_interval_seconds: float = 0.5,
         python_runtime_probe: Callable[[Path], bool] | None = None,
         profile: str = "default",
+        store_verifying: Callable[[], bool] | None = None,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.root = root.resolve()
         self.system = system or WindowsSystem()
@@ -383,6 +389,23 @@ class PlatformController:
         self.readiness_interval_seconds = max(0.0, float(readiness_interval_seconds))
         self.state_path = self.root / STATE_RELATIVE_PATH
         self._python_runtime_probe = backend_python_has_runtime if python_runtime_probe is None else python_runtime_probe
+        self._store_verifying = self._store_verification_running if store_verifying is None else store_verifying
+        self.clock = clock
+
+    def _store_path(self) -> Path:
+        # The API's own resolution (local_state.paths): IMP_STATE_DIR, else the checkout's .local directory.
+        directory = self.environ.get("IMP_STATE_DIR")
+        return (Path(directory).expanduser() if directory else self.root / ".local") / "imp-state.sqlite3"
+
+    def _store_verification_running(self) -> bool:
+        source = str(self.root / "src")
+        if source not in sys.path and Path(source).is_dir():
+            sys.path.insert(0, source)
+        try:
+            from market_platform_foundation.local_state.integrity_receipt import verification_in_progress
+        except ImportError:
+            return False
+        return verification_in_progress(self._store_path()) is not None
 
     def _process_alive(self, pid: int) -> bool:
         return self.system.process_alive(pid)
@@ -441,12 +464,21 @@ class PlatformController:
         return self.system.url_ready(API_URL) and self.system.url_ready(UI_URL)
 
     def _wait_until_ready(self) -> bool:
-        for attempt in range(self.readiness_attempts):
+        attempt, verify_deadline = 0, None
+        while True:
             if self._both_ready():
                 return True
-            if attempt + 1 < self.readiness_attempts:
-                self.system.sleep(self.readiness_interval_seconds)
-        return False
+            if self._store_verifying():
+                if verify_deadline is None:
+                    verify_deadline = self.clock() + VERIFY_WAIT_CAP_SECONDS
+                    print("Waiting: the state store's integrity check is running; readiness polls are paused.")
+                if self.clock() < verify_deadline:
+                    self.system.sleep(self.readiness_interval_seconds)
+                    continue
+            attempt += 1
+            if attempt >= self.readiness_attempts:
+                return False
+            self.system.sleep(self.readiness_interval_seconds)
 
     def _validate_prerequisites(self) -> tuple[Path, str]:
         backend_entrypoint = self.root / "tools/ui1/run_ui_api.py"

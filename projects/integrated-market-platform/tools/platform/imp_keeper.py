@@ -15,7 +15,12 @@ Every ``TICK_SECONDS`` it looks at the three in dependency order and brings back
    block that has not expired.
 3. The platform: ``RUN_IMP.py start``, which builds the platform's environment itself. Restarted when the API
    stops answering, or when its own feed watchdog reports the Moomoo feed unrecoverable while OpenD is healthy
-   (only a fresh process clears a wedged SDK session).
+   (only a fresh process clears a wedged SDK session). A platform that does not answer while a whole-store
+   integrity check is visibly running (local_state/integrity_receipt.py) is waited for, not restarted: a restart
+   would only start the same check again (2026-10-27).
+4. The store: once per night, inside ``STORE_VERIFY_WINDOW`` (US/Eastern), when the verified-store receipt is
+   missing, invalid or older than ``STORE_VERIFY_FRESH_SECONDS``, tools/platform/verify_state_store.py checks the
+   whole store read-only and renews the receipt, so a daytime restart only checks the critical tables.
 
 Every restart is bounded: a backoff between tries, a few tries per window, then a cool-off and a fresh
 allowance. Nothing loops tightly and nothing gives up for good. Every action and its outcome goes to the
@@ -54,6 +59,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from tools.platform.local_launcher import VERIFY_WAIT_CAP_SECONDS  # noqa: E402
 from tools.platform.restart_log import RestartLog, report  # noqa: E402
 
 STATE_SCHEMA = "imp-keeper-state/1.0.0"
@@ -68,7 +74,8 @@ OPEND_LOGIN_WAIT_SECONDS = 240
 OPEND_LOGIN_POLL_SECONDS = 10
 PLATFORM_FAILURES_BEFORE_RESTART = 3
 PLATFORM_FEED_CHECK_SECONDS = 60
-PLATFORM_START_TIMEOUT_SECONDS = 900
+# RUN_IMP.py start may legitimately wait out a whole-store integrity check; killing it then restarts the check.
+PLATFORM_START_TIMEOUT_SECONDS = max(900, VERIFY_WAIT_CAP_SECONDS + 300)
 PLATFORM_STOP_TIMEOUT_SECONDS = 180
 API_BASE = "http://127.0.0.1:8766"
 COLLECTOR_CONFIRM_SECONDS = 15
@@ -82,6 +89,12 @@ COOL_OFF_SECONDS = 3600
 ALLOWANCES = {"OPEND": (4, 6 * 3600), "COLLECTOR": (6, 3600), "PLATFORM": (4, 3600)}
 # The PF-01 supervisor clears this latch by itself after its expiry (news/supervision.py); the others stay manual.
 EXPIRING_LATCH = "PERSISTENT_CHILD_FAILURE"
+# The nightly whole-store check: (start, end) as (hour, minute) US/Eastern, after the 20:00 close of extended hours
+# and before the 04:00 pre-market.
+STORE_VERIFY_WINDOW = ((20, 15), (3, 45))
+STORE_VERIFY_FRESH_SECONDS = 20 * 3600
+STORE_VERIFY_TIMEOUT_SECONDS = 3 * 3600
+STORE_VERIFY_OUTCOMES = {0: "OK", 2: "INVALIDATED", 3: "BUSY", 4: "STORE_MISSING"}
 NO_WINDOW = int(getattr(subprocess, "CREATE_NO_WINDOW", 0) or 0)
 _COLLECTOR_COMMAND = re.compile(r"RUN_COLLECTOR\.py\"?\s+run\b", re.IGNORECASE)
 
@@ -183,6 +196,9 @@ class Operations(Protocol):
     def platform_health(self) -> dict[str, Any] | None: ...
     def platform_start(self, *, stop_first: bool) -> int: ...
     def paper_status(self) -> dict[str, Any] | None: ...
+    def store_verifying(self) -> bool: ...
+    def store_receipt_age(self) -> float | None: ...
+    def store_verify_spawn(self) -> Any: ...
     def sleep(self, seconds: float) -> None: ...
 
 
@@ -233,7 +249,9 @@ def _fresh_state() -> dict[str, Any]:
             "allowances": {name: {} for name in ALLOWANCES},
             "opend": {"failures": 0, "last_check": 0.0, "healthy": None, "down_since": None, "cause": None},
             "collector": {"down_since": None, "waiting_for": None, "disabled": False},
-            "platform": {"failures": 0, "down_since": None, "last_feed_check": 0.0, "feed_wait_logged": False},
+            "platform": {"failures": 0, "down_since": None, "last_feed_check": 0.0, "feed_wait_logged": False,
+                         "verify_wait_logged": False},
+            "store_verify": {"window": None, "started_at": None, "pid": None},
             "paper_watch": None}
 
 
@@ -245,6 +263,7 @@ class Keeper:
         self.state = _fresh_state() if dry_run else self._load()
         self.started = False
         self.reboot_at: float | None = None
+        self._verify_process: Any = None
         self.last_seen: float | None = None
         # A dry run reports what one failed observation would lead to; the real loop waits for the full count.
         self.opend_threshold = 1 if dry_run else OPEND_FAILURES_BEFORE_RESTART
@@ -312,6 +331,7 @@ class Keeper:
             summary["collector"] = self._collector(self.clock())
             summary["platform"] = self._platform(self.clock(), summary["opend_healthy"])
             self._paper(self.clock())
+            summary["store_verify"] = self._store_verify(self.clock())
             self.last_seen = None  # only the first pass inherits the time the keeper was away
         self.state["heartbeat_epoch"] = self.clock()
         self._save()
@@ -460,9 +480,17 @@ class Keeper:
                 return "ANSWERING"
             down_since = now
         else:
-            s["failures"] = int(s.get("failures") or 0) + 1
             if s.get("down_since") is None:
                 s["down_since"] = self._down_since(now)
+            if self.ops.store_verifying():
+                # The API (or the opener ahead of it) is reading the whole store; it answers when that ends.
+                if not s.get("verify_wait_logged"):
+                    self.log.record("PLATFORM", "WAITING", cause="NOT_ANSWERING", outcome="WAITING_FOR_STORE_VERIFY")
+                    s["verify_wait_logged"] = True
+                s["failures"] = 0
+                return "WAITING_FOR_STORE_VERIFY"
+            s["verify_wait_logged"] = False
+            s["failures"] = int(s.get("failures") or 0) + 1
             if s["failures"] < self.platform_threshold:
                 return "NOT_ANSWERING"
             cause, down_since = "NOT_ANSWERING", float(s["down_since"])
@@ -498,6 +526,49 @@ class Keeper:
                         waited_seconds=round(now - float(watch["since"]), 1), **detail)
         self.state["paper_watch"] = None
 
+    # ------------------------------------------------------------------ store integrity (nightly)
+    def _store_verify(self, now: float) -> str:
+        s = self.state.setdefault("store_verify", {"window": None, "started_at": None, "pid": None})
+        if self._verify_process is not None:
+            code = self._verify_process.poll()
+            elapsed = now - float(s.get("started_at") or now)
+            if code is None:
+                if elapsed < STORE_VERIFY_TIMEOUT_SECONDS:
+                    return "RUNNING"
+                try:
+                    self._verify_process.kill()
+                except OSError:
+                    pass
+                outcome = "TIMED_OUT"
+            else:
+                outcome = STORE_VERIFY_OUTCOMES.get(int(code), "FAILED")
+            self.log.record("STORE", "VERIFY", cause="NIGHTLY", outcome=outcome, exit_code=code,
+                            elapsed_seconds=round(elapsed, 1), pid=s.get("pid"))
+            self._verify_process = None
+            s.update(started_at=None, pid=None)
+            return outcome
+        window = store_verify_window(now)
+        if window is None:
+            return "OUTSIDE_WINDOW"
+        if s.get("window") == window:
+            return "DONE_THIS_WINDOW"
+        age = self.ops.store_receipt_age()
+        if age is not None and age < STORE_VERIFY_FRESH_SECONDS:
+            return "RECEIPT_FRESH"
+        if self.dry_run:
+            return "DRY_RUN_NOT_STARTED"
+        s["window"] = window  # at most one try per night, whatever its outcome
+        try:
+            self._verify_process = self.ops.store_verify_spawn()
+        except OSError as exc:
+            self.log.record("STORE", "VERIFY", cause="NIGHTLY", outcome="SPAWN_FAILED", error=type(exc).__name__,
+                            message=str(exc))
+            return "SPAWN_FAILED"
+        s.update(started_at=now, pid=getattr(self._verify_process, "pid", None))
+        self.log.record("STORE", "VERIFY_STARTED", cause="RECEIPT_STALE" if age is None else "RECEIPT_AGING",
+                        outcome="RUNNING", pid=s["pid"], receipt_age_seconds=None if age is None else round(age, 1))
+        return "STARTED"
+
     # ------------------------------------------------------------------ loop
     def run(self, stop: threading.Event | None = None) -> int:
         stop = stop or threading.Event()
@@ -512,6 +583,31 @@ class Keeper:
             stop.wait(TICK_SECONDS)
         self.log.record("KEEPER", "STOPPED", cause="STOP_FILE" if self.paths.stop_file.exists() else "STOP_REQUESTED")
         return 0
+
+
+def _eastern(now: float):
+    from datetime import datetime
+
+    try:
+        from zoneinfo import ZoneInfo
+
+        return datetime.fromtimestamp(now, ZoneInfo("America/New_York"))
+    except Exception:  # noqa: BLE001 - no tz database: this PC keeps Eastern time
+        return datetime.fromtimestamp(now)
+
+
+def store_verify_window(now: float) -> str | None:
+    """The evening date (YYYY-MM-DD) of the nightly window ``now`` falls in, or None outside it."""
+    from datetime import timedelta
+
+    local = _eastern(now)
+    (start_hour, start_minute), (end_hour, end_minute) = STORE_VERIFY_WINDOW
+    minutes = local.hour * 60 + local.minute
+    if minutes >= start_hour * 60 + start_minute:
+        return local.date().isoformat()
+    if minutes < end_hour * 60 + end_minute:
+        return (local.date() - timedelta(days=1)).isoformat()
+    return None
 
 
 def paper_outcome(status: dict[str, Any] | None, *, since: float) -> tuple[str | None, dict[str, Any]]:
@@ -705,6 +801,44 @@ class WindowsOperations:
         except OSError:
             return -2
         return int(result.returncode)
+
+    def _store(self) -> Path | None:
+        directory = self.paths.state_directory()
+        if directory is None:
+            return None
+        if str(self.paths.app / "src") not in sys.path:
+            sys.path.insert(0, str(self.paths.app / "src"))
+        return directory / "imp-state.sqlite3"
+
+    def store_verifying(self) -> bool:
+        store = self._store()
+        if store is None:
+            return False
+        from market_platform_foundation.local_state.integrity_receipt import verification_in_progress
+
+        return verification_in_progress(store) is not None
+
+    def store_receipt_age(self) -> float | None:
+        """Seconds since the whole store last checked ok, while that receipt still stands; None otherwise."""
+        store = self._store()
+        if store is None:
+            return None
+        from market_platform_foundation.local_state import integrity_receipt as receipts
+
+        receipt = receipts.read_receipt(store)
+        if receipt is None or receipts.receipt_problem(store, receipt=receipt) is not None:
+            return None
+        return max(0.0, time.time() - float(receipt["checked_at_epoch"]))
+
+    def store_verify_spawn(self) -> Any:
+        store = self._store()
+        if store is None:
+            raise FileNotFoundError("STATE_DIRECTORY_UNKNOWN")
+        script = self.paths.app / "tools" / "platform" / "verify_state_store.py"
+        return subprocess.Popen([str(self.paths.python(windowless=True)), "-B", str(script), "--store", str(store),
+                                 "--label", "imp-keeper-nightly"], cwd=str(self.paths.app), env=self._child_env(),
+                                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                creationflags=NO_WINDOW)
 
     def sleep(self, seconds: float) -> None:
         time.sleep(seconds)

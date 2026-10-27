@@ -11,6 +11,9 @@ from unittest.mock import patch
 from market_platform_foundation.local_state.connection import LocalStateConnection
 from market_platform_foundation.ui_api.screener_news import ScreenerNewsService
 from market_platform_foundation.ui_api.screener_squeeze_sources import BackgroundCache
+from market_platform_foundation.local_state.integrity_receipt import SIDECAR_SUFFIXES
+
+NOT_A_DATABASE = ('-wal', '-shm') + SIDECAR_SUFFIXES  # SQLite's and the integrity receipt's own files
 
 NOW = 1791867600.0  # outside US regular trading hours
 RAW = {'headline': 'AAPL announces update', 'url': 'https://example.test/a', 'tickers': ['AAPL'],
@@ -139,7 +142,7 @@ class DurableCollectionTests(unittest.TestCase):
             self.assertEqual(collector.status()['state'], 'BLOCKED')
             self.assertEqual(collector.status()['reason'], 'COLLECTION_STORAGE_RETRY_LIMIT_EXCEEDED')
         self.assertEqual(self.calls, [])
-        self.assertEqual(sorted(p.name for p in self.path.parent.iterdir() if not p.name.endswith(('-wal', '-shm'))),
+        self.assertEqual(sorted(p.name for p in self.path.parent.iterdir() if not p.name.endswith(NOT_A_DATABASE)),
                          ['imp-state.sqlite3'])
 
     def test_restart_gap_is_explicit_and_only_one_catchup_attempt_runs(self):

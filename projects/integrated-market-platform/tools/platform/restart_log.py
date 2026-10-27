@@ -18,7 +18,8 @@ from typing import Any, Callable, Iterable
 SCHEMA = "imp-restart-log/1.0.0"
 MAX_BYTES = 5 * 1024 * 1024
 KEEP = 4
-COMPONENTS = ("PC", "KEEPER", "OPEND", "COLLECTOR", "PLATFORM", "PAPER_CONTROLLER")
+# STORE: the keeper's nightly whole-store integrity check (tools/platform/verify_state_store.py).
+COMPONENTS = ("PC", "KEEPER", "OPEND", "COLLECTOR", "PLATFORM", "PAPER_CONTROLLER", "STORE")
 _DETAIL_CHARS = 300
 
 

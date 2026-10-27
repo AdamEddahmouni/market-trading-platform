@@ -16,6 +16,7 @@ from unittest.mock import MagicMock, patch
 
 from market_platform_foundation.local_state.connection import (LocalStateConnection, lock_contention_error,
                                                                transient_storage_error)
+from market_platform_foundation.local_state.integrity_receipt import receipt_path
 from market_platform_foundation.market_data.persistence import (BUSY_TIMEOUT_MS, WAL_SIZE_LIMIT_BYTES,
                                                                 MarketStreamWriter)
 from market_platform_foundation.news.collection import RETRY_LIMIT, CollectionJob, NewsCollector
@@ -204,7 +205,10 @@ class SupervisedIntegrityTests(StoreCase):
         return check.called
 
     def test_supervised_child_skips_the_whole_store_scan_and_others_keep_it(self):
-        self.assertTrue(self.opened_with_check(None))
+        receipt_path(self.path).unlink(missing_ok=True)  # setUp's own open recorded one
+        self.assertTrue(self.opened_with_check(None))  # no receipt: the whole store is scanned
+        # A receipt from this boot: only the critical tables (test_store_verify_receipt.py covers the policy).
+        self.assertFalse(self.opened_with_check(None))
         self.assertFalse(self.opened_with_check('owner-1'))
         self.assertTrue(self.opened_with_check('owner-1', verify=True))
 

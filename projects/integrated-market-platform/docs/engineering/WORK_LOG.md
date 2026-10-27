@@ -1,5 +1,48 @@
 # IMP Work Log
 
+## 2026-10-27 — Restart at any time: one whole-store integrity scan per boot
+
+**Problem.** The Lane 01 deploy at 14:02 ET became a multi-hour outage. Every
+`LocalStateConnection` open ran a full `PRAGMA integrity_check` of the 9.8 GB
+store on the D: hard drive, which takes 15–80 min while the collector writes.
+The API alone opens the store up to three times.
+- `RUN_IMP.py`'s readiness (about 15 min) and the keeper's 900 s start timeout
+  ran out.
+- Each rollback or retry started the scan again, and concurrent openers each
+  scanned.
+
+**Fix.**
+- A full scan that returns `ok` writes a verified-store receipt
+  (`local_state/integrity_receipt.py`). It is trusted only for the same file,
+  the same boot and at most 48 h.
+- An open that trusts it checks the trading-critical tables with
+  `PRAGMA integrity_check(<table>)`.
+- Any failure, including `SQLITE_CORRUPT`/`NOTADB` at run time, invalidates the
+  receipt and fails closed.
+- Full scans are single-flight per store (an OS lock), with a `VERIFYING`
+  heartbeat.
+- The launcher does not spend readiness polls while that heartbeat is fresh (up
+  to 3 h). The keeper does not restart a platform that is waiting on a scan,
+  its start timeout outlasts the wait, and it renews the receipt nightly
+  20:15–03:45 ET with the read-only `tools/platform/verify_state_store.py`.
+- `/state/startup` reports `state_verification`.
+- The collector's start/stop snapshot (outside the repo) uses `max(rowid)`
+  instead of `count(*)`/`GROUP BY` over the stream and news tables.
+
+**Unchanged.** Supervised children skip verification as before, `verify=True`
+still forces the full scan, and no gate, account, policy, capital, cadence, Live
+or paid-AI setting changed.
+
+**Evidence.**
+- Red before, green after: two opens ran 2 full scans and the keeper restarted
+  a platform 1 time during a 20-minute scan (900 s timeout). With the fix:
+  1 scan, 0 restarts, 11,100 s timeout.
+- New and extended tests in `tests/market_data/test_store_verify_receipt.py`,
+  `test_imp_keeper.py` and `test_local_launcher.py`.
+- Three outage tests now ignore the receipt's own sidecar files, as they already
+  ignored `-wal`/`-shm`.
+- Deployment and live timings are in `destination-tests/20261027-store-verify/`.
+
 ## 2026-10-27 — Sprint 1 local slice workload correction after natural verification
 
 After deploying 28ea678b, three natural USD-crypto runs proved sent context bounds and deferred progression, but two exhausted the unchanged 180-second reduction budget with 18/15 initial finalists. First-pass admission now ends at ten distinct finalists in local rolling slices, explicitly deferring the rest through the existing epoch/turn mechanism. Already admitted finalists retain their comparison and validation; no selection/risk threshold, model/provider, cadence, account, arming, capital or output limit changes. A regression first reproduced thirty admitted finalists, then passed with ten admitted/twenty deferred and a disjoint next slice; a manual global run still reaches all thirty. Tests, deployment and runtime outcomes remain separately evidenced in the Sprint 1 full-execution package.

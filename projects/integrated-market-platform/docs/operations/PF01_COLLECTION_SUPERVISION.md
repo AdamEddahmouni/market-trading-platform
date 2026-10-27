@@ -406,14 +406,44 @@ held the only write lock for seconds per commit and gave up after about 30 s.
     `QUEUE_OVERFLOW` gaps.
   - The writer status reports `lock_contention`, `retrying_seconds`,
     `lock_retry_window_seconds` and `last_flush_seconds`.
-- **One integrity scan per supervisor, not per connection.** A full
-  `PRAGMA integrity_check` reads the whole store, about 75 s on the hard drive.
-  - Connections opened inside a supervised child (`IMP_PF01_SUPERVISOR_OWNER`
-    set) skip it, because the supervisor's own connection checked the same file.
-  - The API, the supervisor and an unsupervised `--collect-only` run still
-    check, and still fail closed on corruption.
-  - Trade-off: a child restarted hours after the supervisor started is not
-    re-checked.
+- **One whole-store integrity scan per boot, not per open.** A full
+  `PRAGMA integrity_check` reads the whole store. For the 9.8 GB store on the
+  hard drive that is about 63 s at night and 15–80 min while collecting. It
+  used to run on every open, and on 2026-10-27 that kept the platform down for
+  hours.
+  - A scan that returns `ok` writes `<store>.verified.json`
+    (`local_state/integrity_receipt.py`). A later open trusts that receipt only
+    for the same file (`st_dev`, `st_ino`, no smaller), the same boot, and an
+    age under `IMP_STATE_VERIFY_MAX_AGE_HOURS` (default 48, clamped to 1–168).
+    Otherwise it runs the full scan again.
+  - An open that trusts a receipt still checks the trading-critical tables
+    (`CRITICAL_TABLES`: `schema_meta`, the `paper_*` and `paper_automation_*`
+    tables) with `PRAGMA integrity_check(<table>)`. That takes milliseconds.
+  - Any failure, at open or at run time (`SQLITE_CORRUPT`, `SQLITE_NOTADB`),
+    rewrites the receipt as `INVALIDATED` and fails closed. The next open scans
+    the whole file again.
+  - One full scan runs at a time per store, under the OS lock
+    `<store>.verify.lock`. An opener that waited re-reads the receipt instead of
+    scanning again. While a scan runs, `<store>.verify-status.json` says
+    `VERIFYING`, with a heartbeat every 30 s.
+  - The launcher does not spend readiness polls while that heartbeat is fresh,
+    up to 3 h. The keeper does not restart a platform that is waiting on a scan
+    (`WAITING_FOR_STORE_VERIFY`), and its start timeout outlasts that wait.
+  - The keeper renews the receipt once a night, 20:15–03:45 US/Eastern, when it
+    is missing, invalid or older than 20 h. It runs
+    `tools/platform/verify_state_store.py`, which opens the store read-only, and
+    logs `STORE / VERIFY` in the restart log. The same tool bootstraps a
+    receipt before a release.
+  - Connections inside a supervised child (`IMP_PF01_SUPERVISOR_OWNER` set)
+    still skip verification, because their supervisor's connection verified the
+    store.
+  - Why a boot-bound receipt is safe: a process crash or a Windows sign-out
+    cannot corrupt a WAL store. A power cut or an OS crash is a new boot, so the
+    next open scans the whole file.
+  - Trade-off: damage to a large collection table (market streams, news, AI
+    receipts) that SQLite has not read yet is found by the next boot scan or the
+    nightly scan, not by every open. Trading-critical tables are checked on
+    every open.
 - **Operating rule.** While the collector runs during US hours, do not load
   the store's drive. See
   [Portable workstation](../engineering/PORTABLE_WORKSTATION.md#disk-load-while-collecting).

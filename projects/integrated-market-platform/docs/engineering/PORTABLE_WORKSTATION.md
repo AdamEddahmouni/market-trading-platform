@@ -100,7 +100,21 @@ from 04:00 to 20:00 ET on trading days. The writer now waits out up to
 **Always:**
 - Never scan `market_stream_records` in full (`count(*)`, `GROUP BY symbol`).
 - Use `max(rowid)` (rows are never deleted) and `market_stream_checkpoints`
-  instead.
+  instead. `collector/RUN_COLLECTOR.py` start and stop snapshots do the same
+  since 2026-10-27.
+
+**Restarting the platform while collecting.** A platform start no longer reads
+the whole store. One full integrity scan per boot is recorded in
+`<store>.verified.json`, and later opens check only the trading-critical tables.
+See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md#storage-contention).
+- After a reboot or an invalidated receipt, the first open still scans the
+  whole store: 15–80 min while collecting.
+- The launcher and the keeper wait for that scan instead of restarting it.
+- Before a release, bootstrap the receipt off-hours with
+  `tools/platform/verify_state_store.py --store <store>`. It opens the store
+  read-only.
+- Moving the store to the E: SSD would shorten the post-reboot scan. That is an
+  owner decision and has not been made.
 
 ## Which tree is which
 

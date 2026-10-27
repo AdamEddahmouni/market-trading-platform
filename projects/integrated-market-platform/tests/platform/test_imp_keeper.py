@@ -22,6 +22,20 @@ class Clock:
         return self.value
 
 
+class FakeProcess:
+    pid = 4242
+
+    def __init__(self, ops):
+        self.ops, self.killed = ops, False
+
+    def poll(self):
+        return self.ops.verify_code
+
+    def kill(self):
+        self.killed = True
+        self.ops.calls.append(('store_verify_kill', self.ops.clock.value))
+
+
 class FakeOps:
     """The machine as the keeper sees it. Every action is recorded in ``calls``."""
 
@@ -31,6 +45,19 @@ class FakeOps:
         self.opend_running, self.opend_ok, self.opend_recovers, self.launch_error = True, True, True, None
         self.collector_running, self.collector_stays, self.supervision = True, True, {}
         self.answering, self.health, self.start_code, self.paper = True, {'data_flow': {'state': 'WATCHING'}}, 0, None
+        # The store: no check running, a receipt one minute old, and a nightly check that finishes with ``verify_code``.
+        self.verifying, self.receipt_age, self.verify_code, self.verify_process = False, 60.0, None, None
+
+    def store_verifying(self):
+        return self.verifying
+
+    def store_receipt_age(self):
+        return self.receipt_age
+
+    def store_verify_spawn(self):
+        self.calls.append(('store_verify_spawn', self.clock.value))
+        self.verify_process = FakeProcess(self)
+        return self.verify_process
 
     def boot_epoch(self):
         return self.boot
@@ -365,6 +392,100 @@ class DryRunAndLockTests(KeeperCase):
         self.paths.stop_file.write_text('deploy', encoding='utf-8')
         self.assertEqual(self.keeper().run(), 0)
         self.assertEqual(self.log('KEEPER', 'STOPPED')[0]['cause'], 'STOP_FILE')
+
+
+def eastern_epoch(year, month, day, hour, minute):
+    """The epoch of a US/Eastern wall-clock time, as the keeper reads it (local time without a tz database)."""
+    from datetime import datetime
+    try:
+        from zoneinfo import ZoneInfo
+
+        return datetime(year, month, day, hour, minute, tzinfo=ZoneInfo('America/New_York')).timestamp()
+    except Exception:  # noqa: BLE001
+        return datetime(year, month, day, hour, minute).timestamp()
+
+
+class StoreVerifyTests(KeeperCase):
+    """2026-10-27: a platform start waited out a whole-store scan, the keeper restarted it, and each restart began
+    the scan again. The keeper now waits for a visible scan and renews the receipt off-hours."""
+
+    def at(self, hour, minute, day=27):
+        self.clock.value = eastern_epoch(2026, 10, day, hour, minute)
+
+    def test_the_window_is_after_the_evening_close_and_before_pre_market(self):
+        cases = [((20, 14), None), ((20, 15), '2026-10-27'), ((23, 59), '2026-10-27'), ((12, 0), None)]
+        for (hour, minute), window in cases:
+            self.assertEqual(imp_keeper.store_verify_window(eastern_epoch(2026, 10, 27, hour, minute)), window)
+        self.assertEqual(imp_keeper.store_verify_window(eastern_epoch(2026, 10, 28, 3, 44)), '2026-10-27')
+        self.assertIsNone(imp_keeper.store_verify_window(eastern_epoch(2026, 10, 28, 3, 45)))
+
+    def test_a_stale_receipt_is_renewed_once_per_night_and_the_outcome_is_logged(self):
+        keeper = self.keeper()
+        self.ops.receipt_age = None
+        self.at(20, 10)
+        self.run_ticks(keeper, 5)
+        self.assertEqual(self.ops.actions('store_verify_spawn'), [])  # not before the window
+        self.at(20, 20)
+        self.run_ticks(keeper, 5)
+        self.assertEqual(len(self.ops.actions('store_verify_spawn')), 1)
+        self.assertEqual(self.log('STORE', 'VERIFY'), [])  # still running
+        self.ops.verify_code = 0
+        self.run_ticks(keeper, 3)
+        entry = self.log('STORE', 'VERIFY')[0]
+        self.assertEqual((entry['cause'], entry['outcome'], entry['detail']['exit_code']), ('NIGHTLY', 'OK', 0))
+        self.assertGreater(entry['detail']['elapsed_seconds'], 0)
+        self.run_ticks(keeper, 50)  # the receipt reads stale again: still one try this night
+        self.assertEqual(len(self.ops.actions('store_verify_spawn')), 1)
+        self.at(20, 30, day=28)
+        self.run_ticks(keeper, 1)
+        self.assertEqual(len(self.ops.actions('store_verify_spawn')), 2)  # the next night tries again
+
+    def test_a_fresh_receipt_or_a_pause_starts_nothing(self):
+        keeper = self.keeper()
+        self.at(21, 0)
+        self.ops.receipt_age = 3600.0
+        self.run_ticks(keeper, 5)
+        self.assertEqual(self.ops.actions('store_verify_spawn'), [])
+        self.ops.receipt_age = None
+        self.paths.state_dir.mkdir(parents=True, exist_ok=True)
+        self.paths.paused_file.write_text('deploy', encoding='utf-8')
+        self.run_ticks(keeper, 5)
+        self.assertEqual(self.ops.actions('store_verify_spawn'), [])
+
+    def test_a_check_that_outlives_its_limit_is_stopped_and_logged(self):
+        keeper = self.keeper()
+        self.ops.receipt_age = None
+        self.at(20, 30)
+        keeper.tick()
+        self.clock.value += imp_keeper.STORE_VERIFY_TIMEOUT_SECONDS + 1
+        keeper.tick()
+        self.assertEqual(len(self.ops.actions('store_verify_kill')), 1)
+        self.assertEqual(self.log('STORE', 'VERIFY')[0]['outcome'], 'TIMED_OUT')
+
+    def test_a_dry_run_starts_no_check(self):
+        keeper = self.keeper(dry_run=True)
+        self.ops.receipt_age = None
+        self.at(21, 0)
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(keeper.tick()['store_verify'], 'DRY_RUN_NOT_STARTED')
+        self.assertEqual(self.ops.actions('store_verify_spawn'), [])
+
+    def test_a_platform_reading_the_whole_store_is_waited_for_not_restarted(self):
+        keeper = self.keeper()
+        self.ops.answering, self.ops.verifying = False, True
+        self.run_ticks(keeper, 40)  # twenty minutes of a scan
+        self.assertEqual(self.ops.actions('platform_start'), [])
+        self.assertEqual([e['outcome'] for e in self.log('PLATFORM', 'WAITING')], ['WAITING_FOR_STORE_VERIFY'])
+        self.ops.verifying = False  # the scan ended but the API still does not answer: the usual three checks
+        self.run_ticks(keeper, 2)
+        self.assertEqual(self.ops.actions('platform_start'), [])
+        self.run_ticks(keeper, 1)
+        self.assertEqual(len(self.ops.actions('platform_start')), 1)
+
+    def test_the_start_timeout_outlasts_the_launchers_wait_for_a_scan(self):
+        from tools.platform.local_launcher import VERIFY_WAIT_CAP_SECONDS
+
+        self.assertGreaterEqual(imp_keeper.PLATFORM_START_TIMEOUT_SECONDS, VERIFY_WAIT_CAP_SECONDS + 300)
 
 
 if __name__ == '__main__':

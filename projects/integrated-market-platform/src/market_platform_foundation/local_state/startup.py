@@ -284,6 +284,7 @@ def startup_report(*, live_healthy: bool = False) -> dict[str, Any]:
         "schema_version": SCHEMA_VERSION,
         "state_dir": str(state_dir()),
         "state_error": None,
+        "state_verification": None,
     }
     try:
         repo = open_local_state()
@@ -294,6 +295,8 @@ def startup_report(*, live_healthy: bool = False) -> dict[str, Any]:
         return report
     if repo is None:
         return report
+    # How this process verified the store when it opened it: FULL, RECEIPT, SUPERVISED or SKIPPED.
+    report["state_verification"] = dict(getattr(repo.connection, "verification", None) or {}) or None
     report["schema_version"] = repo.connection.schema_version()
     previous = repo.latest_open_session()
     if previous is None:

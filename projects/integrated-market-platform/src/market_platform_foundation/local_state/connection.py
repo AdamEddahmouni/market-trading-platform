@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import sys
 import threading
 import time
 from pathlib import Path
 from typing import Any
 
+from . import integrity_receipt as receipts
 from .migrations import SchemaVersionError, apply_migrations, current_schema_version
 from .schema import SCHEMA_VERSION
 
@@ -20,6 +22,7 @@ class CorruptStateError(ValueError):
 # SQLite primary result codes a bounded retry can outlast: BUSY, LOCKED, IOERR, CANTOPEN, PROTOCOL.
 _TRANSIENT_SQLITE_CODES = frozenset({5, 6, 10, 14, 15})
 _CONTENTION_SQLITE_CODES = frozenset({5, 6})  # BUSY, LOCKED
+_CORRUPTION_SQLITE_CODES = frozenset({11, 26})  # CORRUPT, NOTADB
 
 # A write that meets a busy neighbour waits this long before the connection reports the contention. The
 # explicit transaction retry below adds the rest of its window; both are bounded and environment-overridable.
@@ -58,6 +61,17 @@ def lock_contention_error(exc: BaseException) -> bool:
         return code & 0xFF in _CONTENTION_SQLITE_CODES
     text = str(exc).lower()
     return text == "not an error" or "locked" in text or "busy" in text
+
+
+def corruption_error(exc: BaseException) -> bool:
+    """True when SQLite reports a damaged file: the store's receipt no longer stands."""
+    if not isinstance(exc, sqlite3.DatabaseError):
+        return False
+    code = getattr(exc, "sqlite_errorcode", None)
+    if code is not None and code != 0:
+        return code & 0xFF in _CORRUPTION_SQLITE_CODES
+    text = str(exc).lower()
+    return "malformed" in text or "not a database" in text
 
 
 def lock_retry_window_seconds(name: str) -> float:
@@ -143,13 +157,23 @@ class _MaterializedCursor:
         self.close()
 
 
+def _checker_label() -> str:
+    return os.environ.get("IMP_STATE_VERIFY_LABEL") or Path(sys.argv[0] if sys.argv and sys.argv[0] else "python").name
+
+
 class LocalStateConnection:
+    """``verify``: None (default) skips the check in a supervised child and otherwise trusts a valid receipt
+    (integrity_receipt.py) after a check of the critical tables, running the full check when there is none;
+    True always runs the full check; False runs none. ``verification`` records which happened."""
+
     def __init__(self, path: Path, *, require_existing: bool = False,
                  expected_identity: tuple[int, int] | None = None, verify: bool | None = None) -> None:
-        # A full integrity_check reads the whole file: about 75 s per open for the 6.7 GB store on a hard drive,
-        # three times per collector child start. The first opener (API, supervisor, unsupervised run) still checks.
-        verify = not verified_by_supervisor() if verify is None else verify
+        # A full integrity_check reads the whole file: about 63 s at night and 15-80 min during collection for the
+        # 9.8 GB store on the D: hard drive (2026-10-27). One full check per boot is recorded in a receipt; a
+        # supervised child still skips it, since its supervisor's connection verified the store moments earlier.
+        supervised = verify is None and verified_by_supervisor()
         self.path = path
+        self.verification: dict[str, Any] = {"mode": "SKIPPED", "reason": None, "elapsed_seconds": 0.0}
         self._lock = threading.RLock()
         # A transaction belongs to one thread. Nested ``with connection.transaction()`` calls on that thread
         # are re-entrant; another thread waits for the outer transaction instead of joining it implicitly.
@@ -173,8 +197,10 @@ class LocalStateConnection:
                 if (stat.st_dev, stat.st_ino) != expected_identity:
                     raise FileNotFoundError('STATE_STORAGE_REPLACED')
             self._configure()
-            if verify:
-                self._verify_or_raise()
+            if supervised:
+                self.verification["mode"] = "SUPERVISED"
+            elif verify is not False:
+                self._verify_store(full=verify is True)
             apply_migrations(self._conn)
         except Exception:
             self._conn.close()
@@ -187,14 +213,72 @@ class LocalStateConnection:
         self._conn.execute(f"PRAGMA busy_timeout={_busy_timeout_ms()}")
 
     def _verify_or_raise(self) -> None:
-        row = self._conn.execute("PRAGMA integrity_check").fetchone()
-        status = str(row[0]) if row is not None else "missing"
+        status = receipts.full_check(self._conn)
         if status != "ok":
             raise CorruptStateError(f"SQLITE_INTEGRITY_FAILED:{status}")
 
+    def _verify_store(self, *, full: bool) -> None:
+        started = time.monotonic()
+        store = self.path.resolve()
+        if not store.is_file():  # nothing on disk to hold a receipt for
+            self._verify_or_raise()
+            self.verification = {"mode": "FULL", "reason": "NOT_A_FILE",
+                                 "elapsed_seconds": round(time.monotonic() - started, 3)}
+            return
+        reason = "FULL_CHECK_REQUESTED" if full else receipts.receipt_problem(store)
+        if reason is None:
+            self._critical_or_raise(store)
+            self.verification = {"mode": "RECEIPT", "reason": None,
+                                 "elapsed_seconds": round(time.monotonic() - started, 3)}
+            return
+        # One full check per store at a time. An opener that waited re-reads the receipt: the check it waited
+        # for usually answers its own question.
+        with receipts.VerifyLock(store):
+            if not full and receipts.receipt_problem(store) is None:
+                self._critical_or_raise(store)
+                self.verification = {"mode": "RECEIPT", "reason": "VERIFIED_WHILE_WAITING",
+                                     "elapsed_seconds": round(time.monotonic() - started, 3)}
+                return
+            checked_at, check_started = time.time(), time.monotonic()
+            with receipts.VerifyHeartbeat(store, label=_checker_label()) as beat:
+                try:
+                    self._verify_or_raise()
+                except Exception as exc:
+                    if isinstance(exc, CorruptStateError) or corruption_error(exc):
+                        receipts.invalidate(store, str(exc), label=_checker_label())
+                    beat.result = str(exc)
+                    raise
+                beat.result = "ok"
+            elapsed = time.monotonic() - check_started
+            try:
+                receipts.write_receipt(store, elapsed_seconds=elapsed, label=_checker_label(), started_at=checked_at)
+            except OSError:
+                reason = f"{reason};RECEIPT_NOT_WRITTEN"
+        self.verification = {"mode": "FULL", "reason": reason, "elapsed_seconds": round(elapsed, 3)}
+
+    def _critical_or_raise(self, store: Path) -> None:
+        try:
+            status = receipts.critical_check(self._conn)
+        except sqlite3.DatabaseError as exc:
+            if corruption_error(exc):
+                receipts.invalidate(store, f"CRITICAL_CHECK:{exc}", label=_checker_label())
+            raise
+        if status != "ok":
+            receipts.invalidate(store, f"CRITICAL_CHECK:{status}", label=_checker_label())
+            raise CorruptStateError(f"SQLITE_INTEGRITY_FAILED:{status}")
+
+    def _note_corruption(self, exc: BaseException) -> None:
+        """A damaged page found at run time invalidates the receipt, so the next open scans the whole file."""
+        if corruption_error(exc):
+            receipts.invalidate(self.path.resolve(), f"RUNTIME:{exc}", label=_checker_label())
+
     def execute(self, sql: str, params: tuple[Any, ...] = ()) -> _MaterializedCursor:
         with self._lock:
-            return _MaterializedCursor(self._conn.execute(sql, params))
+            try:
+                return _MaterializedCursor(self._conn.execute(sql, params))
+            except sqlite3.DatabaseError as exc:
+                self._note_corruption(exc)
+                raise
 
     def fetchone(self, sql: str, params: tuple[Any, ...] = ()) -> Any:
         """Read one row with the fetch inside the connection lock.
@@ -209,7 +293,11 @@ class LocalStateConnection:
 
     def executemany(self, sql: str, seq: list[tuple[Any, ...]]) -> _MaterializedCursor:
         with self._lock:
-            return _MaterializedCursor(self._conn.executemany(sql, seq))
+            try:
+                return _MaterializedCursor(self._conn.executemany(sql, seq))
+            except sqlite3.DatabaseError as exc:
+                self._note_corruption(exc)
+                raise
 
     def transaction(self, *, retry_seconds: float | None = None) -> "StateTransaction":
         """One write transaction. ``retry_seconds`` opts into the explicit contention window.
@@ -235,8 +323,10 @@ class LocalStateConnection:
 
     def integrity_ok(self) -> bool:
         with self._lock:
-            row = self._conn.execute("PRAGMA integrity_check").fetchone()
-            return bool(row) and str(row[0]) == "ok"
+            status = receipts.full_check(self._conn)
+        if status != "ok":
+            receipts.invalidate(self.path.resolve(), f"INTEGRITY_OK:{status}", label=_checker_label())
+        return status == "ok"
 
     def schema_version(self) -> int:
         with self._lock:

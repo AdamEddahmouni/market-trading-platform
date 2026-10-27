@@ -11,6 +11,9 @@ from market_platform_foundation.news import supervision
 from market_platform_foundation.news.supervision import (CHILD_EXIT_PERMANENT, COOLDOWN_LIMIT, HEALTHY_RESET_SECONDS,
     LATCH_EXPIRY_SECONDS, RESTART_LIMIT, RESTART_WINDOW_SECONDS, STORAGE_GRACE_SECONDS, SUPERVISION_JOB,
     UNHEALTHY_FAILURE_LIMIT, CollectionSupervisor, reset_restart_budget, supervision_status)
+from market_platform_foundation.local_state.integrity_receipt import SIDECAR_SUFFIXES
+
+NOT_A_DATABASE = ('-wal', '-shm') + SIDECAR_SUFFIXES  # SQLite's and the integrity receipt's own files
 
 
 class Process:
@@ -265,7 +268,7 @@ class SupervisorStorageOutageTests(SupervisorCase):
         self.assertEqual((status['state'], status['reason'], status['crashes']), ('BACKOFF', 'STORAGE_UNAVAILABLE', 1))
         self.assertIn('SUPERVISION_OUTAGE_GAP_UNVERIFIED', [e['reason'] for e in self.saved()['events']])
         self.run_for(owner, 120); self.assertEqual(len(self.children), 2)
-        self.assertEqual(sorted(p.name for p in self.path.parent.iterdir() if not p.name.endswith(('-wal', '-shm'))),
+        self.assertEqual(sorted(p.name for p in self.path.parent.iterdir() if not p.name.endswith(NOT_A_DATABASE)),
                          ['imp-state.sqlite3'])
 
     def test_storage_that_never_returns_blocks_after_the_grace_period(self):

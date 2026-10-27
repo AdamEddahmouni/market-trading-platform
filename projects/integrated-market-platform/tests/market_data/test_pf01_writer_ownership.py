@@ -19,6 +19,9 @@ from unittest.mock import patch
 from market_platform_foundation.local_state.connection import LocalStateConnection, transient_storage_error
 from market_platform_foundation.market_data import persistence
 from market_platform_foundation.market_data.persistence import LEASE_NS, OWNER_LOCK_SUFFIX, MarketStreamWriter
+from market_platform_foundation.local_state.integrity_receipt import SIDECAR_SUFFIXES
+
+NOT_A_DATABASE = ('-wal', '-shm') + SIDECAR_SUFFIXES  # SQLite's and the integrity receipt's own files
 
 
 def record(index=1, **changes):
@@ -144,7 +147,7 @@ class FailureClassificationTests(WriterCase):
                          ('FAILED', 'WRITER_RETRY_LIMIT_EXCEEDED', persistence.RETRY_LIMIT))
         self.assertFalse(status['accepting'])
         self.assertEqual(status['backlog'], 1)  # still held, still reported as not durable
-        names = sorted(p.name for p in self.path.parent.iterdir() if not p.name.endswith(('-wal', '-shm')))
+        names = sorted(p.name for p in self.path.parent.iterdir() if not p.name.endswith(NOT_A_DATABASE))
         self.assertEqual(names, ['imp-state.sqlite3', 'imp-state.sqlite3' + OWNER_LOCK_SUFFIX])
 
     def test_storage_returning_inside_the_retry_budget_recovers_without_restart(self):
