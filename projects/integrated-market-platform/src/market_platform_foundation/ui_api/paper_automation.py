@@ -13,6 +13,8 @@ simulator's active Paper experiment. No broker or live route is imported here.
 """
 from __future__ import annotations
 
+from ..crypto_market.kraken_stream import BOOK as CRYPTO_BOOK, TRADES as CRYPTO_TRADES
+
 from ..paper.contracts import quantity_number, quantity_wire
 
 import copy
@@ -1256,7 +1258,7 @@ class PaperAutomationService:
         kept = [iid for iid in current if iid in wanted]
         for iid in [i for i in wanted if i not in kept]:
             try:
-                results = runtime.subscribe(instrument_id=iid, capabilities=['BOOK', 'TRADES'], consumer_id=CANDIDATE_QUOTE_CONSUMER)
+                results = runtime.subscribe(instrument_id=iid, capabilities=[CRYPTO_BOOK, CRYPTO_TRADES], consumer_id=CANDIDATE_QUOTE_CONSUMER)
             except Exception:  # noqa: BLE001 - a failed subscribe leaves that candidate without a current quote
                 results = [dict(accepted=False, reason='SUBSCRIBE_FAILED')]
             if all(r.get('accepted') for r in results):
@@ -1275,7 +1277,7 @@ class PaperAutomationService:
                 return
             for iid in instruments:
                 try:
-                    runtime.unsubscribe(instrument_id=iid, capabilities=['BOOK', 'TRADES'], consumer_id=CANDIDATE_QUOTE_CONSUMER)
+                    runtime.unsubscribe(instrument_id=iid, capabilities=[CRYPTO_BOOK, CRYPTO_TRADES], consumer_id=CANDIDATE_QUOTE_CONSUMER)
                 except Exception:  # noqa: BLE001
                     pass
             return

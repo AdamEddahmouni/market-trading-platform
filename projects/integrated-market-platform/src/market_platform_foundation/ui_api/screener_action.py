@@ -19,6 +19,7 @@ from ..intelligence.inference.candidate_reduction import ScreenerEvidencePacket
 from ..intelligence.inference.config import IntelligenceInferenceConfig
 from ..intelligence.inference.contracts import IntelligenceTaskType
 from ..intelligence.inference.hashing import input_hash_from_dict
+from ..intelligence.inference.action_input import VERSION as ACTION_INPUT_ENCODING, encode as encode_action_input, provider_diagnostics
 from ..intelligence.inference.prompts import PromptRegistry
 from ..local_state.action_decisions import action_repository
 from ..local_state.connection import CRITICAL_WRITE_RETRY_SECONDS
@@ -181,7 +182,8 @@ class ScreenerActionService:
         stable_context.pop('forecast_admission',None)
         material = dict(candidate=candidate, candidate_input_hash=run['input_hash'], candidate_rank=pick['rank'],
                         context=stable_context, policy_id=POLICY_ID, prompt_hash=prompt.content_hash,
-                        provider_id=getattr(provider,'provider_id',None),model_id=getattr(provider,'model_id',None))
+                        provider_id=getattr(provider,'provider_id',None),model_id=getattr(provider,'model_id',None),
+                        input_encoding=ACTION_INPUT_ENCODING if getattr(provider,'runtime',None)=='LOCAL_MODEL' else 'canonical-json/1.0.0')
         digest = input_hash_from_dict(material)
         data = dict(decision_cutoff=now,candidate=candidate,selection=pick,context=context,conditions=conditions)
         encoded = json.dumps(data,sort_keys=True,allow_nan=False,separators=(',',':'))
@@ -228,7 +230,9 @@ class ScreenerActionService:
             elif provider is None: error='LOCAL_NOT_CONFIGURED'
             else:
                 schema = wire_schema(b['candidate'],b['conditions'])
-                rendered = b['prompt'].template.replace('{{evidence_json}}',b['encoded']).replace('{{output_schema}}',json.dumps(schema,separators=(',',':')))
+                local_input = getattr(provider,'runtime',None)=='LOCAL_MODEL'
+                encoded = json.dumps(encode_action_input(b['data']),sort_keys=True,allow_nan=False,separators=(',',':')) if local_input else b['encoded']
+                rendered = b['prompt'].template.replace('{{evidence_json}}',encoded).replace('{{output_schema}}',json.dumps(schema,separators=(',',':')))
                 config = IntelligenceInferenceConfig(prompt_id=PROMPT_ID,default_task_type=IntelligenceTaskType.SCREENER_ACTION_DECISION,
                     max_tokens=2000, timeout_seconds=300 if getattr(provider,'runtime','')=='LOCAL_MODEL' else 45)
                 packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_ACTION_DECISION,identity,b['digest'],now,
@@ -261,6 +265,9 @@ class ScreenerActionService:
                 model = dict(provider_id=None,model_id=None,runtime=None,prompt_id=None,prompt_hash=None,prompt_version=None,
                              simulated=False,origin='SERVER_RISK_CONTROL')
             if response:
+                model.update(provider_diagnostics(response))
+                model.update(run_id=body['run_id'],request_timestamp=now,
+                    input_encoding=ACTION_INPUT_ENCODING if getattr(provider,'runtime',None)=='LOCAL_MODEL' else 'canonical-json/1.0.0')
                 for field in ('tokens_input','tokens_output','latency_ms','provider_request_id','provider_response_id'):
                     model[field]=getattr(response,field,None)
             snapshot = dict(cutoff=now,evidence=b['candidate'],candidate_run_id=body['run_id'],

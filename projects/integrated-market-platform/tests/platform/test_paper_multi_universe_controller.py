@@ -325,10 +325,34 @@ class CryptoEvidenceIntegrationTests(unittest.TestCase):
         service._candidate_quotes(work, summary)
         self.assertEqual(work['subscriptions'], ['BTC'])
         self.assertNotIn('quote_refusals', summary)
-        self.assertEqual(calls, [('subscribe', 'BTC', ('BOOK', 'TRADES'), 'paper-automation-candidates')])
+        self.assertEqual(calls, [('subscribe', 'BTC', ('CRYPTO_BOOK', 'CRYPTO_TRADES'), 'paper-automation-candidates')])
         # A second cycle with the same selection subscribes nothing new.
         service._candidate_quotes(work, summary)
-        self.assertEqual(calls, [('subscribe', 'BTC', ('BOOK', 'TRADES'), 'paper-automation-candidates')])
+        self.assertEqual(calls, [('subscribe', 'BTC', ('CRYPTO_BOOK', 'CRYPTO_TRADES'), 'paper-automation-candidates')])
+
+    def test_dna_link_use_canonical_runtime_capabilities_and_release_ownership(self):
+        from market_platform_foundation.crypto_market.kraken_stream import KrakenStreamRuntime
+        runtime=KrakenStreamRuntime.__new__(KrakenStreamRuntime)
+        import threading
+        runtime._lock=threading.RLock()
+        runtime._pairs={}
+        runtime._resolve=lambda iid: (iid, iid.replace('/', ''))
+        runtime._symbols={}; runtime._by_symbol={}; runtime._consumers={}; runtime._acked={}
+        runtime._shutdown_status={'state':'NOT_REQUESTED'}
+        runtime._wake=threading.Event(); runtime._ensure_worker=lambda:None
+        service=self.crypto_service(lambda create:runtime)[1]
+        service.reevaluation._loop.return_value=dict(selected=['DNA/USD','LINK/USD'],pending_selection=None)
+        work,summary={},dict(actions=[],blockers=[])
+        service._candidate_quotes(work,summary)
+        self.assertEqual(work['subscriptions'], ['DNA/USD','LINK/USD'])
+        self.assertNotIn('quote_refusals',summary)
+        self.assertEqual(set(runtime._consumers), {('DNA/USD','CRYPTO_BOOK'),('DNA/USD','CRYPTO_TRADES'),
+            ('LINK/USD','CRYPTO_BOOK'),('LINK/USD','CRYPTO_TRADES')})
+        service._release_candidate_quotes(work['subscriptions'])
+        self.assertEqual(runtime._consumers,{})
+        refusal=runtime.subscribe(instrument_id='DNA/USD',capabilities=['BOOK'],consumer_id='bad')
+        self.assertFalse(refusal[0]['accepted'])
+        self.assertEqual(refusal[0]['reason'],'UNSUPPORTED_CAPABILITY')
 
     def test_crypto_candidate_venue_refusal_is_recorded_not_worked_around(self):
         class StubRuntime:

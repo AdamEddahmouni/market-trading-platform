@@ -373,7 +373,9 @@ def gate_proposal(proposal, candidate, context, *, now):
     state = 'EXIT' if server_exit else proposal['proposal_state'] if proposal else 'REVALIDATION_REQUIRED'
     position = context['position']
     legal = {'FLAT':{'NO_ACTION','CONSIDER_ENTRY','ENTER'}, 'LONG':{'HOLD','EXIT'}, 'SHORT':{'HOLD','EXIT'}}
-    if state not in legal.get(position['state'],set()):
+    if proposal is None and not server_exit:
+        blockers.append('MISSING_PROPOSAL')
+    if (proposal is not None or server_exit) and state not in legal.get(position['state'],set()):
         blockers.append('ILLEGAL_POSITION_ACTION'); state = 'REVALIDATION_REQUIRED'
     cutoff, snapshot = timestamp(now), timestamp(position.get('snapshot_at'))
     deadline = timestamp(context.get('candidate_valid_until'))

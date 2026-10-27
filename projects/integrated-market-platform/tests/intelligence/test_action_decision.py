@@ -55,6 +55,13 @@ class ActionDecisionTests(unittest.TestCase):
         c = c or candidate()
         return gate_proposal(p, c, context or self.context(), now=now)
 
+    def test_absent_proposal_is_blocked_without_inventing_an_illegal_action(self):
+        result = self.gate(None)
+        self.assertEqual(result['action_state'], 'REVALIDATION_REQUIRED')
+        self.assertEqual(result['execution_readiness'], 'BLOCKED')
+        self.assertIn('MISSING_PROPOSAL', result['blocker_codes'])
+        self.assertNotIn('ILLEGAL_POSITION_ACTION', result['blocker_codes'])
+
     def test_bounded_states_and_unknown_execution_keys(self):
         for p in [dict(proposal(), proposal_state='STRONG_BUY'), dict(proposal(), quantity=1000),
                   dict(proposal(), exit_conditions=['stop_at_184']), dict(proposal(), rationale='Guaranteed profit'),
@@ -243,6 +250,74 @@ class ActionServiceTests(unittest.TestCase):
         from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
         self.response=ProviderInferenceResponse(raw_text=wire(proposal()),provider_id='fixture',model_id='controlled',simulated=True)
         self.provider.infer.return_value=self.response
+
+    def test_context_refusal_preserves_safe_diagnostics_and_no_order(self):
+        from dataclasses import replace
+        from market_platform_foundation.intelligence.inference.errors import InferenceErrorCode
+        self.provider.infer.return_value = replace(self.response, raw_text='',
+            error_code=InferenceErrorCode.PROVIDER_UNAVAILABLE, error_message='LOCAL_CONTEXT_EXCEEDED',
+            tokens_input=7441, inference_dispatched=False,
+            diagnostics=dict(context=dict(input_tokens=7441, output_allowance=751, output_floor=768,
+                configured_max_tokens=2000, context_window=8192), secret='do-not-persist',
+                http=[dict(stage='EXACT_TOKEN_COUNT', prompt='do-not-persist')]))
+        result = self.service.run(self.body)
+        self.assertEqual(result['action_state'], 'REVALIDATION_REQUIRED')
+        self.assertNotIn('ILLEGAL_POSITION_ACTION', result['blocker_codes'])
+        model=result['model']
+        self.assertEqual(model.get('error_message'), 'LOCAL_CONTEXT_EXCEEDED')
+        self.assertEqual(model.get('failure_category'), 'CONTEXT_BUDGET_REFUSAL')
+        self.assertEqual(model.get('diagnostics', {}).get('context', {}).get('input_tokens'), 7441)
+        self.assertIs(model.get('inference_dispatched'), False)
+        self.assertNotIn('do-not-persist', json.dumps(model))
+        self.assertEqual(self.repo.get('decision',result['decision_id'])['model'], model)
+        trace=self.traces.get_execution_decision_trace(result['decision_trace_id'])
+        self.assertEqual(trace.provider_state,model)
+        self.assertEqual(self.ledger.events, [])
+        with self.assertRaises(ValueError):
+            self.service.handoff(dict(decision_id=result['decision_id']))
+
+    def test_only_known_provider_reason_symbols_are_persisted(self):
+        from dataclasses import replace
+        from market_platform_foundation.intelligence.inference.action_input import provider_diagnostics
+        from market_platform_foundation.intelligence.inference.errors import InferenceErrorCode
+        for reason,want in [('LOCAL_API_KEY_SECRET123',None),('LOCAL_CONTEXT_EXCEEDED','LOCAL_CONTEXT_EXCEEDED'),
+                ('LOCAL_RESOURCE_COMMIT_HEADROOM','LOCAL_RESOURCE_COMMIT_HEADROOM'),
+                ('LOCAL_MODEL_HTTP_503','LOCAL_MODEL_HTTP_503'),('LOCAL_MODEL_HTTP_503_SECRET',None)]:
+            with self.subTest(reason=reason):
+                response=replace(self.response,error_code=InferenceErrorCode.PROVIDER_UNAVAILABLE,error_message=reason)
+                self.assertEqual(provider_diagnostics(response)['error_message'],want)
+
+    def test_provider_outage_does_not_persist_untrusted_error_text(self):
+        from dataclasses import replace
+        from market_platform_foundation.intelligence.inference.errors import InferenceErrorCode
+        self.provider.infer.return_value=replace(self.response, raw_text='',
+            error_code=InferenceErrorCode.PROVIDER_UNAVAILABLE,
+            error_message='Authorization: Bearer do-not-persist', inference_dispatched=False)
+        result=self.service.run(self.body)
+        self.assertEqual(result['model'].get('failure_category'), 'PROVIDER_FAILURE')
+        self.assertNotIn('do-not-persist', json.dumps(result))
+        self.assertEqual(result['execution_readiness'], 'BLOCKED')
+
+    def test_local_action_encoding_reconstructs_every_input_without_dropping_evidence(self):
+        from market_platform_foundation.intelligence.inference.action_input import encode, reconstruct, VERSION
+        b=self.service._build(self.body)
+        original=copy.deepcopy(b['data'])
+        # Repeated source metadata and an explicit conflicting reference must survive intact.
+        c=original['candidate']
+        c['blocked_evidence']=copy.deepcopy(c['blocked'])
+        c['missing_evidence']=copy.deepcopy(c['missing'])
+        c['weak_evidence']=copy.deepcopy(c['weak'])
+        for i in range(8):
+            c['reference_evidence'].append(dict(c['current_market_evidence'][0],
+                evidence_id='source-'+str(i), facts=dict(headline='unique fact '+str(i), conflict=True)))
+        encoded=encode(original)
+        self.assertEqual(encoded['encoding'], VERSION)
+        self.assertEqual(reconstruct(encoded),original)
+        self.assertLess(len(json.dumps(encoded)),len(json.dumps(original)))
+        self.service.run(self.body)
+        rendered=self.provider.infer.call_args.kwargs['rendered_prompt']
+        self.assertIn(VERSION, rendered)
+        self.assertEqual(self.service._build(self.body)['data'],b['data'])
 
     def test_preview_zero_inference_and_run_zero_ledger_mutations(self):
         before=copy.deepcopy(self.ledger.events)

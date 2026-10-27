@@ -48,6 +48,29 @@ same persisted daily budget as News and candidate reduction. The browser supplie
 only run/instrument IDs and an optional existing Opportunity ID. It cannot supply
 an evidence packet, position, model instructions, quantity or risk settings.
 
+## Sprint 1 request and failure contract
+
+Local Action Decision requests use the reversible `action-evidence-columns/1.0.0`
+transport. It reuses the existing evidence-column encoder, removes only verified
+equal aliases, and checks exact reconstruction before sending. Every fact,
+evidence ID, source clock, condition, selection and account/risk context remains
+available. The canonical input and persisted snapshot retain their original
+shape. Input identity includes this transport version. Exact model token
+preflight and the existing output floor remain mandatory; irreducible requests
+fail closed without generation or an invented proposal.
+
+An absent proposal produces `MISSING_PROPOSAL` and blocked revalidation; only an
+actual proposal or deterministic server exit is checked for position legality.
+Real illegal actions retain `ILLEGAL_POSITION_ACTION`. Provider failures preserve
+bounded numeric context diagnostics, dispatch status, symbolic local reason,
+failure category/stage and request lineage in the decision and execution trace.
+Arbitrary provider text, prompts, credentials and resource payloads are excluded.
+Context-capacity refusal remains distinct from provider failure.
+
+The crypto controller subscribes and releases canonical `CRYPTO_BOOK` and
+`CRYPTO_TRADES` capabilities. Runtime capability, pair, quote, position, risk,
+preview and internal Paper authority gates remain independent and unchanged.
+
 ## States and position restrictions
 
 | State | Meaning | Position |

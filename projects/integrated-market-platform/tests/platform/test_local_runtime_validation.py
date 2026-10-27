@@ -362,6 +362,17 @@ class ControlledLifecycleTests(unittest.TestCase):
         result = provider.infer(packet, rendered_prompt='exact full prompt', config=IntelligenceInferenceConfig(max_tokens=max_tokens))
         return result, sent
 
+    def test_known_7441_boundary_exact_fit_and_one_token_overflow(self):
+        for count, accepted in [(7441,False),(7424,True),(7425,False)]:
+            with self.subTest(input_tokens=count):
+                result,sent=self._reduction_request(input_tokens=count,max_tokens=2000)
+                self.assertEqual(bool(sent),accepted)
+                if accepted:
+                    self.assertEqual(sent[0]['max_tokens'],768)
+                else:
+                    self.assertEqual(result.error_message,'LOCAL_CONTEXT_EXCEEDED')
+                    self.assertFalse(result.inference_dispatched)
+
     def test_output_allowance_is_what_the_window_leaves_up_to_the_configured_maximum(self):
         # The October 16 crypto packets counted ~6,000 tokens: refused under a fixed 2,600 reserve, sent now.
         result, sent = self._reduction_request(input_tokens=6000)
