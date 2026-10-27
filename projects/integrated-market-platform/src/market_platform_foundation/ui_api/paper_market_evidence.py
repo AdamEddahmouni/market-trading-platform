@@ -355,6 +355,44 @@ class PaperMarketEvidence:
         except ValueError as exc:
             return _empty_bars(str(exc))
 
+    def crypto_trade_bars(self, instrument_id, *, now_ns=None):
+        """Fresh Kraken trade prints as one-print execution bars for the internal Paper simulator.
+
+        Each print is one complete bar at its exact venue price and quantity; availability is its local
+        receipt. Prints from a previous connection or subscription, out of clock order or older than the
+        quote age are omitted, so a missing or stale stream yields no bar and the order gate fails closed.
+        Observe only: no subscription is created here.
+        """
+        now = int(self.clock() * NS) if now_ns is None else now_ns
+        runtime = self._kraken()
+        if runtime is None:
+            return []
+        from ..crypto_market.kraken_stream import TRADES
+        key = str(instrument_id)
+        with runtime._lock:
+            connected = runtime.lifecycle.connected_ns
+            activated = runtime.subscriptions.activated_at(instrument_id=key, capability=TRADES)
+            if runtime.lifecycle.connection_state != 'CONNECTED' or connected is None or activated is None:
+                return []
+            trades = runtime.state.trades_for(key)
+        since = max(connected, activated)
+        bars = []
+        for trade in trades:
+            event, received = trade.get('event_time_ns'), trade.get('received_ns')
+            price, quantity = _decimal(trade.get('price')), _decimal(trade.get('quantity'))
+            if self._clock_check(event, received, now) or received < since or price is None or quantity is None:
+                continue
+            value, volume = format(price, 'f'), format(quantity, 'f')
+            trade_id = str(trade.get('trade_id'))
+            bars.append(dict(available_time=received, event_time=event, instrument_id=key, provider='KRAKEN',
+                             source='KRAKEN_TRADE_PRINT', normalized_event_id=f'KRAKEN:{key}:TRADE:{trade_id}',
+                             complete=True, volume=volume, volume_basis='VENUE_TRADE_QUANTITY',
+                             bar_payload=dict(open=value, high=value, low=value, close=value, volume=volume,
+                                              volume_basis='VENUE_TRADE_QUANTITY', complete=True, event_time=event,
+                                              provider='KRAKEN', source='KRAKEN_TRADE_PRINT', trade_id=trade_id)))
+        bars.sort(key=lambda bar: (bar['available_time'], bar['event_time']))
+        return bars
+
     def session(self, universe, instrument_id=None, *, instrument=None):
         """Provider/venue session facts; crypto/futures never use the equity close."""
         now = int(self.clock() * NS)

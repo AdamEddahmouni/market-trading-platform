@@ -668,7 +668,7 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
     else:
         preview = preview_interactive_order(
             ledger=store.paper_ledger,
-            bars=_bars_for_paper_execution(store, instrument_id=focus),
+            bars=_bars_for_paper_execution(store, instrument_id=focus, instrument=instrument),
             symbol=focus,
             instrument_id=focus,
             side=parsed["side"],
@@ -877,13 +877,14 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
             decision_source_snapshot=parsed["decision_source_snapshot"],
         )
         return _paper_envelope(store, {"submission": result})
-    bars = _bars_for_paper_execution(store, instrument_id=focus)
+    bars = _bars_for_paper_execution(store, instrument_id=focus, instrument=instrument)
     if parsed["order_type"] == "MARKET":
         bars = _wait_for_post_intent_bars(
             store,
             instrument_id=focus,
             created_time_ns=intent_time,
             bars=bars,
+            instrument=instrument,
         )
     if action_record:
         # Waiting for an eligible bar must not extend ActionDecision authority.
@@ -1411,12 +1412,35 @@ def _paper_observation_time(store: ReplayStore, *, instrument_id: str | None = N
     return store.prediction_cutoff()
 
 
-def _bars_for_paper_execution(store: ReplayStore, *, instrument_id: str | None = None) -> list[dict[str, Any]]:
+def _is_crypto_pair(instrument: dict[str, Any] | None) -> bool:
+    return (instrument or {}).get("instrument_kind") == "CRYPTO_PAIR"
+
+
+def _crypto_execution_bars(instrument_id: str) -> list[dict[str, Any]]:
+    """Fresh Kraken trade prints for one crypto pair, or none; never replay bars or another venue's quotes."""
+    from ..clock import monotonic_wall_ns
+    from .paper_market_evidence import PaperMarketEvidence
+
+    return PaperMarketEvidence().crypto_trade_bars(instrument_id, now_ns=monotonic_wall_ns())
+
+
+def _bars_for_paper_execution(
+    store: ReplayStore,
+    *,
+    instrument_id: str | None = None,
+    instrument: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     from ..market_data.live_config import live_observational_enabled, moomoo_live_enabled
     from ..market_data.live_runtime import get_live_runtime
     from ..clock import monotonic_wall_ns
 
     focus = instrument_id or _live_focus_instrument_id(store)
+    if live_observational_enabled() and _is_crypto_pair(instrument) and focus:
+        # Crypto executes only against its own venue's prints, on the same wall clock as the intent time;
+        # without that clock (_paper_observation_time) there is no comparable price and the gate fails closed.
+        if moomoo_live_enabled() and get_live_runtime(create=False) is not None:
+            return _crypto_execution_bars(focus)
+        return []
     if live_observational_enabled() and moomoo_live_enabled() and focus:
         runtime = get_live_runtime(create=False)
         if runtime is not None:
@@ -1435,6 +1459,7 @@ def _wait_for_post_intent_bars(
     instrument_id: str,
     created_time_ns: int,
     bars: list[dict[str, Any]],
+    instrument: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     import time
 
@@ -1449,6 +1474,14 @@ def _wait_for_post_intent_bars(
     runtime = get_live_runtime(create=False)
     if runtime is None:
         return bars
+    if _is_crypto_pair(instrument):
+        deadline = time.monotonic() + live_execution_wait_ms() / 1000.0
+        while time.monotonic() < deadline:
+            time.sleep(0.05)
+            latest = _crypto_execution_bars(instrument_id)
+            if any(int(bar.get("available_time", 0)) > created_time_ns for bar in latest):
+                return latest
+        return _crypto_execution_bars(instrument_id)
     # Deadline uses monotonic elapsed time: a wall clock that freezes or jumps
     # must never stall or truncate the wait (the shared clock for observation times).
     deadline = time.monotonic() + live_execution_wait_ms() / 1000.0

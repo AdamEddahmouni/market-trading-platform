@@ -31,7 +31,9 @@ class ControlledFeed:
     def observation_time(self, store: Any, *, instrument_id: str | None = None) -> int:
         return self.now_ns()
 
-    def bars(self, store: Any, *, instrument_id: str | None = None) -> list[dict[str, Any]]:
+    def bars(
+        self, store: Any, *, instrument_id: str | None = None, instrument: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         price = self.prices.get(str(instrument_id))
         if price is None:
             return []

@@ -176,6 +176,14 @@ class BarConservativeSimulator:
         prior = self._bar_allocations.get(allocation_key, 0)
         remaining = max(eligible - prior, 0)
         fill_qty = min(approved_qty, remaining)
+        if fractional and fill_qty < approved_qty:
+            # A crypto partial fill never leaves a fill or an unfilled remainder below the venue minimum: no valid
+            # order at that venue could close such a position, so the fill is reduced or not made at all.
+            minimum = exact_quantity(instrument["minimum_quantity"])
+            if 0 < approved_qty - fill_qty < minimum:
+                fill_qty = ((approved_qty - minimum) / step).to_integral_value(rounding=ROUND_FLOOR) * step
+            if fill_qty < minimum:
+                fill_qty = 0
         if fill_qty <= 0:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_NO_ELIGIBLE_VOLUME"]

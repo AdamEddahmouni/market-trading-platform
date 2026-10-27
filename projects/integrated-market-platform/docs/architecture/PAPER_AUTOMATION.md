@@ -85,6 +85,21 @@ experiment currency must be USD. The controller does not fund, convert or
 settle another currency. The Step 10 experiment's original `source_scope`
 label is `US_EQUITY_ETF`; the configured automation policy is the operative
 scope contract, and the immutable experiment record is not rewritten.
+
+Crypto Paper orders are priced and filled only from the controller's own
+Kraken Spot trade prints (2026-10-27). Each print received on the current
+connection and subscription, in clock order and no older than the 15 s quote
+age, is one complete bar at its exact venue price and quantity, available at
+its local receipt time. A MARKET submit waits up to `IMP_LIVE_EXECUTION_WAIT_MS`
+for a print after the intent. With no fresh print the order is refused
+`REQUIRED_PRICE_MISSING` and the intent is deferred, and with no print after
+the intent the order is rejected `SIM_NO_POST_SIGNAL_BAR`. Crypto never reads the
+Moomoo equity buffer or replay bars. The ledger's participation cap applies to
+each print, so crypto orders often fill partly; a partial fill is reduced, or not
+made, so that neither the fill nor the unfilled remainder is below the venue
+minimum quantity. Held crypto pairs keep their stream after they leave the
+selection, so their mark and any exit price stay current. Crypto shorts are not
+supported: a sell from flat is refused `INSUFFICIENT_POSITION`.
 Local reduction is context-bounded (2026-10-26 repair): the local engine's
 exact token count is taken before a `GLOBAL_REDUCTION` request is sent, the
 finalists are split into groups that fit, and rounds are hierarchical. A pair

@@ -1252,7 +1252,10 @@ class PaperAutomationService:
             return
         loop = self.reevaluation._loop() or {}
         wanted = [*(loop.get('selected') or []), *((loop.get('pending_selection') or {}).get('chosen') or [])]
-        wanted = list(dict.fromkeys(wanted))[:10]
+        # Held pairs keep their stream outside the candidate bound: their mark and any exit price come only from it.
+        held = [str(p['instrument_id']) for p in self.store.paper_ledger.project_positions()
+                if p.get('quantity') and p.get('instrument_kind') == 'CRYPTO_PAIR']
+        wanted = list(dict.fromkeys([*held, *list(dict.fromkeys(wanted))[:10]]))
         current = list(work.get('subscriptions') or [])
         self._release_candidate_quotes([iid for iid in current if iid not in wanted])
         kept = [iid for iid in current if iid in wanted]
