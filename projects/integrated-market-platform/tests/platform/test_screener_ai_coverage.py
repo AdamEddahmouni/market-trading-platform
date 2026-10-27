@@ -1209,6 +1209,47 @@ class RowLevelRejectionTests(unittest.TestCase):
 
 
 class RollingSliceTests(unittest.TestCase):
+
+    def test_empty_local_slice_records_one_terminal_without_a_plan(self):
+        h,_=ticking([],step=0.0)
+        h.run(slice_plan={'deadline_epoch':NOW+1000,'epoch':1,'last_evaluated':{}})
+        self.assertEqual(h.block['status'],'EMPTY_UNIVERSE')
+        self.assertIsNone(h.block['slice'].get('admission_stop_reason'))
+        self.assertIsNotNone(h.ledger.terminal(h.run_id))
+        self.assertEqual(len(h.ledger.records(h.run_id,'terminal')),1)
+        self.assertEqual(h.provider.calls,0)
+
+
+    def test_local_slice_bounds_intake_before_reduction_and_continues_deferred_rows(self):
+        rows=universe(30,strong={i:90.0+i for i in range(30)})
+        h,_=ticking(rows,step=0.0)
+        h.run(slice_plan={'deadline_epoch':NOW+1000,'epoch':1,'last_evaluated':{}})
+        first=[iid for call in h.calls() if call['stage']=='BATCH_INFERENCE' for iid in call['instrument_ids']]
+        self.assertEqual(len(first),10)
+        self.assertEqual(h.block['slice']['deferred_count'],20)
+        self.assertEqual(h.block['slice'].get('admission_stop_reason'),'LOCAL_REDUCTION_FINALIST_LIMIT')
+        self.assertEqual(h.block['plan']['slice'].get('max_finalists'),10)
+        self.assertTrue(h.block['slice_complete'])
+        self.assertFalse(h.block['coverage_complete'])
+        self.assertEqual(h.block['status'],'SLICE_SELECTION_COMPLETE')
+        turns={iid:NOW for iid in first}
+        next_slice,_=ticking(rows,step=0.0)
+        next_slice.run(slice_plan={'deadline_epoch':NOW+1000,'epoch':1,'last_evaluated':turns,'last_turn':turns})
+        following=[iid for call in next_slice.calls() if call['stage']=='BATCH_INFERENCE' for iid in call['instrument_ids']]
+        self.assertEqual(len(following),10)
+        self.assertTrue(set(first).isdisjoint(following))
+        self.assertEqual(next_slice.block['slice']['deferred_count'],20)
+        reconciled(self,h.block,30)
+        reconciled(self,next_slice.block,30)
+
+    def test_manual_global_run_still_reaches_all_rows_without_slice_intake_limit(self):
+        h,_=ticking(universe(30,strong={i:90.0+i for i in range(30)}),step=0.0)
+        h.run()
+        reached={iid for call in h.calls() if call['stage']=='BATCH_INFERENCE' for iid in call['instrument_ids']}
+        self.assertEqual(len(reached),30)
+        self.assertTrue(h.block['coverage_complete'])
+        self.assertTrue(h.block['selection_complete'])
+
     def test_the_deadline_defers_the_rest_and_the_slice_is_labelled_a_slice(self):
         h, _ = ticking(universe(12, strong={index: 90.0 + index for index in range(12)}))
         h.run(slice_plan={"deadline_epoch": NOW + 25, "epoch": 3, "last_evaluated": {}})

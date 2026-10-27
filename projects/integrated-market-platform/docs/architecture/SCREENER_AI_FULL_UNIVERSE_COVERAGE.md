@@ -279,6 +279,21 @@ that rejected any row is never a global selection: it ends
 
 ### Rolling slices (local engine, automation only)
 
+Local rolling first-pass intake is additionally bounded at ten distinct
+finalists (`2 * MAX_SELECTED`). Three October 26/27 natural runs demonstrated
+that admitting 15–18 finalists could exhaust the unchanged 180-second reduction
+budget before final comparison. This is a workload bound, with no change to
+selection thresholds, model, trading/risk policy, cadence or output allowance.
+All admitted finalists are still compared under the existing rules. Remaining
+rows retain `DEFERRED_TO_NEXT_SLICE` and their place in the existing turn order;
+no row is silently excluded or counted as evaluated. The plan records
+`slice.max_finalists`; the terminal slice records
+`admission_stop_reason=LOCAL_REDUCTION_FINALIST_LIMIT` when that bound ends
+intake. Manual full-universe runs retain their existing behavior. A bounded
+slice remains a slice; full-global completion still requires its original
+coverage/selection criteria.
+
+
 The Paper automation controller starts local-engine runs with a **slice plan**:
 a first-pass deadline (40% of the scope's minimum separation) and, for each
 row, when the scope's recent runs last evaluated it and when they last gave it

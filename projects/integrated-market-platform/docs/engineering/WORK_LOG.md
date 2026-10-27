@@ -1,5 +1,10 @@
 # IMP Work Log
 
+## 2026-10-27 — Sprint 1 local slice workload correction after natural verification
+
+After deploying 28ea678b, three natural USD-crypto runs proved sent context bounds and deferred progression, but two exhausted the unchanged 180-second reduction budget with 18/15 initial finalists. First-pass admission now ends at ten distinct finalists in local rolling slices, explicitly deferring the rest through the existing epoch/turn mechanism. Already admitted finalists retain their comparison and validation; no selection/risk threshold, model/provider, cadence, account, arming, capital or output limit changes. A regression first reproduced thirty admitted finalists, then passed with ten admitted/twenty deferred and a disjoint next slice; a manual global run still reaches all thirty. Tests, deployment and runtime outcomes remain separately evidenced in the Sprint 1 full-execution package.
+
+
 ## 2026-10-26 — Sprint 1 capability, missing-proposal, diagnostics and bounded Action input repair
 
 Full Sprint 1 execution is owner-authorized. Regressions reproduced incorrect BOOK/TRADES caller names, a null proposal mislabeled as an illegal position action, and lost provider diagnostics. The repair uses canonical crypto capabilities for subscribe/release, blocks missing proposals explicitly while retaining genuine legality and server-risk-exit checks, and persists only bounded whitelisted provider diagnostics. Local Action Decision input reuses reversible evidence columns with exact reconstruction and transport-version input identity; model/context/output-floor/risk/strategy/account/cadence boundaries remain unchanged. The known 7,441+768>8,192 case is still refused before generation. Focused regressions pass after the fixes; broader validation, deployment and natural-operation evidence are recorded separately in the new Sprint 1 full-execution evidence package. No operational success is inferred from offline tests.

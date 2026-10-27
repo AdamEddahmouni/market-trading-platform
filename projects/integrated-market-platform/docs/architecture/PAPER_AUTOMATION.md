@@ -216,7 +216,9 @@ blockers together; the state label alone is not a complete readiness answer.
   `universe_evaluation_interval_seconds` has passed. Its terminal coverage is
   recorded as it is: counts, percentage, status, model, tokens.
 - On the local engine every run is a **rolling slice**: its first pass ends at
-  40% of the scope's `universe_evaluation_interval_seconds`, rows with no recent
+  40% of the scope's `universe_evaluation_interval_seconds` or once ten distinct
+  finalists have been admitted (two existing final-selection sets), whichever
+  comes first. Remaining rows are explicitly deferred; rows with no recent
   turn go first, then the least recent turn (see
   [coverage](SCREENER_AI_FULL_UNIVERSE_COVERAGE.md#rolling-slices-local-engine-automation-only)).
   Each scope keeps a **coverage epoch** in its controller state: the ids of its

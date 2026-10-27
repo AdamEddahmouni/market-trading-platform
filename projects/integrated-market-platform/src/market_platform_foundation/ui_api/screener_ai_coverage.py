@@ -84,6 +84,10 @@ CONTEXT_FIT_BYTES_PER_TOKEN = 2.5
 # pathological finalist set from turning that split into an unbounded run. They are call/time budgets, not
 # selection thresholds: exceeding one defers the remaining finalists with their own reasons.
 REDUCTION_DEADLINE_SECONDS = 180.0
+# The 2026-10-26 natural runs admitted 15-18 finalists and exhausted this unchanged
+# reduction budget. A local rolling slice admits at most two final selection sets;
+# remaining rows retain their turn and are deferred, never silently excluded.
+LOCAL_SLICE_MAX_FINALISTS = 2 * MAX_SELECTED
 REDUCTION_REQUESTS_PER_FINALIST = 6
 REDUCTION_REQUESTS_FLOOR = 12
 # 2026-10-23 crypto: six finalists in pairs and byes, both pairs' answers rejected, and the run ended with every
@@ -350,6 +354,11 @@ class ScreenerAiCoverage:
             if should_stop():
                 self._unprocessed(run, batches[index:], "STOPPED_BY_OPERATOR")
                 return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
+            if (self._slice and getattr(self._provider, 'runtime', None) == 'LOCAL_MODEL'
+                    and len({item['instrument_id'] for item in run.finalists}) >= LOCAL_SLICE_MAX_FINALISTS):
+                self._unprocessed(run, batches[index:], "DEFERRED_TO_NEXT_SLICE")
+                run.plan['slice']['admission_stop_reason'] = 'LOCAL_REDUCTION_FINALIST_LIMIT'
+                break
             if deadline is not None and service._clock() >= float(deadline):
                 # The slice's time budget is spent: the rest are deferred to later slices of this epoch, not dropped.
                 self._unprocessed(run, batches[index:], "DEFERRED_TO_NEXT_SLICE")
@@ -944,6 +953,7 @@ class ScreenerAiCoverage:
                 "order": "NO_RECENT_TURN_FIRST_THEN_OLDEST_TURN_THEN_" + (
                     "OPPORTUNITY_SCORE" if run.shortlist is not None else "FAIR_ORDER"),
                 "epoch": self._slice.get("epoch"),
+                "max_finalists": LOCAL_SLICE_MAX_FINALISTS,
                 "evaluated_in_epoch": sum(1 for key in eligible if key in (self._slice.get("last_evaluated") or {}))},
         }
         report_stage("REUSE_ASSESSMENT", reused_batches=0, new_inference_requests=len(batches), required_tokens=None)
@@ -1365,6 +1375,7 @@ class ScreenerAiCoverage:
             "cutoffs": run.cutoffs, "timings_ms": {key: round(value, 1) for key, value in run.timings.items()},
             "ai_rejected_count": counts["by_class"].get(AI_REJECTED, 0), "slice_complete": slice_complete,
             "slice": None if not self._slice else {
+                "admission_stop_reason": ((run.plan or {}).get('slice') or {}).get('admission_stop_reason'),
                 "epoch": self._slice.get("epoch"),
                 "deadline": _iso(float(self._slice["deadline_epoch"])) if self._slice.get("deadline_epoch") is not None else None,
                 "deferred_count": deferred, "rejected_requests": run.rejected,
