@@ -1551,6 +1551,43 @@ class ReductionSplitTests(unittest.TestCase):
         self.assertGreater(len({pair for _, pair in pairs}), len([1 for number, _ in pairs if number == 1]),
                            "later rounds compared the same pairs again")
 
+    def _exhausted(self, **limits):
+        """Ten local finalists compared in pairs under the given reduction limits."""
+        from unittest import mock
+        from market_platform_foundation.ui_api import screener_ai_coverage as module
+        clock = [NOW]
+        provider = self._local(lambda ids: len(ids) > 2)(clock, step=0.1)
+        h = Harness(universe(100, strong={index: 90.0 + index / 10 for index in range(0, 100, 10)}), provider,
+                    clock=lambda: clock[0])
+        with mock.patch.multiple(module, **limits):
+            h.run()
+        reconciled(self, h.block, 100)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "GLOBAL_REDUCTION_BUDGET_EXCEEDED"))
+        self.assertEqual(h.result["candidates"], [])
+        self.assertIsNone(action_repository().get("candidate_run", "CU-" + h.run_id))
+        self.assertEqual(len(h.ledger.records(h.run_id, "terminal")), 1)
+        rows = {item[0]: item[1:] for part in h.ledger.records(h.run_id, "rows") if part["phase"] == "FINAL" for item in part["rows"]}
+        held = sorted(key for key, (name, reasons) in rows.items() if "GLOBAL_REDUCTION_BUDGET_EXCEEDED" in reasons)
+        self.assertTrue(held)
+        self.assertTrue(all(rows[key][0] == "UNPROCESSED" for key in held))
+        return h, held
+
+    def test_a_reduction_out_of_requests_stops_at_its_cap_and_selects_nothing(self):
+        h, held = self._exhausted(REDUCTION_REQUESTS_FLOOR=3, REDUCTION_REQUESTS_PER_FINALIST=0)
+        budget = h.block["reduction"]["budget"]
+        self.assertEqual((budget["max_requests"], budget["exhausted"]), (3, "REQUESTS"))
+        # A comparison refused at send by the exact count is a request too: 10, then 5, then 3 are refused and
+        # the cap ends the reduction there, with every finalist held for a later run rather than retried.
+        attempts = [len(r["instrument_ids"]) for r in h.calls() if r["stage"] == "GLOBAL_REDUCTION"]
+        self.assertEqual(attempts, [10, 5, 3])
+        self.assertEqual(len(held), 10)
+
+    def test_a_reduction_out_of_time_sends_no_comparison_and_selects_nothing(self):
+        h, held = self._exhausted(REDUCTION_DEADLINE_SECONDS=-1.0)
+        self.assertEqual(h.block["reduction"]["budget"]["exhausted"], "SECONDS")
+        self.assertEqual([r for r in h.calls() if r["stage"] == "GLOBAL_REDUCTION"], [])
+        self.assertEqual(len(held), 10)
+
 
 class ContextBoundedReductionTests(unittest.TestCase):
     """The 2026-10-26 crypto shape: 12 finalists, 68,834 input tokens, 8,192-token local window."""
