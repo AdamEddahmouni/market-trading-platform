@@ -16,6 +16,7 @@ from __future__ import annotations
 from ..crypto_market.kraken_stream import BOOK as CRYPTO_BOOK, TRADES as CRYPTO_TRADES
 
 from ..paper.contracts import quantity_number, quantity_wire
+from ..paper.short_gate import SHORTABLE_KINDS
 
 import copy
 import json
@@ -96,6 +97,55 @@ _DEFER_CODES = ('ACTION_INPUT_CHANGED', 'ACTION_DECISION_EXPIRED', 'ACTION_HANDO
 
 def _iso(seconds):
     return datetime.fromtimestamp(seconds, UTC).isoformat().replace('+00:00', 'Z') if seconds is not None else None
+
+
+def _universe_catalog_row(instrument_id, universe):
+    """The Screener catalog row this scope admitted for the instrument, or None."""
+    from .screener_multi import multi_screener_service
+    return multi_screener_service().row_for(instrument_id, universe=universe)[0]
+
+
+def register_catalog_equity(instrument_id, universe, *, catalog_row=_universe_catalog_row):
+    """Register a US_EQUITIES target in XA-01 from the catalog row that admitted it (Lane 01).
+
+    US_EQUITIES rows are keyed by the Finviz ticker and, unlike ETF and crypto rows, never reach the XA-01 registry
+    when the catalog is projected, so the closed legacy bridge refuses every one of them at the order boundary. The
+    identity comes from that scope's own admitted row -- an equity export row classified ADMITTED and a tradable
+    security kind -- never from the symbol's shape. Anything else is left unregistered and fails closed there.
+    """
+    if universe != 'US_EQUITIES':
+        return None
+    try:
+        row = catalog_row(instrument_id, universe)
+    except Exception as exc:  # noqa: BLE001 - an unreadable catalog admits nothing; the intent records why
+        raise ValueError('UNIVERSE_CATALOG_UNAVAILABLE: ' + type(exc).__name__) from exc
+    if not row:
+        return None
+    instrument, classification = row.get('instrument') or {}, row.get('classification') or {}
+    if (instrument.get('instrument_id') != instrument_id or instrument.get('asset_class') != 'EQUITY'
+            or instrument.get('instrument_kind') != 'TRADABLE_SECURITY' or classification.get('universe') != universe
+            or classification.get('status') != 'ADMITTED' or str(row.get('symbol') or '').upper() != instrument_id.upper()):
+        return None
+    from ..xa01.compatibility import register_equity
+    from ..xa01.errors import Xa01Error
+    try:
+        return register_equity(symbol=instrument_id, venue_id=str(instrument.get('venue_id') or 'US_EQUITY'))
+    except Xa01Error:
+        return None  # a conflicting identity is never overwritten; admission resolves what is registered or refuses
+
+
+def status_universe(universe):
+    """The primary scope's universe state for the status read: the epoch's per-instrument turn indexes become counts.
+
+    They key a float by every ticker the epoch reached (one per row), and a ticker such as KEYS is a secret-shaped key
+    name, so the response leak audit refuses the whole status read. The counts are what the read reports.
+    """
+    if not universe or not isinstance(universe.get('epoch'), dict):
+        return universe
+    epoch = {key: value for key, value in universe['epoch'].items() if key not in ('prior_turns', 'prior_evaluated')}
+    epoch.update(prior_turns_count=len(universe['epoch'].get('prior_turns') or {}),
+                 prior_evaluated_count=len(universe['epoch'].get('prior_evaluated') or {}))
+    return dict(universe, epoch=epoch)
 
 
 def _utc_day(seconds):
@@ -197,6 +247,7 @@ class PaperAutomationService:
         self.worker = None
         self._revives = []
         self._scope_services = {}
+        self.catalog_row = _universe_catalog_row  # the scope catalog an equity target is admitted from
         self._scope_context = ContextVar('paper_scope_' + self.owner_id, default=None)
         self._session_context = ContextVar('paper_session_' + self.owner_id, default=None)
 
@@ -1420,7 +1471,18 @@ class PaperAutomationService:
             if not owned or owned * signed <= 0:
                 return finish(IntentState.BLOCKED, ['AUTOMATION_POSITION_NOT_OWNED'])
             quantity = min(quantity, abs(owned))
-        instrument = paper_projections._admit_focus_instrument(self.store, draft['instrumentId'])
+        try:
+            register_catalog_equity(str(draft['instrumentId']), (decision.get('instrument') or {}).get('universe'),
+                                    catalog_row=self.catalog_row)
+            instrument = paper_projections._admit_focus_instrument(self.store, draft['instrumentId'])
+        except ValueError as exc:
+            # A target the order boundary cannot admit is this decision's refusal, recorded on its intent. It never
+            # aborts the scope's cycle and the decisions queued behind it.
+            return finish(IntentState.BLOCKED, [_code(exc)], side=draft['side'])
+        if state == 'ENTER' and draft['side'] == 'SELL' and instrument.get('instrument_kind') not in SHORTABLE_KINDS:
+            # A SELL from flat opens a short. The approved short policy covers equities and ETFs only, so a spot pair
+            # is refused here for what it is, not deferred on price and then refused for the position it lacks.
+            return finish(IntentState.BLOCKED, ['SHORT_INSTRUMENT_UNSUPPORTED', str(instrument.get('instrument_kind'))], side=draft['side'])
         if state == 'ENTER':
             from ..numeric import decimal_to_minor_units
             scale = int(instrument.get('price_scale', ledger.policy.get('price_scale', 100)))
@@ -1952,7 +2014,7 @@ class PaperAutomationService:
                           heartbeat_at=_iso(controller.get('heartbeat_at')), lease_until=_iso(controller.get('lease_until')) if leased else None,
                           cycle_count=controller.get('cycle_count'), consecutive_failures=controller.get('consecutive_failures'),
                           last_error=controller.get('last_error'), last_scheduled=_iso(controller.get('last_scheduled_epoch'))),
-            last_cycle=last or None, universe=controller.get('universe'), candidate_quotes=controller.get('subscriptions') or [],
+            last_cycle=last or None, universe=status_universe(controller.get('universe')), candidate_quotes=controller.get('subscriptions') or [],
             risk=self.risk_utilization(policy, positions=positions, valuation=valuation, day=controller.get('day')),
             scheduling=self.scheduling(policy, controller),
             day=controller.get('day'), positions=[{k: p.get(k) for k in ('instrument_id', 'symbol', 'side', 'quantity', 'average_fill_minor',

@@ -99,7 +99,20 @@ each print, so crypto orders often fill partly; a partial fill is reduced, or no
 made, so that neither the fill nor the unfilled remainder is below the venue
 minimum quantity. Held crypto pairs keep their stream after they leave the
 selection, so their mark and any exit price stay current. Crypto shorts are not
-supported: a sell from flat is refused `INSUFFICIENT_POSITION`.
+supported: the approved short policy (`paper-equity-short/1.0.0`) covers equities
+and ETFs only, so the controller refuses a spot pair's SELL-to-open
+`SHORT_INSTRUMENT_UNSUPPORTED` before sizing or price (Lane 01, 2026-10-27), and a
+manual sell from flat is refused `INSUFFICIENT_POSITION` at the preview.
+
+US_EQUITIES targets are admitted from the scope's own catalog (Lane 01,
+2026-10-27). Finviz rows are keyed by ticker and are not registered in XA-01
+when the catalog is projected, unlike ETF and crypto rows, so the closed legacy
+bridge refused every one of them `UNKNOWN_INSTRUMENT`. Before admission the
+controller registers the target as a US equity only when that scope's catalog
+row is an `EQUITY` / `TRADABLE_SECURITY` listing classified `ADMITTED` for
+`US_EQUITIES`; anything else stays unregistered and fails closed. Any admission
+refusal is the decision's own `BLOCKED` intent, never a failure of the scope's
+cycle and the decisions queued behind it.
 Local reduction is context-bounded (2026-10-26 repair): the local engine's
 exact token count is taken before a `GLOBAL_REDUCTION` request is sent, the
 finalists are split into groups that fit, and rounds are hierarchical. A pair
@@ -238,7 +251,10 @@ blockers together; the state label alone is not a complete readiness answer.
   [coverage](SCREENER_AI_FULL_UNIVERSE_COVERAGE.md#rolling-slices-local-engine-automation-only)).
   Each scope keeps a **coverage epoch** in its controller state: the ids of its
   last 16 finished runs plus compact per-instrument last-evaluation and last-turn indexes derived from immutable ledger outcomes. Those indexes survive pruning and process restart, so full-universe sweeps cannot forget early turns and starve later names. The state also keeps the
-  epoch number, its start and the count of completed epochs. A row has had its
+  epoch number, its start and the count of completed epochs. The status read
+  reports the two indexes as `prior_turns_count` and `prior_evaluated_count`:
+  keyed by ticker, they made the response leak audit refuse the whole read when a
+  ticker is a secret-shaped name (`KEYS`, Lane 01 2026-10-27). A row has had its
   **turn** when the model answered it (`AI_EVALUATED` or `AI_REJECTED`) or it
   could not be sent alone (`UNPROCESSED:BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED`); a
   row only deferred or stopped has not. An epoch completes
