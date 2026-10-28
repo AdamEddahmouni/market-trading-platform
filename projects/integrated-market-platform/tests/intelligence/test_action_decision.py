@@ -213,6 +213,40 @@ class ActionDecisionTests(unittest.TestCase):
         for p in [proposal(), dict(proposal(), supporting_refs=['q','q']), dict(proposal(), supporting_refs=['q','unknown'])]:
             self.assertIsNotNone(parse_proposal(json.dumps(p), c, build_conditions(c, self.context(), NOW))[1])
 
+    def test_an_enter_that_leaves_the_quote_as_context_stays_ungrounded(self):
+        # October 28 crypto: 24 of 35 ENTER proposals cited technicals, news and sentiment but gave the quote the
+        # stance CONTEXT. The gate keeps requiring the quote; the v6 prompt tells the model so.
+        c = candidate()
+        c['reference_evidence'] = [dict(evidence_id='n', capability='NEWS', as_of=NOW, valid_until=END,
+                                        role='REFERENCE_CONTEXT', decision_admissibility='ADMISSIBLE', weak_reasons=[], facts={})]
+        context = self.context()
+        ungrounded = self.gate(dict(proposal(), supporting_refs=['t', 'n']), context, c)
+        self.assertEqual(ungrounded['action_state'], 'CONSIDER_ENTRY')
+        self.assertIn('SUPPORT_UNAVAILABLE', ungrounded['blocker_codes'])
+        grounded = self.gate(dict(proposal(), supporting_refs=['q', 't', 'n']), context, c)
+        self.assertEqual(grounded['action_state'], 'ENTER')
+        self.assertNotIn('SUPPORT_UNAVAILABLE', grounded['blocker_codes'])
+        # The quote alone, or the quote with only another quote, is still not enough.
+        self.assertIn('SUPPORT_UNAVAILABLE', self.gate(dict(proposal(), supporting_refs=['q']), context, c)['blocker_codes'])
+
+    def test_the_action_prompt_says_the_quote_grounds_an_enter(self):
+        from market_platform_foundation.intelligence.inference.action_decision import PROMPT_ID
+        from market_platform_foundation.intelligence.inference.contracts import IntelligenceTaskType
+        from market_platform_foundation.intelligence.inference.prompts import PromptRegistry
+        registry = PromptRegistry()
+        prompt = registry.get_by_id(PROMPT_ID)
+        self.assertEqual(prompt.prompt_id, 'screener.action_decision.v6')
+        self.assertIs(registry.get_for_task(IntelligenceTaskType.SCREENER_ACTION_DECISION), prompt)
+        text = ' '.join(prompt.template.split())
+        self.assertIn('On ENTER give the current QUOTE evidence the stance SUPPORTING, and at least one further '
+                      'strong non-QUOTE item the proposal relies on.', text)
+        self.assertIn('If you would not rely on both, do not ENTER; choose CONSIDER_ENTRY or NO_ACTION.', text)
+        self.assertIn('Never choose sufficiency merely to pass a gate.', text)
+        # Recorded decisions keep their prompt: v5 stays registered and unchanged.
+        old = registry.get_by_id('screener.action_decision.v5')
+        self.assertEqual(old.output_schema_version, prompt.output_schema_version)
+        self.assertNotIn('On ENTER give the current QUOTE', old.template)
+
     def test_durable_immutable_readback_and_idempotency(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / 'state.sqlite'
@@ -334,7 +368,7 @@ class ActionServiceTests(unittest.TestCase):
         packet = self.provider.infer.call_args.args[0]
         self.assertIn('evidence_stance', packet.output_schema['properties'])
         self.assertIn('evidence_stance', self.provider.infer.call_args.kwargs['rendered_prompt'])
-        self.assertEqual(d['model']['prompt_id'], 'screener.action_decision.v5')
+        self.assertEqual(d['model']['prompt_id'], 'screener.action_decision.v6')
         self.assertEqual((d['action_state'], d['supporting_refs']), ('ENTER', ['q', 't']))
 
     def test_structured_model_reasoning_is_preserved_beside_the_canonical_proposal(self):
@@ -346,7 +380,7 @@ class ActionServiceTests(unittest.TestCase):
         d = self.service.run(self.body)
         self.assertEqual(d['model_reasoning_wire'], answer)
         self.assertEqual(d['model_proposal']['proposal_state'], 'ENTER')
-        self.assertEqual(d['evidence_snapshot']['model']['prompt_id'], 'screener.action_decision.v5')
+        self.assertEqual(d['evidence_snapshot']['model']['prompt_id'], 'screener.action_decision.v6')
 
     def test_idempotency_and_position_change_new_transition(self):
         first=self.service.run(self.body); second=self.service.run(self.body)

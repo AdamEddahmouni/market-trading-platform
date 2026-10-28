@@ -14,7 +14,8 @@ from ...market_data.freshness_contract import timestamp
 from .hashing import input_hash_from_dict
 from .screener_synthesis import unsupported_certainty
 
-PROMPT_ID = 'screener.action_decision.v5'
+# v6 (2026-10-28): every crypto ENTER downgraded SUPPORT_UNAVAILABLE that morning had marked the quote CONTEXT.
+PROMPT_ID = 'screener.action_decision.v6'
 # 1.1.0 (rebuild step 7): hold conditions compare as a set, and an overnight review may add one server condition.
 POLICY_ID = 'action-decision-policy/1.1.0'
 # Owner decision 6: a position is carried over the close only on an evidence-backed hold made in the review window.
