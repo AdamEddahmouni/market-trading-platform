@@ -774,6 +774,30 @@ class RiskTests(AutoBase):
         # The existing pre-trade engine still sized it against an in-memory Opportunity that is never persisted.
         self.assertEqual([o for o in self.store.strategy_repository.list_opportunities() if o.opportunity_id.startswith('OPP-AID-')], [])
 
+    def test_ai_direct_entry_reaches_the_ledger_when_the_candidate_has_no_symbol(self):
+        # Live screener candidates carry no 'symbol' (2026-10-28 13:59Z HTGC: KeyError in assess_entry_risk).
+        from unittest import mock
+        a = self.auto
+        a.quote('AAPL', 150, 2)
+        original = a.ai.candidate
+
+        def live_shape(iid, now):
+            value = original(iid, now)
+            value['instrument'] = {k: v for k, v in value['instrument'].items() if k != 'symbol'}
+            return value
+
+        with mock.patch.object(a.ai, 'candidate', live_shape), mock.patch.dict(os.environ, {'IMP_PAPER_AI_DIRECT': '1'}):
+            a.go()
+            a.cycle()
+            a.select('AAPL')
+            cycles = [a.cycle() for _ in range(3)]
+        decision = next(d for d in a.actions.history('AAPL') if d['action_state'] == 'ENTER')
+        self.assertNotIn('symbol', decision['instrument'])
+        self.assertNotIn('BLOCKED_BY_DATA', [c['status'] for c in cycles])
+        submitted = [o for c in cycles for o in c['actions'] if o['outcome'] == 'SUBMITTED']
+        self.assertEqual([(o['action'], o['side']) for o in submitted], [('ENTER', 'BUY')])
+        self.assertGreater(a.position('AAPL')['quantity'], 0)
+
     def test_eod_flatten_closes_equity_positions_once_near_the_bell(self):
         self.enter()
         a = self.auto

@@ -433,10 +433,12 @@ class ScreenerActionService:
             opportunity=direct_opportunity(record)
         else:
             raise ValueError('NO_GOVERNED_OPPORTUNITY')
+        # A live screener candidate carries no 'symbol'; the Paper order is keyed by the instrument id itself.
+        symbol=record['instrument'].get('symbol') or record['instrument_id']
         engine=PreTradeRiskEngine()
         proposal=engine.build_proposal(opportunity=opportunity,policy=policy,portfolio=portfolio,
             quote=MarketQuoteV1(record['instrument_id'],price,price,int(timestamp(record['reference_quote']['as_of']).timestamp()*1e9)),proposal_time_ns=now,
-            instrument_id=record['instrument_id'],symbol=record['instrument']['symbol'],
+            instrument_id=record['instrument_id'],symbol=symbol,
             allocation_desired_quantity=parsed['quantity'],instrument=instrument if fractional else None,lineage_refs=(ContractReference('ActionDecisionV1',record['decision_id']),))
         submitted=set()
         for order in ledger.project_orders():
@@ -447,7 +449,7 @@ class ScreenerActionService:
             legacy=(order.get('metadata') or {}).get('opportunity_id')
             if legacy: submitted.add(legacy)
         risk=engine.assess(proposal=proposal,opportunity=opportunity,policy=policy,portfolio=portfolio,
-            decision_time_ns=now,symbol=record['instrument']['symbol'],submitted_opportunity_ids=frozenset(submitted))
+            decision_time_ns=now,symbol=symbol,submitted_opportunity_ids=frozenset(submitted))
         repo=self.store.strategy_repository
         for method,value in (('put_execution_policy',policy),('put_paper_portfolio_snapshot',portfolio),('put_trade_proposal',proposal),('put_risk_decision',risk)):
             getattr(repo,method)(value)
