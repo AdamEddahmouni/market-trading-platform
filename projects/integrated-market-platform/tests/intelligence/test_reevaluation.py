@@ -678,6 +678,32 @@ class HardeningTests(unittest.TestCase):
         receipt = self.h.tick()
         self.assertEqual((receipt['cycle_status'], receipt['model_call_count'], self.h.provider.calls), ('BUDGET_BLOCKED', 0, calls))
 
+    def test_model_call_caps_are_per_universe_on_both_backends(self):
+        """Another market's loop on the same account spends its own budget, never this one's; a stopped earlier loop
+        of the same market still counts."""
+        def other_loop(h, loop_id, universe, calls):
+            account = h.service._loop()['account_id']
+            h.repo.save_loop(dict(loop_id=loop_id, account_id=account, updated_epoch=0.0, scope=dict(SCOPE, universe=universe)))
+            h.repo.put_cycle(dict(cycle_id=f'{loop_id}-c', loop_id=loop_id, account_id=account, scheduled_epoch=h.clock(),
+                                  session_date='2026-10-05', model_call_count=calls))
+
+        with tempfile.TemporaryDirectory() as temp:
+            connection = LocalStateConnection(Path(temp) / 'state.sqlite')
+            for h in (Harness(), Harness(connection=connection)):
+                h.hold()
+                h.configure(max_model_calls_per_hour=2)
+                other_loop(h, 'RL-crypto', 'CRYPTO', 50)
+                receipt = h.tick()
+                self.assertNotEqual(receipt['cycle_status'], 'BUDGET_BLOCKED')
+                self.assertGreater(receipt['model_call_count'], 0)
+                account = h.service._loop()['account_id']
+                self.assertEqual(h.repo.model_calls_since(account, T0, 'CRYPTO'), 50)
+                other_loop(h, 'RL-old-equity', 'US_EQUITIES', 2)
+                own = receipt['model_call_count']
+                self.assertEqual(h.repo.model_calls_since(account, T0, 'US_EQUITIES'), own + 2)
+                self.assertEqual(h.repo.model_calls_since(account, T0), own + 52)
+            connection.close()
+
     def test_held_instruments_keep_a_quote_subscription_without_any_page_open(self):
         self.h.hold()
         self.h.ledger.data_mode = self.h.store.data_mode = 'LIVE_OBSERVATIONAL'

@@ -150,15 +150,21 @@ class ReevaluationRepository:
                       and (not session_date or v['session_date'] == session_date)]
             return sorted(reversed(values), key=lambda v: v['scheduled_epoch'], reverse=True)[:limit]
 
-    def model_calls_since(self, account_id, epoch):
-        """Across every loop of the account: a reconfigured scope does not start a fresh budget."""
+    def model_calls_since(self, account_id, epoch, universe=None):
+        """Across every loop of the account in the same universe: a reconfigured scope does not start a fresh budget,
+        and one market's loop does not spend another market's. Without ``universe``, the whole account."""
         with self.lock:
             if self.connection:
+                sql, params = 'SELECT loop_id FROM reevaluation_loops WHERE account_id=?', [account_id]
+                if universe is not None:
+                    sql += " AND json_extract(payload,'$.scope.universe')=?"; params.append(universe)
                 return int(self.connection.execute(
-                    'SELECT COALESCE(SUM(model_calls),0) FROM reevaluation_cycles WHERE scheduled_for>=? AND loop_id IN '
-                    '(SELECT loop_id FROM reevaluation_loops WHERE account_id=?)', (epoch, account_id)).fetchone()[0])
+                    f'SELECT COALESCE(SUM(model_calls),0) FROM reevaluation_cycles WHERE scheduled_for>=? AND loop_id IN ({sql})',
+                    (epoch, *params)).fetchone()[0])
+            same = lambda loop_id: universe is None or (
+                loop_id in self._loops and (self._loops[loop_id][2].get('scope') or {}).get('universe') == universe)
             return sum(v['model_call_count'] for v in map(json.loads, self._cycles.values())
-                       if v['account_id'] == account_id and v['scheduled_epoch'] >= epoch)
+                       if v['account_id'] == account_id and v['scheduled_epoch'] >= epoch and same(v['loop_id']))
 
     # --- loop configuration, liveness and lease ---------------------------------
     def _loop_row(self, loop_id):

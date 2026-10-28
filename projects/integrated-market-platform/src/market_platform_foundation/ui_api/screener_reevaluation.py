@@ -595,8 +595,9 @@ class ReevaluationService:
             # The driver's owner policy withholds model calls. Deterministic work, including stops, continues.
             engine = dict(engine, state='UNAVAILABLE', reason=str(model_gate.get('reason') or 'MODEL_CALLS_WITHHELD'))
         usable = engine['state'] == 'AVAILABLE'
-        hour = self.repository.model_calls_since(loop['account_id'], started - 3600)
-        day = self.repository.model_calls_since(loop['account_id'], started - 86400)
+        universe = (loop['scope'] or {}).get('universe')
+        hour = self.repository.model_calls_since(loop['account_id'], started - 3600, universe)
+        day = self.repository.model_calls_since(loop['account_id'], started - 86400, universe)
         window_left = min(policy['max_model_calls_per_hour'] - hour, policy['max_model_calls_per_day'] - day)
         state = spent if spent is not None else {}
         state.update(remaining=max(0, min(policy['max_model_calls_per_cycle'], window_left)) if usable else 0,
