@@ -30,6 +30,10 @@ ruled out the E: SSD; everything stays on D:.
   of every decoded row must match the source before the state store's stream
   tables are emptied (they stay, so older code still opens it) and the file is
   compacted in place with `VACUUM` (same file identity, temp store in memory).
+  First run on the real store was seek-bound on the HDD (400k of 3.3M rows in
+  49 min, slowing down), so it was stopped before touching the state store;
+  `--in-memory` reads the store once in page order into RAM, works there, and
+  writes the compacted store back into the same file with the backup API.
 - The keeper starts the platform as a polled child instead of blocking its loop
   for up to 3 h, so OpenD and the collector stay watched during a long start.
 - The keeper's nightly integrity check covers the stream store too

@@ -20,6 +20,14 @@
 5. The state store's four stream tables are emptied (they stay, so its schema and older code are unchanged) and the
    file is compacted in place with ``VACUUM`` (same file identity, temp store in memory, never on C:).
 6. Full integrity checks of both files write both receipts. Evidence goes to ``--evidence``.
+
+``--in-memory`` (2026-10-27): on the D: hard drive the stream rows of a store grown over two weeks are scattered
+through the file, and reading them in rowid order was seek-bound (~300 then under 100 rows/s, 4+ h for 3.3M rows).
+With it, the state store is first read once, in page order, into a private in-memory database (SQLite's backup
+API); steps 3-4 read from that copy, step 5 empties and VACUUMs the copy and writes it back into the same file with
+the backup API (same file identity, WAL kept), after checking nothing changed the file since it was read. It needs
+free RAM of about 1.4x the store. ``--reuse-backup`` takes a backup copy made by an earlier attempt instead of a new
+one, provided the state store has not been written since that copy was started.
 """
 from __future__ import annotations
 
@@ -55,6 +63,9 @@ RECORD_COLUMNS = ("record_id", "provider", "symbol", "capability", "event_ns", "
                   "normalized_ns", "persisted_ns", "source_identity", "payload_json")
 WINDOW_START_HOUR, WINDOW_END = 20, (3, 45)
 LABEL = "split_stream_store"
+MEMORY_URI = "file:imp-split-state-copy?mode=memory&cache=shared"
+MEMORY_HEADROOM = 1.4  # free RAM needed per byte of store: pages plus SQLite's per-page overhead and the VACUUM
+LOAD_STEP_PAGES = 65_536
 
 
 class SplitError(RuntimeError):
@@ -172,18 +183,131 @@ def _copy_with_hash(source: Path, dest: Path) -> dict[str, Any]:
     return {"path": str(dest), "bytes": size, "sha256": digest.hexdigest()}
 
 
+def _reuse_backup(state: Path, backup: Path, sha256: str | None) -> dict[str, Any]:
+    """An earlier attempt's backup stands for this run only if the state store was not written after it began."""
+    if not backup.is_file():
+        raise SplitError("REUSED_BACKUP_MISSING")
+    source, copy = state.stat(), backup.stat()
+    if copy.st_size != source.st_size:
+        raise SplitError("REUSED_BACKUP_SIZE_MISMATCH")
+    if source.st_mtime > copy.st_ctime:  # st_ctime is the creation time on Windows
+        raise SplitError("STATE_STORE_WRITTEN_AFTER_BACKUP")
+    if _file_bytes(state) != source.st_size:
+        raise SplitError("STATE_STORE_WAL_NOT_EMPTY")
+    return {"path": str(backup), "bytes": copy.st_size, "sha256": sha256, "reused": True,
+            "state_mtime": source.st_mtime, "backup_created": copy.st_ctime}
+
+
+def _free_memory_bytes() -> int | None:
+    if os.name != "nt":
+        return None
+    import ctypes
+
+    class _Status(ctypes.Structure):
+        _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong)] + [
+            (name, ctypes.c_ulonglong) for name in ("total_phys", "avail_phys", "total_page", "avail_page",
+                                                     "total_virtual", "avail_virtual", "avail_extended")]
+
+    status = _Status()
+    status.dwLength = ctypes.sizeof(_Status)
+    if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+        return None
+    return int(status.avail_phys)
+
+
+def load_into_memory(state: Path, *, log=print) -> tuple[sqlite3.Connection, dict[str, Any]]:
+    """One page-order read of the state store into a private in-memory copy (kept open by the returned connection)."""
+    size, stat = state.stat().st_size, state.stat()
+    free = _free_memory_bytes()
+    if free is not None and free < size * MEMORY_HEADROOM:
+        raise SplitError(f"NOT_ENOUGH_FREE_MEMORY:{free}<{int(size * MEMORY_HEADROOM)}")
+    memory = sqlite3.connect(MEMORY_URI, uri=True, isolation_level=None)
+    started = time.monotonic()
+    try:
+        def progress(status: int, remaining: int, total: int) -> None:
+            done = total - remaining
+            if done and done % (LOAD_STEP_PAGES * 8) == 0:
+                log(json.dumps({"event": "LOAD_PROGRESS", "pages": done, "of": total,
+                                "elapsed_seconds": round(time.monotonic() - started, 1)}), flush=True)
+
+        with closing(_ro(state)) as source:
+            source.backup(memory, pages=LOAD_STEP_PAGES, progress=progress)
+        pages = memory.execute("PRAGMA page_count").fetchone()[0]
+        page_size = memory.execute("PRAGMA page_size").fetchone()[0]
+    except BaseException:
+        memory.close()
+        raise
+    if pages * page_size != size:
+        memory.close()
+        raise SplitError(f"MEMORY_COPY_SIZE_MISMATCH:{pages * page_size}!={size}")
+    return memory, {"bytes": size, "pages": pages, "free_memory_before": free, "mtime": stat.st_mtime,
+                    "load_seconds": round(time.monotonic() - started, 1)}
+
+
+def _table_counts(db: sqlite3.Connection, *, skip: tuple[str, ...] = ()) -> dict[str, int]:
+    names = [row[0] for row in db.execute("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE "
+                                          "'sqlite_%' ORDER BY name")]
+    return {name: db.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0] for name in names if name not in skip}
+
+
+def shrink_in_memory(memory: sqlite3.Connection, state: Path, loaded: dict[str, Any]) -> dict[str, Any]:
+    """Step 5 on the in-memory copy, then written back into the same file (same identity, WAL kept)."""
+    before, identity = _file_bytes(state), _identity(state)
+    stream_tables = ("market_stream_records", *SMALL_TABLES)
+    counts_before = _table_counts(memory, skip=stream_tables)
+    memory.execute("BEGIN IMMEDIATE")
+    for table in stream_tables:
+        memory.execute(f"DELETE FROM {table}")
+    memory.execute("COMMIT")
+    started = time.monotonic()
+    memory.execute("PRAGMA temp_store=MEMORY")
+    memory.execute("VACUUM")
+    vacuum_seconds = round(time.monotonic() - started, 1)
+    status = receipts.full_check(memory)
+    if status != "ok":
+        raise SplitError(f"MEMORY_COPY_INTEGRITY:{status}")
+    if _table_counts(memory, skip=stream_tables) != counts_before:
+        raise SplitError("MEMORY_COPY_COUNTS_CHANGED")
+    stat = state.stat()
+    if (_identity(state) != identity or stat.st_size != loaded["bytes"] or stat.st_mtime != loaded["mtime"]
+            or before != loaded["bytes"]):
+        raise SplitError("STATE_STORE_CHANGED_SINCE_LOAD")
+    started = time.monotonic()
+    target = sqlite3.connect(str(state), timeout=30, isolation_level=None)
+    try:
+        target.execute("PRAGMA busy_timeout=30000")
+        memory.backup(target)
+        busy, _, _ = target.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+        mode = target.execute("PRAGMA journal_mode").fetchone()[0]
+        if str(mode).lower() != "wal":
+            mode = target.execute("PRAGMA journal_mode=WAL").fetchone()[0]
+        counts_after = _table_counts(target, skip=stream_tables)
+        stream_left = sum(target.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in stream_tables)
+    finally:
+        target.close()
+    if _identity(state) != identity:
+        raise SplitError("STATE_STORE_IDENTITY_CHANGED")
+    if counts_after != counts_before or stream_left:
+        raise SplitError("STATE_STORE_COUNTS_AFTER_WRITE_BACK")
+    return {"bytes_before": before, "bytes_after": _file_bytes(state), "vacuum_seconds": vacuum_seconds,
+            "write_back_seconds": round(time.monotonic() - started, 1), "checkpoint_busy": bool(busy),
+            "journal_mode": mode, "identity": list(identity), "table_counts": counts_after}
+
+
 def _scope(provider: str, capability: str) -> str:
     return stream_scope(_source(provider), capability)
 
 
-def build(state: Path, partial: Path, *, log=print) -> dict[str, Any]:
-    """Steps 3 and 4: the verified partial stream store. Returns the copy and verification evidence."""
+def build(state: Path, partial: Path, *, log=print, source_uri: str | None = None) -> dict[str, Any]:
+    """Steps 3 and 4: the verified partial stream store. Returns the copy and verification evidence.
+
+    ``source_uri`` reads the rows from another copy of the state store (the in-memory one) instead of the file."""
     create_stream_store(partial)
-    # uri=True lets the ATTACH below open the state store read-only.
+    # uri=True lets the ATTACH below open the state store read-only (or the shared in-memory copy).
     db = sqlite3.connect(partial.resolve().as_uri(), uri=True, isolation_level=None)
     try:
         db.execute("PRAGMA synchronous=NORMAL")
-        db.execute("ATTACH DATABASE ? AS src", (state.resolve().as_uri() + "?mode=ro",))
+        db.execute("ATTACH DATABASE ? AS src", (source_uri or state.resolve().as_uri() + "?mode=ro",))
         small = {}
         db.execute("BEGIN IMMEDIATE")
         for table in SMALL_TABLES:
@@ -315,7 +439,8 @@ def verify_and_receipt(store: Path) -> dict[str, Any]:
 
 
 def run(state: Path, *, backup_dir: Path | None, evidence: Path | None, any_time: bool = False,
-        log=print) -> dict[str, Any]:
+        log=print, in_memory: bool = False, reuse_backup: Path | None = None,
+        reuse_backup_sha256: str | None = None) -> dict[str, Any]:
     state = state.resolve()
     result: dict[str, Any] = {"started_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                               "state": str(state), "identity_before": list(_identity(state))}
@@ -327,15 +452,22 @@ def run(state: Path, *, backup_dir: Path | None, evidence: Path | None, any_time
             evidence.write_text(json.dumps(result, indent=2, default=str) + "\n", encoding="utf-8")
         log(json.dumps({"event": "STAGE", "stage": stage}), flush=True)
 
+    memory = None
     try:
         _preconditions(state, any_time=any_time)
         _exclusive_checkpoint(state)
         save("PRECONDITIONS_OK")
-        if backup_dir is not None:
+        if reuse_backup is not None:
+            result["backup"] = _reuse_backup(state, reuse_backup, reuse_backup_sha256)
+            save("BACKUP_DONE")
+        elif backup_dir is not None:
             result["backup"] = _copy_with_hash(state, backup_dir / state.name)
             save("BACKUP_DONE")
+        if in_memory:
+            memory, result["load"] = load_into_memory(state, log=log)
+            save("LOADED_IN_MEMORY")
         partial = state.parent / PARTIAL_NAME
-        result["copy"] = build(state, partial, log=log)
+        result["copy"] = build(state, partial, log=log, source_uri=MEMORY_URI if in_memory else None)
         save("STREAM_STORE_VERIFIED")
         final = state.parent / STREAM_STORE_NAME
         if final.exists():
@@ -347,7 +479,12 @@ def run(state: Path, *, backup_dir: Path | None, evidence: Path | None, any_time
             Path(str(partial) + suffix).unlink(missing_ok=True)
         os.replace(partial, final)
         save("STREAM_STORE_IN_PLACE")
-        result["shrink"] = shrink_state(state)
+        if memory is not None:
+            result["shrink"] = shrink_in_memory(memory, state, result["load"])
+            memory.close()
+            memory = None
+        else:
+            result["shrink"] = shrink_state(state)
         save("STATE_STORE_COMPACTED")
         result["verify"] = [verify_and_receipt(state), verify_and_receipt(final)]
         result["finished_utc"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -356,6 +493,9 @@ def run(state: Path, *, backup_dir: Path | None, evidence: Path | None, any_time
         result["error"] = f"{type(exc).__name__}:{exc}"
         save("FAILED")
         raise
+    finally:
+        if memory is not None:
+            memory.close()
     return result
 
 
@@ -366,14 +506,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--backup-dir", type=Path)
     parser.add_argument("--evidence", type=Path)
     parser.add_argument("--any-time", action="store_true", help="skip the night-window check (tests only)")
+    parser.add_argument("--in-memory", action="store_true", help="read the store once into RAM, work there")
+    parser.add_argument("--reuse-backup", type=Path, help="an earlier attempt's backup copy of this same store")
+    parser.add_argument("--reuse-backup-sha256", help="that copy's recorded SHA-256 (for the evidence)")
     args = parser.parse_args(argv)
     if args.mode == "plan":
         print(json.dumps(plan(args.state), indent=2, default=str))
         return 0
-    if args.backup_dir is None:
-        parser.error("run needs --backup-dir: the backup copy is the rollback")
+    if args.backup_dir is None and args.reuse_backup is None:
+        parser.error("run needs --backup-dir or --reuse-backup: the backup copy is the rollback")
     try:
-        result = run(args.state, backup_dir=args.backup_dir, evidence=args.evidence, any_time=args.any_time)
+        result = run(args.state, backup_dir=args.backup_dir, evidence=args.evidence, any_time=args.any_time,
+                     in_memory=args.in_memory, reuse_backup=args.reuse_backup,
+                     reuse_backup_sha256=args.reuse_backup_sha256)
     except SplitError as exc:
         print(json.dumps({"result": "FAILED", "error": str(exc)}), flush=True)
         return 2

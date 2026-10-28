@@ -201,11 +201,53 @@ class SplitToolTests(StreamStoreTestBase):
         LocalStateConnection(self.state, verify=True).close()  # a fresh receipt, as the night tool requires
 
     def test_split_moves_rows_compressed_and_compacts_state_in_place(self):
+        self.check_split()
+
+    def test_in_memory_split_gives_the_same_result_and_keeps_wal(self):
+        result = self.check_split(in_memory=True)
+        self.assertEqual(result['shrink']['journal_mode'], 'wal')
+        self.assertEqual(result['load']['bytes'], result['shrink']['bytes_before'])
+        self.assertGreater(result['shrink']['table_counts']['schema_meta'], 0)
+
+    def test_in_memory_split_can_reuse_an_untouched_backup(self):
+        self.fill(120)
+        backup = split._copy_with_hash(self.state, self.dir / 'earlier' / self.state.name)
+        result = split.run(self.state, backup_dir=None, evidence=None, any_time=True, log=lambda *a, **k: None,
+                           in_memory=True, reuse_backup=Path(backup['path']), reuse_backup_sha256=backup['sha256'])
+        self.assertTrue(result['backup']['reused'])
+        self.assertEqual(result['copy']['rows'], len(self.source))
+
+    def test_reused_backup_is_refused_once_the_store_was_written_after_it(self):
+        self.fill(30)
+        copy = self.dir / 'earlier' / self.state.name
+        split._copy_with_hash(self.state, copy)
+        stat = copy.stat()
+        os.utime(self.state, (stat.st_atime, stat.st_ctime + 10))
+        with self.assertRaisesRegex(split.SplitError, 'STATE_STORE_WRITTEN_AFTER_BACKUP'):
+            split.run(self.state, backup_dir=None, evidence=None, any_time=True, log=lambda *a, **k: None,
+                      in_memory=True, reuse_backup=copy)
+
+    def test_in_memory_verify_mismatch_leaves_the_file_untouched(self):
+        self.fill(120)
+        before = self.state.read_bytes()
+        real = codec.PayloadCodec.decode
+
+        def damaged(self_, value):
+            return real(self_, value).replace('N/A', 'n/a', 1)
+
+        with patch.object(codec.PayloadCodec, 'decode', damaged):
+            with self.assertRaises(split.SplitError):
+                split.run(self.state, backup_dir=None, evidence=None, any_time=True, log=lambda *a, **k: None,
+                          in_memory=True)
+        self.assertEqual(self.state.read_bytes(), before)
+        self.assertFalse(stream_store.stream_store_path(self.state).exists())
+
+    def check_split(self, **options):
         self.fill()
         identity = split._identity(self.state)
         evidence = self.dir / 'evidence.json'
         result = split.run(self.state, backup_dir=self.dir / 'backup', evidence=evidence, any_time=True,
-                           log=lambda *a, **k: None)
+                           log=lambda *a, **k: None, **options)
         self.assertEqual(json.loads(evidence.read_text())['stage'], 'COMPLETE')
         self.assertEqual(result['copy']['rows'], len(self.source))
         self.assertGreater(result['copy']['encoded_rows'], 0)
@@ -236,6 +278,7 @@ class SplitToolTests(StreamStoreTestBase):
         writer.flush()
         self.assertGreater(self.rows(stream)[-1][0], self.source[-1][0])
         self.assertTrue(codec.is_encoded(self.rows(stream)[-1][2]))
+        return result
 
     def test_verify_mismatch_aborts_before_state_store_changes(self):
         self.fill(120)
