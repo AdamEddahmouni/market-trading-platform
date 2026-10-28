@@ -348,6 +348,18 @@ latch. It is never restarted in a tight loop.
   cannot write its evidence for 60 seconds, half the lease, it stops the child
   and waits as for a storage outage (`SUPERVISION_EVIDENCE_UNAVAILABLE`).
 
+### The market stream store (2026-10-27)
+
+- Once `tools/platform/split_stream_store.py` has run, market receipts are stored in
+  `imp-market-stream.sqlite3` beside `imp-state.sqlite3` (`market_data/stream_store.py`), with payloads
+  compressed losslessly (`local_state/payload_codec.py`; `IMP_MARKET_PAYLOAD_CODEC=0` keeps new rows plain).
+- The state store keeps empty `market_stream_*` tables, so its schema is unchanged and older code still opens it.
+- The writer's owner lock stays `imp-state.sqlite3.market-writer.lock`. Runs, checkpoints and gaps are read from
+  the stream store; supply evidence stays in the state store.
+- The database-plus-WAL guard counts both files against the one configured ceiling.
+- The stream store is never created by an open: a missing file means the split has not run and everything uses the
+  state store as before.
+
 ### What ends the child
 
 The child stops when its parent's lease is lost, when a worker reports

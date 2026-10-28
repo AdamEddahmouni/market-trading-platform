@@ -20,6 +20,7 @@ from uuid import uuid4
 from ..local_state.connection import (LocalStateConnection, lock_contention_error, lock_retry_window_seconds,
                                       transient_storage_error)
 from ..market_data.capacity import configured_max_database_bytes
+from ..market_data.stream_store import footprint_bytes
 from .knowledge import append_revision, article_identity
 from .rss_feeds import FEEDS
 
@@ -120,8 +121,8 @@ class NewsCollector:
             if not path.is_file():
                 return "UNAVAILABLE"  # possibly a drive that returns; retried, never recreated
             stat = path.stat()
-            wal = Path(str(path) + "-wal")
-            size = stat.st_size + (wal.stat().st_size if wal.is_file() else 0)
+            # The market stream store beside the state store shares the one bound (market_data/stream_store.py).
+            size = footprint_bytes(path)
         except OSError:
             return "UNAVAILABLE"
         if (stat.st_dev, stat.st_ino) != self._storage_identity:

@@ -24,6 +24,7 @@ from typing import Any, Mapping
 from market_platform_foundation.market_data.capacity import capacity_status
 from market_platform_foundation.market_data.headless_supply import collection_session, validate_supply
 from market_platform_foundation.market_data.persistence import configured_selection, validate_capture_selection
+from market_platform_foundation.market_data.stream_store import footprint_bytes, stream_data_path
 from market_platform_foundation.news.collection import configured_jobs
 from market_platform_foundation.news.supervision import (
     AI_CREDENTIAL_PREFIXES, EXECUTION_GATES, LEASE_SECONDS, child_stop_bound_seconds, collection_only_reason, require_current_schema,
@@ -92,8 +93,10 @@ def _schema(path: Path) -> dict[str, Any]:
 
 def _capacity(path: Path, env: Mapping[str, str]) -> dict[str, Any]:
     try:
+        # The state store and the market stream store beside it share the one ceiling (stream_store.py).
         wal = Path(str(path) + '-wal')
-        status = capacity_status(path.stat().st_size, wal_bytes=wal.stat().st_size if wal.is_file() else 0,
+        wal_bytes = wal.stat().st_size if wal.is_file() else 0
+        status = capacity_status(footprint_bytes(path) - wal_bytes, wal_bytes=wal_bytes,
                                  free_disk_bytes=shutil.disk_usage(path.parent).free, env=env)
     except (OSError, ValueError) as exc:
         return _check('capacity', UNKNOWN, str(exc) if isinstance(exc, ValueError) else 'CAPACITY_UNAVAILABLE')
@@ -115,7 +118,7 @@ def _owners(path: Path, env: Mapping[str, str], now: float) -> list[dict[str, An
     else:
         supervisor = _check('supervisor_owner', READY)
     try:
-        with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True, timeout=.1)) as db:
+        with closing(sqlite3.connect(stream_data_path(path).resolve().as_uri() + '?mode=ro', uri=True, timeout=.1)) as db:
             held = db.execute('SELECT COUNT(*) FROM market_stream_runs WHERE closed_ns IS NULL AND lease_until_ns>?',
                               (int(now * 1e9),)).fetchone()[0]
         writer = _check('market_writer_owner', BLOCKED, 'MARKET_CAPTURE_OWNER_ACTIVE') if held else _check('market_writer_owner', READY)

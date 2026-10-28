@@ -264,6 +264,7 @@ class Keeper:
         self.started = False
         self.reboot_at: float | None = None
         self._verify_process: Any = None
+        self._platform_process: Any = None
         self.last_seen: float | None = None
         # A dry run reports what one failed observation would lead to; the real loop waits for the full count.
         self.opend_threshold = 1 if dry_run else OPEND_FAILURES_BEFORE_RESTART
@@ -460,6 +461,9 @@ class Keeper:
     # ------------------------------------------------------------------ platform
     def _platform(self, now: float, opend_healthy: bool | None) -> str:
         s = self.state["platform"]
+        pending = self._platform_pending(now)
+        if pending is not None:
+            return pending
         cause = None
         if self.ops.platform_answering():
             s["failures"] = 0
@@ -500,12 +504,56 @@ class Keeper:
             return "WAITING_FOR_ALLOWANCE"
         stop_first = cause == "FEED_UNRECOVERABLE"
         if self.dry_run:
-            outcome, code = "DRY_RUN_NOT_STARTED", None
-        else:
+            return self._platform_finished("DRY_RUN_NOT_STARTED", None, cause=cause, attempt=attempt,
+                                           down_since=down_since, stop_first=stop_first)
+        spawn = getattr(self.ops, "platform_start_spawn", None)
+        if spawn is None:
             code = self.ops.platform_start(stop_first=stop_first)
-            outcome = "READY" if code == 0 else "START_FAILED"
+            return self._platform_finished("READY" if code == 0 else "START_FAILED", code, cause=cause,
+                                           attempt=attempt, down_since=down_since, stop_first=stop_first)
+        # The start runs beside the loop: a platform start may wait hours for a whole-store scan, and OpenD and the
+        # collector must stay watched meanwhile (each tick polls it in _platform_pending).
+        try:
+            self._platform_process = spawn(stop_first=stop_first)
+        except OSError as exc:
+            return self._platform_finished("START_FAILED", -2, cause=cause, attempt=attempt, down_since=down_since,
+                                           stop_first=stop_first, error=type(exc).__name__)
+        s["start"] = {"started_at": self.clock(), "pid": getattr(self._platform_process, "pid", None),
+                      "attempt": attempt, "cause": cause, "down_since": down_since, "stop_first": stop_first}
+        self.log.record("PLATFORM", "RESTART_STARTED", cause=cause, outcome="STARTING", attempt=attempt,
+                        pid=s["start"]["pid"], stopped_first=stop_first)
+        return "STARTING"
+
+    def _platform_pending(self, now: float) -> str | None:
+        """The state of a start this keeper launched: None when there is none, else STARTING or its outcome."""
+        s = self.state["platform"]
+        if self._platform_process is None:
+            if s.pop("start", None) is not None:
+                # Launched by an earlier keeper process, which cannot be polled from here; the normal checks resume.
+                self.log.record("PLATFORM", "START_ORPHANED", outcome="NOT_TRACKED")
+            return None
+        start = s.get("start") or {}
+        code = self._platform_process.poll()
+        if code is None:
+            if now - float(start.get("started_at") or now) < PLATFORM_START_TIMEOUT_SECONDS:
+                return "STARTING"
+            try:
+                self._platform_process.kill()
+            except OSError:
+                pass
+            code = -1
+        self._platform_process = None
+        s.pop("start", None)
+        return self._platform_finished("READY" if code == 0 else "START_FAILED", int(code),
+                                       cause=start.get("cause"), attempt=start.get("attempt"),
+                                       down_since=float(start.get("down_since") or now),
+                                       stop_first=bool(start.get("stop_first")))
+
+    def _platform_finished(self, outcome: str, code: int | None, *, cause: str | None, attempt: int | None,
+                           down_since: float, stop_first: bool, **extra: Any) -> str:
+        s = self.state["platform"]
         self.log.record("PLATFORM", "RESTART", cause=cause, outcome=outcome, attempt=attempt,
-                        down_seconds=self.clock() - down_since, exit_code=code, stopped_first=stop_first)
+                        down_seconds=self.clock() - down_since, exit_code=code, stopped_first=stop_first, **extra)
         if outcome == "READY":
             s.update(failures=0, down_since=None, last_feed_check=self.clock(), feed_wait_logged=False)
             self.state["paper_watch"] = {"since": self.clock()}
@@ -801,6 +849,22 @@ class WindowsOperations:
         except OSError:
             return -2
         return int(result.returncode)
+
+    def platform_start_spawn(self, *, stop_first: bool) -> subprocess.Popen:
+        """``RUN_IMP start`` as a child the keeper polls each tick (Keeper._platform_pending), instead of waiting
+        inside one tick for up to PLATFORM_START_TIMEOUT_SECONDS. A requested stop still runs first, bounded."""
+        env = dict(os.environ, IMP_PLATFORM_RESTARTER="keeper", PYTHONDONTWRITEBYTECODE="1")
+        python = str(self.paths.python())
+        if stop_first:
+            try:
+                subprocess.run([python, "-B", str(self.paths.run_imp), "stop"], cwd=str(self.paths.portable), env=env,
+                               capture_output=True, timeout=PLATFORM_STOP_TIMEOUT_SECONDS, creationflags=NO_WINDOW)
+            except subprocess.TimeoutExpired:
+                pass  # the start below reports whatever state the stop left
+        # No pipes: nobody reads them while the child runs, and a full pipe would stall it.
+        return subprocess.Popen([python, "-B", str(self.paths.run_imp), "start", "--no-browser"],
+                                cwd=str(self.paths.portable), env=env, stdin=subprocess.DEVNULL,
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=NO_WINDOW)
 
     def _store(self) -> Path | None:
         directory = self.paths.state_directory()

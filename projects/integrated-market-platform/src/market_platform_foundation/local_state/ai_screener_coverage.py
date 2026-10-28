@@ -28,6 +28,7 @@ class CoverageLedger:
         self.table = table
         self.connection = connection
         self._memory: list[tuple[str, int, str, str]] = []
+        self._codec = None
         self.lock = threading.RLock()
         if connection is not None:
             with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
@@ -35,6 +36,17 @@ class CoverageLedger:
                                    'kind TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(run_id,seq))')
                 index = 'ai_screener_coverage_kind' if self.table == 'ai_screener_coverage_records' else 'ai_screener_staged_kind'
                 connection.execute(f'CREATE INDEX IF NOT EXISTS {index} ON {self.table}(kind,run_id)')
+
+    def _text(self, payload) -> str:
+        """Records are written as JSON text. A compressed record (local_state/payload_codec.py) is decoded, so a
+        later release may compress them without breaking this reader; it fails closed when it cannot decode."""
+        if isinstance(payload, str):
+            return payload
+        if self._codec is None:
+            from .payload_codec import PayloadCodec
+
+            self._codec = PayloadCodec(self.connection)
+        return self._codec.decode(payload)
 
     def _rows(self, run_id: str | None = None, kind: str | None = None) -> list[tuple[str, int, str, str]]:
         if self.connection:
@@ -44,7 +56,7 @@ class CoverageLedger:
                     clauses.append(f'{column}=?')
                     values.append(value)
             where = ' WHERE ' + ' AND '.join(clauses) if clauses else ''
-            return [tuple(row) for row in self.connection.execute(
+            return [(row[0], row[1], row[2], self._text(row[3])) for row in self.connection.execute(
                 f'SELECT run_id,seq,kind,payload FROM {self.table}' + where + ' ORDER BY rowid', values).fetchall()]
         return [row for row in self._memory if (run_id is None or row[0] == run_id) and (kind is None or row[2] == kind)]
 

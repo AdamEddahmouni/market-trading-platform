@@ -224,6 +224,93 @@ class PlatformTests(KeeperCase):
         self.assertEqual((entry['cause'], entry['outcome'], entry['detail']['stopped_first']), ('FEED_UNRECOVERABLE', 'READY', True))
 
 
+class FakeStart:
+    """A ``RUN_IMP start`` child: still running (``code`` None) until a test sets its exit code."""
+    pid = 5150
+
+    def __init__(self, ops):
+        self.ops, self.code, self.killed = ops, None, False
+
+    def poll(self):
+        return self.code
+
+    def kill(self):
+        self.killed = True
+
+
+class SpawningOps(FakeOps):
+    """Operations with the non-blocking platform start (2026-10-27)."""
+
+    def __init__(self, clock):
+        super().__init__(clock)
+        self.starts = []
+
+    def platform_start_spawn(self, *, stop_first):
+        self.calls.append(('platform_start_spawn', stop_first, self.clock.value))
+        self.starts.append(FakeStart(self))
+        return self.starts[-1]
+
+
+class NonBlockingPlatformStartTests(KeeperCase):
+    def setUp(self):
+        super().setUp()
+        self.ops = SpawningOps(self.clock)
+
+    def down_until_started(self, keeper):
+        self.ops.answering = False
+        self.run_until(keeper, lambda: self.ops.starts)
+
+    def test_a_pending_start_keeps_the_collector_and_opend_watched_and_starts_no_second_platform(self):
+        keeper = self.keeper()
+        self.down_until_started(keeper)
+        self.assertEqual(self.log('PLATFORM', 'RESTART_STARTED')[0]['outcome'], 'STARTING')
+        self.ops.collector_running = False  # the collector dies while the platform is still starting
+        self.run_ticks(keeper, 40)  # 20 minutes of a start that is waiting for a whole-store scan
+        self.assertEqual(len(self.ops.starts), 1)
+        self.assertEqual(self.ops.actions('platform_start'), [])  # the blocking call is never used
+        self.assertTrue(self.ops.actions('collector_spawn'))  # serviced while the start is pending
+        self.assertEqual(self.log('PLATFORM', 'RESTART'), [])
+        self.assertEqual(keeper.tick()['platform'], 'STARTING')
+
+    def test_the_exit_code_decides_the_outcome_and_a_ready_platform_is_watched_again(self):
+        keeper = self.keeper()
+        self.down_until_started(keeper)
+        self.ops.starts[0].code, self.ops.answering = 0, True
+        self.assertEqual(keeper.tick()['platform'], 'READY')
+        entry = self.log('PLATFORM', 'RESTART')[0]
+        self.assertEqual((entry['cause'], entry['outcome'], entry['attempt'], entry['detail']['exit_code']),
+                         ('NOT_ANSWERING', 'READY', 1, 0))
+        self.assertNotIn('start', keeper.state['platform'])
+        self.assertIsNotNone(keeper.state['paper_watch'])
+        self.assertEqual(keeper.tick()['platform'], 'ANSWERING')
+
+    def test_a_failed_start_is_logged_and_retried_within_the_allowance(self):
+        keeper = self.keeper()
+        self.down_until_started(keeper)
+        self.ops.starts[0].code = 1
+        self.assertEqual(keeper.tick()['platform'], 'START_FAILED')
+        self.run_until(keeper, lambda: len(self.ops.starts) == 2)
+        spawns = self.ops.actions('platform_start_spawn')
+        self.assertGreaterEqual(spawns[1][-1] - spawns[0][-1], BACKOFF_SECONDS[0])
+
+    def test_a_start_that_outlives_its_bound_is_killed_and_counted_as_failed(self):
+        keeper = self.keeper()
+        self.down_until_started(keeper)
+        self.clock.value += imp_keeper.PLATFORM_START_TIMEOUT_SECONDS + 1
+        self.assertEqual(keeper.tick()['platform'], 'START_FAILED')
+        self.assertTrue(self.ops.starts[0].killed)
+        self.assertEqual(self.log('PLATFORM', 'RESTART')[0]['detail']['exit_code'], -1)
+
+    def test_a_new_keeper_does_not_adopt_a_start_it_cannot_poll(self):
+        keeper = self.keeper()
+        self.down_until_started(keeper)
+        self.assertIn('start', keeper.state['platform'])
+        successor = self.keeper()
+        successor.tick()
+        self.assertEqual(self.log('PLATFORM', 'START_ORPHANED')[0]['outcome'], 'NOT_TRACKED')
+        self.assertNotIn('start', successor.state['platform'])
+
+
 class OpenDTests(KeeperCase):
     def test_a_lost_login_is_restarted_after_three_checks_politely_then_by_force(self):
         keeper = self.keeper()

@@ -271,6 +271,11 @@ class HeadlessMarketSupply:
         if not targets or len(targets) > MAX_TARGETS:
             raise ValueError('MARKET_SUPPLY_TARGETS_INVALID')
         self.path, self.targets, self.writer, self.clock, self.interval = path, targets, writer, clock, interval
+        # ``path`` is the state store (supply evidence, the writer's owner lock); runs and checkpoints are read where
+        # the writer keeps them (stream_store.py).
+        from .stream_store import stream_data_path
+
+        self.stream_path = stream_data_path(path)
         stat = path.stat()
         self._storage_identity = (stat.st_dev, stat.st_ino)
         self.entitled_sources = frozenset(entitled_sources)
@@ -298,7 +303,7 @@ class HeadlessMarketSupply:
     def _foreign_writer(self) -> bool | None:
         """True while another process holds the market writer. None when the store could not be read."""
         try:
-            with closing(sqlite3.connect(self.path.resolve().as_uri() + '?mode=ro', uri=True, timeout=.1)) as db:
+            with closing(sqlite3.connect(self.stream_path.resolve().as_uri() + '?mode=ro', uri=True, timeout=.1)) as db:
                 rows = db.execute('SELECT run_id FROM market_stream_runs WHERE closed_ns IS NULL AND lease_until_ns>?',
                                   (time.time_ns(),)).fetchall()
         except (sqlite3.Error, OSError):
@@ -402,7 +407,7 @@ class HeadlessMarketSupply:
 
     def _checkpoints(self) -> dict[str, tuple[int, int]] | None:
         try:
-            with closing(sqlite3.connect(self.path.resolve().as_uri() + '?mode=ro', uri=True, timeout=.1)) as db:
+            with closing(sqlite3.connect(self.stream_path.resolve().as_uri() + '?mode=ro', uri=True, timeout=.1)) as db:
                 return {str(row[0]).lower(): (row[1], row[2]) for row in
                         db.execute('SELECT stream_id,received_ns,commit_ns FROM market_stream_checkpoints').fetchall()}
         except (sqlite3.Error, OSError):
@@ -584,7 +589,7 @@ def start_supply(writer: Any, env: Mapping[str, str] | None = None, *,
     with _GLOBAL_LOCK:
         if _SUPPLY is not None:
             raise ValueError('MARKET_SUPPLY_ALREADY_STARTED')
-        supply = HeadlessMarketSupply(writer.connection.path, targets, writer=writer, providers=providers,
+        supply = HeadlessMarketSupply(getattr(writer, 'state_path', writer.connection.path), targets, writer=writer, providers=providers,
                                       entitled_sources=_list(env, 'IMP_MARKET_SUPPLY_ENTITLED_SOURCES'))
         supply.start()
         _SUPPLY = supply

@@ -25,6 +25,7 @@ from typing import Any, Callable, Mapping
 from uuid import uuid4
 from ..local_state.connection import LocalStateConnection, transient_storage_error
 from ..market_data.capacity import DEFAULT_MAX_DATABASE_BYTES, configured_max_database_bytes
+from ..market_data.stream_store import footprint_bytes
 
 SUPERVISION_JOB = '__pf01_supervision__'
 LEASE_SECONDS = 120
@@ -170,8 +171,8 @@ class CollectionSupervisor:
 
     def _storage_fault(self) -> str | None:
         try:
-            path=self.connection.path; stat=path.stat(); wal=Path(str(path)+'-wal')
-            size=stat.st_size+(wal.stat().st_size if wal.is_file() else 0)
+            path=self.connection.path; stat=path.stat()
+            size=footprint_bytes(path)  # with the market stream store beside it: one ceiling for both
         except OSError: return 'STORAGE_UNAVAILABLE'  # possibly a drive that returns
         if (stat.st_dev,stat.st_ino)!=self._identity: return 'STORAGE_REPLACED'
         if size+8*1024*1024>self._max_bytes: return 'STORAGE_BOUND_EXCEEDED'

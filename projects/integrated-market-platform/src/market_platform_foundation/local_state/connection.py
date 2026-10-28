@@ -164,10 +164,13 @@ def _checker_label() -> str:
 class LocalStateConnection:
     """``verify``: None (default) skips the check in a supervised child and otherwise trusts a valid receipt
     (integrity_receipt.py) after a check of the critical tables, running the full check when there is none;
-    True always runs the full check; False runs none. ``verification`` records which happened."""
+    True always runs the full check; False runs none. ``verification`` records which happened.
+    ``migrate=False`` and ``critical_tables`` serve a store that is not the state store (the market stream store,
+    market_data/stream_store.py): no state schema is created in it, and its own small tables are the critical ones."""
 
     def __init__(self, path: Path, *, require_existing: bool = False,
-                 expected_identity: tuple[int, int] | None = None, verify: bool | None = None) -> None:
+                 expected_identity: tuple[int, int] | None = None, verify: bool | None = None,
+                 migrate: bool = True, critical_tables: tuple[str, ...] | None = None) -> None:
         # A full integrity_check reads the whole file: about 63 s at night and 15-80 min during collection for the
         # 9.8 GB store on the D: hard drive (2026-10-27). One full check per boot is recorded in a receipt; a
         # supervised child still skips it, since its supervisor's connection verified the store moments earlier.
@@ -179,6 +182,7 @@ class LocalStateConnection:
         # are re-entrant; another thread waits for the outer transaction instead of joining it implicitly.
         self._tx_owner: int | None = None
         self._tx_depth = 0
+        self._critical_tables = receipts.CRITICAL_TABLES if critical_tables is None else tuple(critical_tables)
         if require_existing:
             if not self.path.is_file():
                 raise FileNotFoundError("STATE_STORAGE_MISSING")
@@ -201,7 +205,8 @@ class LocalStateConnection:
                 self.verification["mode"] = "SUPERVISED"
             elif verify is not False:
                 self._verify_store(full=verify is True)
-            apply_migrations(self._conn)
+            if migrate:
+                apply_migrations(self._conn)
         except Exception:
             self._conn.close()
             raise
@@ -258,7 +263,7 @@ class LocalStateConnection:
 
     def _critical_or_raise(self, store: Path) -> None:
         try:
-            status = receipts.critical_check(self._conn)
+            status = receipts.critical_check(self._conn, self._critical_tables)
         except sqlite3.DatabaseError as exc:
             if corruption_error(exc):
                 receipts.invalidate(store, f"CRITICAL_CHECK:{exc}", label=_checker_label())

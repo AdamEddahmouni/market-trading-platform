@@ -22,6 +22,11 @@ things, in this order, and brings back whatever is down:
 
 - **Order matters.** A frozen feed is not "fixed" by restarting the platform while OpenD itself is down. The
   keeper records `WAITING_FOR_OPEND` and brings OpenD back first.
+- **A platform start never blocks the keeper** (2026-10-27). `RUN_IMP.py start` runs as a child that each pass
+  polls (`RESTART_STARTED`, then `RESTART` with its exit code), so OpenD and the collector stay watched while a
+  start waits, possibly hours, for a whole-store scan. Only one start runs at a time; one that outlives the start
+  timeout is killed and counted as failed. A start left by a keeper that was itself restarted is logged
+  `START_ORPHANED` and the normal checks resume.
 - **The OpenD health check runs in a child process with a 45 s timeout.** A vendor SDK call can block for ever
   (2026-10-19..22), and that must not stop the keeper.
 - **It replaces the old OpenD watchdog** (`collector/OPEND_WATCHDOG.py`, outside git) and keeps its rules: a

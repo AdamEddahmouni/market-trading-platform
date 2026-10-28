@@ -1,5 +1,45 @@
 # IMP Work Log
 
+## 2026-10-27 — Market stream store: split out of the state store, compressed
+
+**Problem.** The state store reached 10.05 GB and grew about 2.2 GB a trading
+day, about 3 trading days from the collector's budget. About 8.4 GB were
+`market_stream_records`: raw Moomoo/Kraken receipts that no runtime code reads,
+which every whole-store integrity scan still read. A Moomoo L1 receipt is about
+2.7 KB of JSON, mostly repeated field names and `"N/A"` option fields. The owner
+ruled out the E: SSD; everything stays on D:.
+
+**Fix.**
+- `local_state/payload_codec.py`: zlib with a per-scope preset dictionary built
+  from the store's own rows (about 10x on real L1 rows). Every encoded value is
+  decoded and compared before it is stored; otherwise the plain text is kept.
+  Decoding fails closed on unknown dictionaries or damaged bytes. Dictionaries
+  live in a lazily created `payload_dictionaries` table; no schema change.
+- `market_data/stream_store.py`: the four `market_stream_*` tables move to
+  `imp-market-stream.sqlite3` beside the state store (`auto_vacuum=INCREMENTAL`,
+  its own receipt and critical tables, never migrated into a state store, never
+  created by an open). Until the split has run, everything uses the state store
+  exactly as before.
+- The writer stores into the stream store with compressed payloads
+  (`IMP_MARKET_PAYLOAD_CODEC=0` keeps them plain); record identity is still
+  hashed from the plain JSON. Supply status, preflight, the news collector and
+  the writer count both files against the one ceiling. The coverage ledger
+  decodes compressed records (its writes stay plain).
+- `tools/platform/split_stream_store.py`: the one-time night split. Backup copy
+  with SHA-256 first; rows copied with their rowids; a SHA-256 over every column
+  of every decoded row must match the source before the state store's stream
+  tables are emptied (they stay, so older code still opens it) and the file is
+  compacted in place with `VACUUM` (same file identity, temp store in memory).
+- The keeper starts the platform as a polled child instead of blocking its loop
+  for up to 3 h, so OpenD and the collector stay watched during a long start.
+
+**Rollback.** Code only: older code writes stream rows into the state store's
+empty tables again. The stream store remains as the archive.
+
+**Evidence.** `destination-tests/20261027-store-split/`; tests in
+`tests/market_data/test_stream_store.py`, `test_payload_codec.py` and
+`tests/platform/test_imp_keeper.py`.
+
 ## 2026-10-27 — Restart at any time: one whole-store integrity scan per boot
 
 **Problem.** The Lane 01 deploy at 14:02 ET became a multi-hour outage. Every

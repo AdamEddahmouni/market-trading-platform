@@ -25,7 +25,9 @@ from uuid import uuid4
 
 from ..local_state.connection import (LocalStateConnection, lock_contention_error, lock_retry_window_seconds,
                                       transient_storage_error)
+from ..local_state.payload_codec import MIN_SAMPLE_ROWS, SAMPLE_ROWS, PayloadCodec, stream_scope
 from .capacity import configured_max_database_bytes
+from .stream_store import footprint_bytes, open_stream_store, stream_store_path
 
 MAX_RECORD_BYTES = 128 * 1024
 MAX_BATCH_BYTES = 2 * 1024 * 1024
@@ -43,6 +45,9 @@ WORKER_JOIN_SECONDS = 5.0
 FINAL_DRAIN_SECONDS = 5.0
 OWNER_LOCK_SUFFIX = '.market-writer.lock'
 MAX_SEEN_BARS = 2048  # per selected symbol; above the provider's 1000-bar current window
+# A scope without a compression dictionary samples its own latest plain rows among the newest rows only, so a rare
+# scope never scans the whole table; it tries again once the table has grown by another SAMPLE_ROWS rows.
+DICTIONARY_SAMPLE_WINDOW_ROWS = 20_000
 CAPABILITIES = {'US_EQUITY_L1', 'US_EQUITY_TICKS', 'US_EQUITY_DEPTH',
                 'CRYPTO_TRADES', 'CRYPTO_BOOK', 'CURRENT_BAR_1M'}
 _WRITER: MarketStreamWriter | None = None
@@ -133,7 +138,7 @@ class MarketStreamWriter:
                  max_database_bytes: int | None = None, acquire: bool = True,
                  idle_release_seconds: float | None = IDLE_RELEASE_SECONDS,
                  suppress_unchanged_l1: bool | None = None, busy_timeout_ms: int = BUSY_TIMEOUT_MS,
-                 lock_retry_window: float | None = None) -> None:
+                 lock_retry_window: float | None = None, encode_payloads: bool | None = None) -> None:
         validate_capture_selection(sources, symbols)
         if not 1 <= batch_limit <= 256 or not batch_limit <= queue_limit <= 4096:
             raise ValueError('MARKET_CAPTURE_LIMITS_INVALID')
@@ -178,7 +183,16 @@ class MarketStreamWriter:
         self._contention = False  # the latest failure was lock contention
         self._last_flush_seconds = 0.0
         self._ownership_waits = self._idle_releases = 0
-        self.connection = LocalStateConnection(path, require_existing=True)
+        # ``path`` is the state store. Once split, the rows go to the stream store beside it (stream_store.py) with
+        # compressed payloads; before that, to the state store, uncompressed, exactly as before.
+        self.state_path = path
+        split = stream_store_path(path)
+        self.split = split.is_file()
+        self.connection = open_stream_store(split) if self.split else LocalStateConnection(path, require_existing=True)
+        if encode_payloads is None:
+            encode_payloads = os.environ.get('IMP_MARKET_PAYLOAD_CODEC', '1') != '0'
+        self._codec = PayloadCodec(self.connection) if self.split and encode_payloads else None
+        self._dictionary_attempts: dict[str, int] = {}  # scope -> max(rowid) at its last attempt
         try:
             # synchronous stays NORMAL, as for every other connection. FULL flushed the disk inside each commit,
             # while this connection held the store's only write lock. On the D: hard drive under load that took
@@ -187,7 +201,7 @@ class MarketStreamWriter:
             self.connection.execute(f'PRAGMA busy_timeout={int(busy_timeout_ms)}')
             # A backlog after contention grew the WAL to 176 MB; checkpoints now shrink it back.
             self.connection.execute(f'PRAGMA journal_size_limit={WAL_SIZE_LIMIT_BYTES}')
-            stat = path.stat()
+            stat = self.connection.path.stat()
             self._identity = (stat.st_dev, stat.st_ino)
             if acquire:
                 self._acquire()
@@ -387,8 +401,7 @@ class MarketStreamWriter:
         path = self.connection.path
         try:
             stat = path.stat()
-            wal = Path(str(path) + '-wal')
-            size = stat.st_size + (wal.stat().st_size if wal.exists() else 0)
+            size = footprint_bytes(self.state_path)
         except OSError:
             return 'MARKET_STORAGE_UNAVAILABLE'  # may be a drive that returns; retried, never recreated
         if (stat.st_dev, stat.st_ino) != self._identity:
@@ -425,6 +438,40 @@ class MarketStreamWriter:
         if not recoverable:
             self.gap('WRITER_FAILURE')
 
+    def _scope(self, row: dict[str, Any]) -> str:
+        return stream_scope(_source(row['provider']), row['capability'])
+
+    def _stored_payload(self, row: dict[str, Any]) -> str | bytes:
+        """The payload as stored: compressed once the scope has a dictionary, else the plain JSON. The codec
+        decodes every value before returning it, so a stored value always decodes to ``row['payload']``."""
+        if self._codec is None:
+            return row['payload']
+        return self._codec.encode(self._scope(row), row['payload'])
+
+    def _prepare_dictionaries(self, batch: list[dict[str, Any]]) -> None:
+        """Record a dictionary for each scope of ``batch`` that has none, each in its own small transaction, so a
+        dictionary is committed before any row compressed with it. Failures leave those rows plain."""
+        if self._codec is None:
+            return
+        for scope, provider, capability in {(self._scope(row), row['provider'], row['capability']) for row in batch}:
+            if self._codec.for_scope(scope) is not None:
+                continue
+            try:
+                top = self.connection.execute('SELECT MAX(rowid) FROM market_stream_records').fetchone()[0] or 0
+                if scope in self._dictionary_attempts and top - self._dictionary_attempts[scope] < SAMPLE_ROWS:
+                    continue
+                self._dictionary_attempts[scope] = top
+                samples = [str(row[0]) for row in self.connection.execute(
+                    "SELECT payload_json FROM market_stream_records WHERE rowid>? AND provider=? AND capability=? "
+                    "AND typeof(payload_json)='text' ORDER BY rowid DESC LIMIT ?",
+                    (top - DICTIONARY_SAMPLE_WINDOW_ROWS, provider, capability, SAMPLE_ROWS)).fetchall()]
+                if len(samples) < MIN_SAMPLE_ROWS:
+                    continue
+                with self.connection.transaction():
+                    self._codec.create(scope, list(reversed(samples)))
+            except Exception:  # noqa: BLE001 - compression is an optimisation; the rows are stored plain
+                self._codec.forget(scope)
+
     def flush(self) -> int:
         with self._flush_lock:
             if self._closed:
@@ -452,6 +499,7 @@ class MarketStreamWriter:
                     raise ValueError(self._storage_fault() or 'MARKET_STORAGE_UNAVAILABLE')
                 if self.run_id is None:
                     self._acquire()
+                self._prepare_dictionaries(batch)
                 now = time.time_ns()
                 with self.connection.transaction():
                     lease = self.connection.execute('SELECT lease_until_ns,closed_ns FROM market_stream_runs WHERE run_id=?', (self.run_id,)).fetchone()
@@ -460,7 +508,7 @@ class MarketStreamWriter:
                     for row in batch:
                         cursor = self.connection.execute('INSERT OR IGNORE INTO market_stream_records VALUES (?,?,?,?,?,?,?,?,?,?,?)',
                             (row['id'], row['provider'], row['symbol'], row['capability'], row['event'], row['source_time'],
-                             row['received'], row['normalized'], now, row['identity'], row['payload']))
+                             row['received'], row['normalized'], now, row['identity'], self._stored_payload(row)))
                         if not cursor.rowcount:
                             duplicates += 1
                             continue
@@ -520,8 +568,10 @@ class MarketStreamWriter:
             stat = path.stat()
             if (stat.st_dev, stat.st_ino) != self._identity:
                 return {'state': 'UNAVAILABLE', 'reason': 'MARKET_STORAGE_REPLACED'}
+            # Both stores count against the one ceiling; the WAL share is reported for the stream file.
             wal = Path(str(path) + '-wal')
-            return capacity_status(stat.st_size, wal_bytes=wal.stat().st_size if wal.exists() else 0,
+            wal_bytes = wal.stat().st_size if wal.exists() else 0
+            return capacity_status(footprint_bytes(self.state_path) - wal_bytes, wal_bytes=wal_bytes,
                                    max_database_bytes=self.max_database_bytes,
                                    free_disk_bytes=shutil.disk_usage(path.parent).free)
         except OSError:
