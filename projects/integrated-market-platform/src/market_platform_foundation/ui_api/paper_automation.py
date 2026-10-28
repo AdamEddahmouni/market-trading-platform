@@ -166,6 +166,19 @@ def _code(exc):
     return text if _CODE.fullmatch(text) else type(exc).__name__
 
 
+def reference_price_minor(reference, scale):
+    """An ENTER's reference quote in minor units, or None when there is no positive quote.
+
+    A sub-cent pair's float quote prints in exponent form (str(4.766e-06) == '4.766e-06'), which the fixed-point
+    reader refuses, so it is written out in fixed-point first. Truncation to the scale is unchanged.
+    """
+    from ..numeric import decimal_to_minor_units
+
+    if not isinstance(reference, (int, float)) or not reference > 0:
+        return None
+    return decimal_to_minor_units(format(Decimal(str(reference)), 'f'), scale=scale)
+
+
 def generation_of(controller):
     """The authorization generation a controller row -- or a cycle's own copy of one -- belongs to.
 
@@ -1490,10 +1503,8 @@ class PaperAutomationService:
             # is refused here for what it is, not deferred on price and then refused for the position it lacks.
             return finish(IntentState.BLOCKED, ['SHORT_INSTRUMENT_UNSUPPORTED', str(instrument.get('instrument_kind'))], side=draft['side'])
         if state == 'ENTER':
-            from ..numeric import decimal_to_minor_units
             scale = int(instrument.get('price_scale', ledger.policy.get('price_scale', 100)))
-            reference = (decision.get('reference_quote') or {}).get('source_value')
-            price = decimal_to_minor_units(str(reference), scale=scale) if isinstance(reference, (int, float)) and reference > 0 else None
+            price = reference_price_minor((decision.get('reference_quote') or {}).get('source_value'), scale)
             sizing = size_entry(policy, price_minor=price, positions=positions,
                                 buying_power_minor=ledger.project_account()['buying_power_minor'], ledger_policy=ledger.policy, instrument=instrument)
             quantity = quantity_number(sizing['quantity'])

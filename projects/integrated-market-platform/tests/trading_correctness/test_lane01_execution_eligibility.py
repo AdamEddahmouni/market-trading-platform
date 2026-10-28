@@ -16,6 +16,7 @@ These prove software behaviour only; they are not live-session acceptance.
 """
 from __future__ import annotations
 
+import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -24,7 +25,7 @@ from market_platform_foundation.intelligence.contracts.common import Opportunity
 from market_platform_foundation.paper.eligibility import admit_order_instrument
 from market_platform_foundation.platform.security.leak_audit import SecretLeakError, assert_no_secrets_in_payload
 from market_platform_foundation.ui_api import paper_experiment, paper_projections, screener_crypto
-from market_platform_foundation.ui_api.paper_automation import register_catalog_equity, status_universe
+from market_platform_foundation.ui_api.paper_automation import reference_price_minor, register_catalog_equity, status_universe
 from tests.support.paper_automation_harness import Automation, policy_body
 from tests.trading_correctness.test_paper_automation import AutoBase
 from tests.trading_correctness.test_paper_automation_shorts import SHORTS, ShortProvider
@@ -238,3 +239,18 @@ class CryptoSpotShortTests(AutoBase):
 
     def test_spot_sell_to_open_with_fresh_prints_is_refused_before_the_preview(self):
         self.assert_refused_without_mutation(self.short_cycles(prints=True))
+
+
+class ReferencePriceTests(unittest.TestCase):
+    """2026-10-28 07:11Z: a PEPE/USD ENTER quoted 4.766e-06 aborted the CRYPTO cycle (invalid decimal value)."""
+
+    def test_a_sub_cent_float_quote_in_exponent_form_converts(self):
+        self.assertEqual(str(4.766e-06), '4.766e-06')
+        self.assertEqual(reference_price_minor(4.766e-06, 10 ** 10), 47660)
+        self.assertEqual(reference_price_minor(1e-07, 10 ** 8), 10)
+
+    def test_ordinary_quotes_and_missing_quotes_are_unchanged(self):
+        self.assertEqual(reference_price_minor(16.5735, 100), 1657)  # truncation to the scale, as before
+        self.assertEqual(reference_price_minor(150, 100), 15000)
+        for missing in (None, 0, -1.5, '16.57'):
+            self.assertIsNone(reference_price_minor(missing, 100))
