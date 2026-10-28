@@ -18,6 +18,7 @@ import os
 import time
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any, Callable
 
 from ..intelligence.inference.candidate_reduction import (
@@ -29,6 +30,7 @@ from ..intelligence.inference.coverage_plan import (
     UNPROCESSED, budget_requirement, chunks, classify, fair_order, reconciles, reduction_rounds, tally,
 )
 from ..intelligence.inference import opportunity_shortlist
+from ..intelligence.inference.paper_automation import unsizeable_from_flat
 from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.evidence_compaction import OPTIMIZER_VERSION, semantic_hash
 from ..intelligence.inference.run_progress import relabelled, report_stage
@@ -42,6 +44,8 @@ BOOT_ID = uuid.uuid4().hex
 GLOBAL_SELECTION_COMPLETE = "GLOBAL_SELECTION_COMPLETE"
 COMPLETE_NO_SELECTION = "COMPLETE_NO_SELECTION"
 NO_ELIGIBLE_ROWS = "NO_ELIGIBLE_ROWS"
+# An eligible row no entry could size under the automation's caps: ineligible, with the bound that refuses it.
+BELOW_ORDER_MINIMUM = "BELOW_ORDER_MINIMUM"
 EMPTY_UNIVERSE = "EMPTY_UNIVERSE"
 # Nothing was eligible because the quote source itself returned nothing: not a statement about the rows.
 EVIDENCE_PROVIDER_UNAVAILABLE = "EVIDENCE_PROVIDER_UNAVAILABLE"
@@ -203,7 +207,9 @@ class ScreenerAiCoverage:
 
     def run(self, body: dict[str, Any], *, run_id: str, account_id: str,
             should_stop: Callable[[], bool] = lambda: False, spend_limit: dict[str, int] | None = None,
-            slice_plan: dict[str, Any] | None = None) -> dict[str, Any]:
+            slice_plan: dict[str, Any] | None = None, order_bounds: dict[str, Any] | None = None) -> dict[str, Any]:
+        # The caps the automation sizes every entry under. Only an operator run, which never sizes, goes without.
+        self._order_bounds = dict(order_bounds) if order_bounds else None
         # AUTO-01: an owner cap on what an unattended run may hold. It can only refuse a plan, never enlarge one.
         self._spend_limit = spend_limit
         # A rolling slice, local engine only: ``deadline_epoch`` ends the first pass on the service clock, and
@@ -237,6 +243,10 @@ class ScreenerAiCoverage:
             "query": {key: query[key] for key in ("universe", "search", "sort", "descending", "filters", "view", "screen")},
             "requested_result_set": query["result_set"], "started_at": _iso(service._clock()),
         }
+        if self._order_bounds:
+            self.identity["order_floor"] = {"risk": {key: self._order_bounds["risk"].get(key) for key in (
+                "max_position_notional_minor", "max_per_trade_risk_minor", "assumed_adverse_move_bps", "max_aggregate_exposure_minor")},
+                "paper_account": dict(self._order_bounds["paper_account"])}
         if self._slice and getattr(provider, "runtime", None) != "LOCAL_MODEL":
             self._slice = None  # a paid engine plans and holds the whole run; it is never sliced
         if self._slice:
@@ -285,12 +295,14 @@ class ScreenerAiCoverage:
         candidates = self._classify(run)
         run.timings["eligibility_ms"] = (time.perf_counter() - mark) * 1000
         eligible = [key for key in run.order if run.classes[key][0] == ELIGIBLE]
-        run.eligible_count = len(eligible)
+        sizeable = self._order_floor(run, eligible, candidates)
+        run.eligible_count = len(sizeable)
         report_stage("ELIGIBILITY", assessed_count=len(run.classes), eligible_count=run.eligible_count)
-        if not eligible:
+        if not sizeable:
             if run.provider_reason:
                 return self._terminal(run, EVIDENCE_PROVIDER_UNAVAILABLE, run.provider_reason)
-            return self._terminal(run, NO_ELIGIBLE_ROWS)
+            return self._terminal(run, NO_ELIGIBLE_ROWS, "NO_ROW_SIZEABLE_UNDER_ORDER_CAPS" if eligible else None)
+        eligible = sizeable
         if self.shortlist:
             mark = time.perf_counter()
             report_stage("SHORTLIST", eligible_count=run.eligible_count)
@@ -671,6 +683,42 @@ class ScreenerAiCoverage:
                     del kept[key]
         self._record_rows(run, "CLASSIFIED")
         return kept
+
+    def _order_floor(self, run: _Run, eligible: list[str], candidates: dict[str, dict[str, Any]]) -> list[str]:
+        """The eligible rows an entry could be sized for under the automation's caps, in order. The rest become
+        INELIGIBLE with ``BELOW_ORDER_MINIMUM`` and the refusing bound, before any model time is spent on them.
+
+        Only a crypto pair is judged: its venue order rules (minimum size, lot, minimum notional) come with the
+        catalog row, and its current price with the admitted quote. A row missing any of these is kept: an unknown
+        is never a refusal here, and the order path still sizes and gates every entry."""
+        if not self._order_bounds:
+            return eligible
+        kept = []
+        for key in eligible:
+            reason = self._unsizeable(candidates[key], run.rows[key])
+            if reason is None:
+                kept.append(key)
+            else:
+                run.classes[key] = (INELIGIBLE, [BELOW_ORDER_MINIMUM, reason])
+        return kept
+
+    def _unsizeable(self, candidate: dict[str, Any], row: dict[str, Any]) -> str | None:
+        if (row.get("instrument") or {}).get("instrument_kind") != "CRYPTO_PAIR":
+            return None
+        price = next((e["facts"].get("price") for e in candidate["current_market_evidence"]
+                      if e["capability"] == "QUOTE" and not e["weak_reasons"] and e["facts"].get("price")), None)
+        decimals = row.get("price_decimals")
+        try:
+            scale = 10 ** int(decimals)
+            economics = dict(instrument_kind="CRYPTO_PAIR", quantity_step=str(row["base_increment"]),
+                             minimum_quantity=str(row["min_order_size"]), minimum_notional=str(row["min_order_notional"]),
+                             contract_multiplier="1", price_scale=scale)
+            price_minor = int(Decimal(str(price)) * scale)
+        except (KeyError, TypeError, ValueError, ArithmeticError):
+            return None
+        if price_minor <= 0 or any(value in (None, "None") for value in (row.get("base_increment"), row.get("min_order_size"))):
+            return None
+        return unsizeable_from_flat(self._order_bounds, price_minor=price_minor, instrument=economics)
 
     def _shortlist(self, run: _Run, eligible: list[str], candidates: dict[str, dict[str, Any]]) -> list[str]:
         """Score every eligible row and keep the model-sized head, best first. The rest are NOT_SHORTLISTED.

@@ -44,9 +44,9 @@ class Harness:
         self.run_id = run_id()
         self.shortlist = shortlist
 
-    def run(self, *, slice_plan=None):
+    def run(self, *, slice_plan=None, order_bounds=None):
         self.result = ScreenerAiCoverage(self.service, ledger=self.ledger, software_sha=SHA, shortlist=self.shortlist).run(
-            SCOPE, run_id=self.run_id, account_id="PAPER-1", slice_plan=slice_plan)
+            SCOPE, run_id=self.run_id, account_id="PAPER-1", slice_plan=slice_plan, order_bounds=order_bounds)
         self.block = self.result["universe_coverage"]
         return self.result
 
@@ -145,6 +145,57 @@ class PaidShortlistTests(unittest.TestCase):
         self.assertIsNone(h.block["shortlist"])
         with mock.patch.dict(os.environ, {"IMP_AI_SCREENER_SHORTLIST": "0"}):
             self.assertFalse(ScreenerAiCoverage(h.service).shortlist)
+
+
+# The automation's live caps on 2026-10-28: $5,000 a position, 100 units an order.
+ORDER_BOUNDS = {"risk": {"max_position_notional_minor": 500_000, "max_per_trade_risk_minor": 50_000, "assumed_adverse_move_bps": 200,
+                         "max_aggregate_exposure_minor": 7_500_000},
+                "paper_account": {"max_order_shares": 100, "max_position_shares": 500, "price_scale": 100}}
+
+
+def pair(item, *, minimum):
+    """A fixture row as a Kraken spot pair carrying the venue's order rules, as the crypto Screener row does."""
+    item["instrument"]["instrument_kind"] = "CRYPTO_PAIR"
+    item.update(min_order_size=minimum, min_order_notional="0.5", base_increment="0.00000001", price_decimals=2)
+    return item
+
+
+class OrderFloorTests(unittest.TestCase):
+    def market(self):
+        rows = market(10, movers={0: 9.0, 1: 5.0})
+        rows[0], rows[1], rows[2] = pair(rows[0], minimum="150"), pair(rows[1], minimum="40"), pair(rows[2], minimum="0.0001")
+        rows[3] = pair(row(3, price=8_000.0, extra=LIQUID), minimum="0.0001")
+        return rows
+
+    def test_a_pair_no_entry_could_size_is_ineligible_and_never_sent(self):
+        h = Harness(self.market(), Local())
+        h.run(order_bounds=ORDER_BOUNDS)
+        # Row 0 moves most but its venue minimum (150) is above the $5,000 position (50 units at $100).
+        self.assertNotIn(instrument_id(0), h.sent())
+        self.assertNotIn(instrument_id(3), h.sent())  # 0.625 units: below one whole unit
+        self.assertEqual(h.sent()[0], instrument_id(1))
+        self.assertIn(instrument_id(2), h.sent())
+        reasons = h.block["counts"]["reasons"]
+        self.assertEqual(reasons["INELIGIBLE:BELOW_ORDER_MINIMUM"], 2)
+        self.assertEqual(reasons["INELIGIBLE:MAX_POSITION_NOTIONAL"], 2)
+        self.assertEqual(h.block["shortlist"]["eligible_before_shortlist"], 8)
+        head = h.ledger.records(h.run_id, "run")[0]
+        self.assertEqual(head["order_floor"]["paper_account"]["max_order_shares"], 100)
+        reconciled(self, h.block, 10)
+
+    def test_an_operator_run_without_caps_sends_every_pair_as_before(self):
+        h = Harness(self.market(), Local())
+        h.run()
+        self.assertEqual(h.sent()[0], instrument_id(0))
+        self.assertNotIn("order_floor", h.ledger.records(h.run_id, "run")[0])
+
+    def test_no_sizeable_row_calls_no_model(self):
+        rows = [pair(item, minimum="1000") for item in market(3)]
+        h = Harness(rows, Local())
+        h.run(order_bounds=ORDER_BOUNDS)
+        self.assertEqual(h.provider.calls, 0)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("NO_ELIGIBLE_ROWS", "NO_ROW_SIZEABLE_UNDER_ORDER_CAPS"))
+        reconciled(self, h.block, 3)
 
 
 class LocalShortlistTests(unittest.TestCase):

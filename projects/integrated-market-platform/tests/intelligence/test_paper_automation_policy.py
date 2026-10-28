@@ -5,7 +5,7 @@ from pathlib import Path
 
 from market_platform_foundation.intelligence.inference.paper_automation import (
     AutomationStatus, build_policy, decision_permitted, derive_status, entry_risk_blockers, exposure_minor,
-    intent_identity, required_fields, size_entry, spending_gate,
+    intent_identity, required_fields, size_entry, spending_gate, unsizeable_from_flat,
 )
 from market_platform_foundation.local_state.connection import LocalStateConnection
 from market_platform_foundation.local_state.paper_automation import PaperAutomationRepository
@@ -139,6 +139,39 @@ class SizingTests(unittest.TestCase):
         self.assertIsNone(decision_permitted(policy(exits=dict(on_stop_breach=False)), dict(action_state='EXIT')))
         for state in ('HOLD', 'NO_ACTION', 'CONSIDER_ENTRY', 'REVALIDATION_REQUIRED', None):
             self.assertEqual(decision_permitted(policy(), dict(action_state=state)), 'ACTION_NOT_EXECUTABLE')
+
+
+class UnsizeableFromFlatTests(unittest.TestCase):
+    """The pre-model floor names exactly the entries the order path would refuse SIZING_BELOW_MINIMUM, using the caps
+    alone. Cases are the live 2026-10-28 refusals: RAILS/USD (ordermin 150), BTC/USD (above $5,000) and ETH/USD."""
+
+    BOUNDS = dict(risk=dict(max_position_notional_minor=500_000, max_per_trade_risk_minor=50_000, assumed_adverse_move_bps=200,
+                            max_aggregate_exposure_minor=7_500_000),
+                  paper_account=dict(max_order_shares=100, max_position_shares=500, price_scale=100))
+
+    @staticmethod
+    def pair(minimum, *, step='0.00000001', notional='0.5', scale=10_000):
+        return dict(instrument_kind='CRYPTO_PAIR', quantity_step=step, minimum_quantity=minimum, minimum_notional=notional,
+                    contract_multiplier='1', price_scale=scale)
+
+    def test_an_ordermin_above_the_order_cap_is_named_by_its_bound(self):
+        # $0.0125 a unit: $5,000 buys 400,000, but the account caps an order at 100 units, below the venue's 150.
+        self.assertEqual(unsizeable_from_flat(self.BOUNDS, price_minor=125, instrument=self.pair('150')), 'PAPER_ACCOUNT_MAX_ORDER_SHARES')
+        self.assertIsNone(unsizeable_from_flat(self.BOUNDS, price_minor=125, instrument=self.pair('40')))
+
+    def test_a_pair_above_the_notional_cap_fails_the_whole_unit_rule(self):
+        btc = self.pair('0.00005', scale=10)
+        self.assertEqual(unsizeable_from_flat(self.BOUNDS, price_minor=808_000, instrument=btc), 'MAX_POSITION_NOTIONAL')
+        eth = self.pair('0.002', scale=100)
+        self.assertIsNone(unsizeable_from_flat(self.BOUNDS, price_minor=234_300, instrument=eth))
+
+    def test_the_venue_minimum_notional_is_checked(self):
+        self.assertEqual(unsizeable_from_flat(self.BOUNDS, price_minor=1, instrument=self.pair('1', notional='5')),
+                         'VENUE_MINIMUM_NOTIONAL')
+
+    def test_shares_follow_the_same_rule_as_the_order_path(self):
+        self.assertIsNone(unsizeable_from_flat(self.BOUNDS, price_minor=10_000))
+        self.assertEqual(unsizeable_from_flat(self.BOUNDS, price_minor=600_000), 'MAX_POSITION_NOTIONAL')
 
 
 class SpendingAndStatusTests(unittest.TestCase):

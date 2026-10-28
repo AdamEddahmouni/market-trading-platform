@@ -126,7 +126,7 @@ class CoverageRuns:
         self.started, self.snapshots, self.lost = [], {}, set()
         self.hold_next = False
 
-    def start(self, account_id, body, *, spend_limit=None, origin='OPERATOR', slice_plan=None):
+    def start(self, account_id, body, *, spend_limit=None, origin='OPERATOR', slice_plan=None, order_bounds=None):
         run_id = f'replay{len(self.started) + 1:026d}'
         self.started.append(dict(run_id=run_id, at=self.controller_clock.value, origin=origin, slice_plan=slice_plan))
         self.snapshots[run_id] = dict(run_id=run_id, state='RUNNING', stage='EVALUATING', progress={}, origin=origin)

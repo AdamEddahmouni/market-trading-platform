@@ -236,11 +236,13 @@ class AiScreenerRuns:
         return screener_ai_service()
 
     def start(self, account_id: str, body: dict[str, Any], *, spend_limit: dict[str, int] | None = None,
-              origin: str = "OPERATOR", slice_plan: dict[str, Any] | None = None) -> dict[str, Any]:
+              origin: str = "OPERATOR", slice_plan: dict[str, Any] | None = None,
+              order_bounds: dict[str, Any] | None = None) -> dict[str, Any]:
         """Start a run for this account, or join the one already in progress. ValueError for an invalid scope.
 
         ``spend_limit`` (AUTO-01) caps what a run started without an operator may hold; a joined run keeps the
-        terms it was started under. ``slice_plan`` makes an automation run a rolling slice (local engine only)."""
+        terms it was started under. ``slice_plan`` makes an automation run a rolling slice (local engine only).
+        ``order_bounds`` are the caps the automation sizes entries under; rows no entry could size are not sent."""
         service = self._service()
         scope = service.validate_scope(body)
         # The whole find/recover/create section is serialized per account. Recovery is inside it so it cannot
@@ -261,7 +263,8 @@ class AiScreenerRuns:
                        "sufficient_count": None, "packet_bytes": None, "result": None, "error": None,
                        "progress": {}, "stop": threading.Event(), "stop_requested_at": None,
                        "spend_limit": dict(spend_limit) if spend_limit is not None else None, "origin": origin,
-                       "slice_plan": dict(slice_plan) if slice_plan else None}
+                       "slice_plan": dict(slice_plan) if slice_plan else None,
+                       "order_bounds": dict(order_bounds) if order_bounds else None}
                 self._active[account_id] = run
                 self._runs[run["run_id"]] = run
                 _LIVE.add(run["run_id"])
@@ -470,6 +473,8 @@ class AiScreenerRuns:
                 extra = {"spend_limit": run["spend_limit"]} if run.get("spend_limit") is not None else {}
                 if run.get("slice_plan"):
                     extra["slice_plan"] = run["slice_plan"]
+                if run.get("order_bounds"):
+                    extra["order_bounds"] = run["order_bounds"]
                 result = (full(scope, run_id=run["run_id"], account_id=run["account_id"], should_stop=run["stop"].is_set, **extra)
                           if callable(full) else service.run(scope))
         except Exception as exc:  # noqa: BLE001 - a run must always end; only a stable code leaves this process

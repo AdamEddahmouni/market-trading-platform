@@ -32,7 +32,7 @@ from datetime import UTC, datetime
 
 from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.paper_automation import (
-    ARM_ACKNOWLEDGEMENT, AutomationStatus, IntentState, build_policy, decision_permitted, derive_status,
+    ARM_ACKNOWLEDGEMENT, MIN_ENTRY_QUANTITY, AutomationStatus, IntentState, build_policy, decision_permitted, derive_status,
     entry_risk_blockers, exposure_minor, intent_identity, optional_fields, required_fields, should_run_universe,
     size_entry, spending_gate, universe_fingerprint, universe_material_change, universe_scopes,
     overnight_limits, sessions_held, select_overnight_carry,
@@ -1091,7 +1091,7 @@ class PaperAutomationService:
             limit = self._remaining_allowance(policy, engine)
             slice_plan = self._slice_plan(universe, policy, now, engine)
             started = self.runs.start(account, policy['scope'], spend_limit=limit, origin='AUTOMATION',
-                                      **({'slice_plan': slice_plan} if slice_plan else {}))
+                                      order_bounds=self._order_bounds(policy), **({'slice_plan': slice_plan} if slice_plan else {}))
             if started.get('deferred'):
                 # Another scope already owns the single account run slot. This scope defers; it must not adopt
                 # that run's id as its own or attribute the other universe's result to itself.
@@ -1127,6 +1127,12 @@ class PaperAutomationService:
             summary['universe'] = dict(state='IDLE', last_result=universe.get('last_result'), withheld=universe.get('withheld'),
                                        decision=decision, next_due=_iso(decision['next_eligible_epoch']))
         work['universe'] = universe
+
+    def _order_bounds(self, policy):
+        """The caps every entry is sized under, so the run spends no model time on a row no entry could ever size."""
+        account = self.store.paper_ledger.policy
+        return dict(risk=dict(policy['risk']), paper_account={key: account[key] for key in ('max_order_shares', 'max_position_shares')}
+                    | dict(price_scale=account.get('price_scale', 100)))
 
     def _slice_plan(self, universe, policy, now, engine):
         """A rolling slice for the local engine: a first-pass deadline and each row's last evaluation. None otherwise."""
@@ -1496,7 +1502,7 @@ class PaperAutomationService:
                 # An earlier attempt was reduced by the pre-trade risk engine and could not be re-previewed then.
                 sizing = dict(sizing, pretrade_reduced_from=quantity_wire(quantity), binding='PRETRADE_RISK_ENGINE')
                 quantity = quantity_number(carried)
-            if quantity < 1:
+            if quantity < MIN_ENTRY_QUANTITY:
                 return finish(IntentState.BLOCKED, ['SIZING_BELOW_MINIMUM', sizing['binding']], sizing=sizing)
         correlation = str(draft['sourceAttentionId'])
         opportunity = correlation.startswith('opportunity:')

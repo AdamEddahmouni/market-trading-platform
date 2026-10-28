@@ -112,10 +112,10 @@ class FixtureRuns:
         self.clock = clock
         self.started, self.stopped, self.snapshots, self.rows = [], [], {}, {}
 
-    def start(self, account_id, body, *, spend_limit=None, origin='OPERATOR', slice_plan=None):
+    def start(self, account_id, body, *, spend_limit=None, origin='OPERATOR', slice_plan=None, order_bounds=None):
         run_id = f'AIR-{len(self.started) + 1}'
         self.started.append(dict(run_id=run_id, account_id=account_id, scope=dict(body), spend_limit=spend_limit, origin=origin,
-                                 slice_plan=slice_plan))
+                                 slice_plan=slice_plan, order_bounds=order_bounds))
         self.snapshots[run_id] = dict(run_id=run_id, state='RUNNING', stage='EVALUATING', progress=dict(evaluated=0), origin=origin)
         return dict(run_id=run_id, state='RUNNING', engine=dict(runtime='LOCAL_MODEL'))
 

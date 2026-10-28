@@ -23,6 +23,8 @@ UNIVERSE_SESSIONS = dict(US_EQUITIES=('REGULAR',), US_ETFS=('REGULAR',),
 # The governed handoff and the deterministic exit are MARKET_NOW_IF_GATES_PASS.
 SUPPORTED_ORDER_TYPES = ('MARKET',)
 REGULAR_SESSION_MINUTES = 390
+# The automation refuses an entry below one whole unit of any instrument, fractional pairs included.
+MIN_ENTRY_QUANTITY = 1
 
 
 class AutomationStatus(StrEnum):
@@ -410,6 +412,25 @@ def size_entry(policy, *, price_minor, positions, buying_power_minor, ledger_pol
     )
     binding = min(bounds, key=lambda name: (bounds[name], name))
     return dict(quantity=int(bounds[binding]), binding=binding, bounds=bounds)
+
+
+def unsizeable_from_flat(order_bounds, *, price_minor, instrument=None):
+    """None when an entry from a flat account could be sized under these caps; otherwise the binding bound.
+
+    ``order_bounds`` holds the owner's ``risk`` and the Paper account's ``paper_account`` caps. Account state is
+    left out (no positions, buying power at the aggregate cap): it changes from cycle to cycle, the caps do not, so
+    only an instrument that no entry could ever size is named. The order path still sizes and gates every entry."""
+    risk = order_bounds['risk']
+    sizing = size_entry(dict(risk=risk), price_minor=price_minor, positions=[],
+                        buying_power_minor=risk['max_aggregate_exposure_minor'],
+                        ledger_policy=order_bounds['paper_account'], instrument=instrument)
+    quantity = Decimal(str(sizing['quantity']))
+    if quantity < MIN_ENTRY_QUANTITY:
+        return sizing['binding']  # the reason ``execute_decision`` would record with SIZING_BELOW_MINIMUM
+    minimum = (instrument or {}).get('minimum_notional')
+    if minimum is not None and quantity * Decimal(price_minor) / Decimal(str(instrument['price_scale'])) < Decimal(str(minimum)):
+        return 'VENUE_MINIMUM_NOTIONAL'
+    return None
 
 
 def decision_permitted(policy, decision):
