@@ -307,7 +307,9 @@ def build(state: Path, partial: Path, *, log=print, source_uri: str | None = Non
     # uri=True lets the ATTACH below open the state store read-only (or the shared in-memory copy).
     db = sqlite3.connect(partial.resolve().as_uri(), uri=True, isolation_level=None)
     try:
-        db.execute("PRAGMA synchronous=NORMAL")
+        # Unsynced while it is built: until it is verified and renamed the file is disposable, and on the HDD each
+        # checkpoint's flush stalled the copy. The final checkpoint below runs with FULL, which makes it durable.
+        db.execute("PRAGMA synchronous=OFF")
         # record_id (the primary key) is a hash, so every insert lands on a random page of its index; with the default
         # 2 MB cache each one was a disk seek on the HDD (~300 rows/s). The whole new file fits in this cache.
         db.execute(f"PRAGMA main.cache_size=-{BUILD_CACHE_KIB}")
@@ -392,6 +394,7 @@ def build(state: Path, partial: Path, *, log=print, source_uri: str | None = Non
             raise SplitError(f"STREAM_STORE_INTEGRITY:{status}")
         db.execute("INSERT INTO stream_store_meta VALUES ('split_from', ?), ('split_rows', ?), ('split_sha256', ?)",
                    (str(state), str(rows), digest.hexdigest()))
+        db.execute("PRAGMA synchronous=FULL")
         busy, _, _ = db.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
         if busy:
             raise SplitError("STREAM_STORE_CHECKPOINT_BUSY")
