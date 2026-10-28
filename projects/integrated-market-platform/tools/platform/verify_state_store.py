@@ -1,7 +1,7 @@
 """Whole-store integrity check that never opens the store for writing: the keeper's nightly scan and a release's
 bootstrap of the verified-store receipt.
 
-  verify_state_store.py --store <imp-state.sqlite3> [--label L] [--wait]
+  verify_state_store.py --store <imp-state.sqlite3> [--store <imp-market-stream.sqlite3>] [--label L] [--wait]
 
 It opens the store read-only (``mode=ro``), takes the store's verify lock (one full check at a time, shared with
 every LocalStateConnection), runs ``PRAGMA integrity_check`` and records the outcome next to the store:
@@ -11,7 +11,9 @@ every LocalStateConnection), runs ``PRAGMA integrity_check`` and records the out
   exit 3  BUSY: another full check holds the lock (``--wait`` waits for it instead)
   exit 4  the store does not exist
 
-It prints one JSON line. It changes no table, runs no migration and needs no platform process.
+Each ``--store`` is checked in turn with its own receipt and lock (the state store and the market stream store); it
+prints one JSON line per store and exits with the worst code: not ok, then BUSY, then missing. It changes no table,
+runs no migration and needs no platform process.
 """
 from __future__ import annotations
 
@@ -77,15 +79,26 @@ def verify(store: Path, *, label: str, wait: bool = False) -> tuple[int, dict]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--store", type=Path, default=default_store())
+    parser.add_argument("--store", type=Path, action="append", help="repeat to check several stores in turn")
     parser.add_argument("--label", default="verify_state_store")
     parser.add_argument("--wait", action="store_true", help="wait for a running check instead of reporting BUSY")
     args = parser.parse_args(argv)
-    if args.store is None:
+    stores = args.store or ([default_store()] if default_store() else [])
+    if not stores:
         parser.error("--store is required when IMP_STATE_DIR is not set")
-    code, body = verify(args.store, label=args.label, wait=args.wait)
-    print(json.dumps({"exit_code": code, **body}, sort_keys=True, default=str), flush=True)
-    return code
+    codes = []
+    for store in stores:
+        code, body = verify(store, label=args.label, wait=args.wait)
+        print(json.dumps({"exit_code": code, **body}, sort_keys=True, default=str), flush=True)
+        codes.append(code)
+    return worst(codes)
+
+
+def worst(codes: list[int]) -> int:
+    for code in (EXIT_NOT_OK, EXIT_BUSY, EXIT_MISSING):
+        if code in codes:
+            return code
+    return EXIT_OK
 
 
 if __name__ == "__main__":

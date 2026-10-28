@@ -253,6 +253,43 @@ class VerifierToolTests(ReceiptCase):
         verify_state_store.verify(self.path, label='test')
         self.assertEqual(self.path.read_bytes(), before)
 
+    def test_several_stores_are_each_checked_and_the_worst_code_is_returned(self):
+        stream = self.path.with_name('imp-market-stream.sqlite3')
+        connection = sqlite3.connect(stream)
+        connection.execute('CREATE TABLE stream_store_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
+        connection.commit()
+        connection.close()
+        with patch('builtins.print'):
+            code = verify_state_store.main(['--store', str(self.path), '--store', str(stream), '--label', 'test'])
+        self.assertEqual(code, verify_state_store.EXIT_OK)
+        self.assertEqual(self.receipt()['result'], 'ok')
+        self.assertEqual(json.loads(receipts.receipt_path(stream).read_text(encoding='utf-8'))['result'], 'ok')
+        with patch('builtins.print'):
+            code = verify_state_store.main(['--store', str(self.path), '--store', str(stream.with_name('absent.sqlite3'))])
+        self.assertEqual(code, verify_state_store.EXIT_MISSING)
+        self.assertEqual(verify_state_store.worst([0, 4, 3, 2]), verify_state_store.EXIT_NOT_OK)
+        self.assertEqual(verify_state_store.worst([0, 4, 3]), verify_state_store.EXIT_BUSY)
+
+    def test_the_keeper_checks_the_stream_store_once_it_exists(self):
+        from tools.platform.imp_keeper import KeeperPaths, WindowsOperations
+
+        portable = self.path.parent
+        (portable / 'NORMAL-CONFIG.json').write_text(json.dumps({'state_directory': '.'}), encoding='utf-8')
+        ops = WindowsOperations(KeeperPaths(app=Path(__file__).resolve().parents[2], portable=portable))
+        self.assertEqual([p.name for p in ops._stores()], ['imp-state.sqlite3'])
+        verify_state_store.verify(self.path, label='test')
+        self.assertIsNotNone(ops.store_receipt_age())
+        stream = self.path.with_name('imp-market-stream.sqlite3')
+        connection = sqlite3.connect(stream)
+        connection.execute('CREATE TABLE stream_store_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
+        connection.commit()
+        connection.close()
+        self.assertEqual([p.name for p in ops._stores()], ['imp-state.sqlite3', 'imp-market-stream.sqlite3'])
+        self.assertIsNone(ops.store_receipt_age())  # the stream store has no receipt yet: the nightly check runs
+        verify_state_store.verify(stream, label='test')
+        self.assertIsNotNone(ops.store_receipt_age())
+        self.assertFalse(ops.store_verifying())
+
 
 class StartupReportTests(unittest.TestCase):
     def test_the_startup_report_says_how_the_store_was_verified_and_passes_the_leak_audit(self):

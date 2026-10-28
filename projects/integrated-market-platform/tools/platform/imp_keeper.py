@@ -20,7 +20,8 @@ Every ``TICK_SECONDS`` it looks at the three in dependency order and brings back
    would only start the same check again (2026-10-27).
 4. The store: once per night, inside ``STORE_VERIFY_WINDOW`` (US/Eastern), when the verified-store receipt is
    missing, invalid or older than ``STORE_VERIFY_FRESH_SECONDS``, tools/platform/verify_state_store.py checks the
-   whole store read-only and renews the receipt, so a daytime restart only checks the critical tables.
+   whole store read-only and renews the receipt, so a daytime restart only checks the critical tables. Once the
+   market stream has its own file (imp-market-stream.sqlite3), both files are checked and the oldest receipt counts.
 
 Every restart is bounded: a backoff between tries, a few tries per window, then a cool-off and a fresh
 allowance. Nothing loops tightly and nothing gives up for good. Every action and its outcome goes to the
@@ -874,32 +875,41 @@ class WindowsOperations:
             sys.path.insert(0, str(self.paths.app / "src"))
         return directory / "imp-state.sqlite3"
 
-    def store_verifying(self) -> bool:
+    def _stores(self) -> list[Path]:
+        """The state store, and the market stream store beside it once the stream has been split out."""
         store = self._store()
         if store is None:
-            return False
+            return []
+        stream = store.with_name("imp-market-stream.sqlite3")
+        return [store, stream] if stream.is_file() else [store]
+
+    def store_verifying(self) -> bool:
         from market_platform_foundation.local_state.integrity_receipt import verification_in_progress
 
-        return verification_in_progress(store) is not None
+        return any(verification_in_progress(store) is not None for store in self._stores())
 
     def store_receipt_age(self) -> float | None:
-        """Seconds since the whole store last checked ok, while that receipt still stands; None otherwise."""
-        store = self._store()
-        if store is None:
+        """Seconds since the oldest store last checked ok, while every receipt still stands; None otherwise."""
+        stores = self._stores()
+        if not stores:
             return None
         from market_platform_foundation.local_state import integrity_receipt as receipts
 
-        receipt = receipts.read_receipt(store)
-        if receipt is None or receipts.receipt_problem(store, receipt=receipt) is not None:
-            return None
-        return max(0.0, time.time() - float(receipt["checked_at_epoch"]))
+        ages = []
+        for store in stores:
+            receipt = receipts.read_receipt(store)
+            if receipt is None or receipts.receipt_problem(store, receipt=receipt) is not None:
+                return None
+            ages.append(max(0.0, time.time() - float(receipt["checked_at_epoch"])))
+        return max(ages)
 
     def store_verify_spawn(self) -> Any:
-        store = self._store()
-        if store is None:
+        stores = self._stores()
+        if not stores:
             raise FileNotFoundError("STATE_DIRECTORY_UNKNOWN")
         script = self.paths.app / "tools" / "platform" / "verify_state_store.py"
-        return subprocess.Popen([str(self.paths.python(windowless=True)), "-B", str(script), "--store", str(store),
+        targets = [arg for store in stores for arg in ("--store", str(store))]
+        return subprocess.Popen([str(self.paths.python(windowless=True)), "-B", str(script), *targets,
                                  "--label", "imp-keeper-nightly"], cwd=str(self.paths.app), env=self._child_env(),
                                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                 creationflags=NO_WINDOW)

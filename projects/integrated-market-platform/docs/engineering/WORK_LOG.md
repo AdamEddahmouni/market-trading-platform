@@ -32,6 +32,9 @@ ruled out the E: SSD; everything stays on D:.
   compacted in place with `VACUUM` (same file identity, temp store in memory).
 - The keeper starts the platform as a polled child instead of blocking its loop
   for up to 3 h, so OpenD and the collector stay watched during a long start.
+- The keeper's nightly integrity check covers the stream store too
+  (`verify_state_store.py` takes `--store` more than once and exits with the
+  worst result); the collector's supervised writer never checks it itself.
 
 **Rollback.** Code only: older code writes stream rows into the state store's
 empty tables again. The stream store remains as the archive.
