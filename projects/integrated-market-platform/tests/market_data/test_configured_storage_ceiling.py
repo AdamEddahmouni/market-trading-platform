@@ -1,4 +1,4 @@
-"""The shared DB+WAL ceiling: 512 MiB unless the operator opts in, never above the approved 8 GiB."""
+"""The shared DB+WAL ceiling: 512 MiB unless the operator opts in, never above the approved 16 GiB."""
 import os
 import sys
 import tempfile
@@ -26,12 +26,14 @@ class ConfiguredCeilingTests(unittest.TestCase):
         self.assertEqual(capacity_status(0, env={})['max_database_bytes'], 512 * MiB)
 
     def test_operator_may_opt_in_up_to_the_approved_ceiling(self):
-        self.assertEqual(APPROVED_MAX_DATABASE_BYTES, 8 * GiB)
+        self.assertEqual(APPROVED_MAX_DATABASE_BYTES, 16 * GiB)
         self.assertEqual(configured_max_database_bytes({MAX_DATABASE_MIB_ENV: '8192'}), 8 * GiB)
+        # The collector's owner-approved budget (15,872 MiB) is a configured value below the ceiling.
+        self.assertEqual(configured_max_database_bytes({MAX_DATABASE_MIB_ENV: '15872'}), 15872 * MiB)
         self.assertEqual(configured_max_database_bytes({MAX_DATABASE_MIB_ENV: '256'}), 256 * MiB)
 
     def test_malformed_or_unapproved_values_fail_closed(self):
-        for value, reason in (('8193', 'CAPACITY_UNAPPROVED_HIGHER_CEILING'), ('99999999', 'CAPACITY_UNAPPROVED_HIGHER_CEILING'),
+        for value, reason in (('16385', 'CAPACITY_UNAPPROVED_HIGHER_CEILING'), ('99999999', 'CAPACITY_UNAPPROVED_HIGHER_CEILING'),
                               ('8GiB', 'CAPACITY_INVALID_CONFIGURED_CEILING'), ('-1', 'CAPACITY_INVALID_CONFIGURED_CEILING'),
                               ('1', 'CAPACITY_INVALID_CONFIGURED_CEILING'), ('8192.0', 'CAPACITY_INVALID_CONFIGURED_CEILING')):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError, reason):
@@ -67,7 +69,7 @@ class ConfiguredCeilingTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'MARKET_CAPTURE_STORAGE_LIMIT_INVALID'):
                     MarketStreamWriter(path, sources=('moomoo',), symbols=('AAPL',), acquire=False,
                                        max_database_bytes=GiB)
-            with patch.dict(os.environ, {MAX_DATABASE_MIB_ENV: '9000'}):
+            with patch.dict(os.environ, {MAX_DATABASE_MIB_ENV: '16385'}):
                 with self.assertRaisesRegex(ValueError, 'MARKET_CAPTURE_STORAGE_LIMIT_INVALID'):
                     MarketStreamWriter(path, sources=('moomoo',), symbols=('AAPL',), acquire=False)
 
@@ -84,7 +86,7 @@ class ConfiguredCeilingTests(unittest.TestCase):
                     self.assertEqual((owner._max_bytes, owner._storage_fault()), (expected, None))
                     owner.stop()
                 with self.assertRaisesRegex(ValueError, 'CAPACITY_UNAPPROVED_HIGHER_CEILING'):
-                    CollectionSupervisor(db, spawn=lambda: None, env={**base, MAX_DATABASE_MIB_ENV: '9000'})
+                    CollectionSupervisor(db, spawn=lambda: None, env={**base, MAX_DATABASE_MIB_ENV: '16385'})
                 # A ceiling below the existing store plus reserve is a stop, never a deletion.
                 with self.assertRaisesRegex(ValueError, 'SUPERVISOR_STORAGE_UNAVAILABLE'):
                     CollectionSupervisor(db, spawn=lambda: None, env={**base, MAX_DATABASE_MIB_ENV: '2'})
