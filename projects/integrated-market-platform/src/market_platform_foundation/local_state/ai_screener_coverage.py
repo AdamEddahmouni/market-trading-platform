@@ -8,6 +8,7 @@ this server never learned.
 from __future__ import annotations
 
 import json
+import os
 import threading
 
 from .connection import CRITICAL_WRITE_RETRY_SECONDS
@@ -19,6 +20,9 @@ from .startup import open_local_state
 
 KINDS = ('run', 'rows', 'plan', 'manifest', 'batch_started', 'batch', 'round', 'terminal')
 MAX_RECORD_BYTES = 512000
+# The coverage table was 1.61 GB of the 10 GB state store on 2026-10-27, mostly repeated JSON keys. Records are
+# stored with the payload codec once a kind has a dictionary; IMP_COVERAGE_PAYLOAD_CODEC=0 keeps them plain.
+DICTIONARY_SAMPLE_WINDOW_ROWS = 2_000
 
 
 class CoverageLedger:
@@ -29,6 +33,7 @@ class CoverageLedger:
         self.connection = connection
         self._memory: list[tuple[str, int, str, str]] = []
         self._codec = None
+        self._dictionary_attempts: dict[str, int] = {}  # scope -> max(rowid) at its last attempt
         self.lock = threading.RLock()
         if connection is not None:
             with connection.transaction(retry_seconds=CRITICAL_WRITE_RETRY_SECONDS):
@@ -47,6 +52,41 @@ class CoverageLedger:
 
             self._codec = PayloadCodec(self.connection)
         return self._codec.decode(payload)
+
+    def _stored(self, kind: str, text: str):
+        """What the row holds: the codec's encoding once this kind has a dictionary, else the JSON text. A codec
+        failure never fails the append; the record is then stored plain."""
+        if self.table != "ai_screener_coverage_records" or os.environ.get("IMP_COVERAGE_PAYLOAD_CODEC", "1") == "0":
+            return text
+        from .payload_codec import MIN_SAMPLE_ROWS, SAMPLE_ROWS, PayloadCodec
+
+        if self._codec is None:
+            self._codec = PayloadCodec(self.connection)
+        scope = f"ai_screener_coverage:{kind}"
+        try:
+            if self._codec.for_scope(scope) is None:
+                top = self.connection.execute(f"SELECT MAX(rowid) FROM {self.table}").fetchone()[0] or 0
+                last = self._dictionary_attempts.get(scope)
+                if last is not None and top - last < SAMPLE_ROWS:
+                    return text
+                self._dictionary_attempts[scope] = top
+                samples = [row[0] for row in self.connection.execute(
+                    f"SELECT payload FROM {self.table} WHERE rowid>? AND kind=? AND typeof(payload)='text' "
+                    "ORDER BY rowid DESC LIMIT ?", (top - DICTIONARY_SAMPLE_WINDOW_ROWS, kind, SAMPLE_ROWS))]
+                if len(samples) < MIN_SAMPLE_ROWS:
+                    return text
+                self.connection.execute("SAVEPOINT coverage_dictionary")
+                try:
+                    self._codec.create(scope, list(reversed(samples)))
+                    self.connection.execute("RELEASE coverage_dictionary")
+                except Exception:
+                    self.connection.execute("ROLLBACK TO coverage_dictionary")
+                    self.connection.execute("RELEASE coverage_dictionary")
+                    raise
+            return self._codec.encode(scope, text)
+        except Exception:  # noqa: BLE001 - compression is an optimisation; the receipt is written plain
+            self._codec.forget(scope)
+            return text
 
     def _rows(self, run_id: str | None = None, kind: str | None = None) -> list[tuple[str, int, str, str]]:
         if self.connection:
@@ -89,7 +129,8 @@ class CoverageLedger:
                     raise ValueError('COVERAGE_RUN_ALREADY_TERMINAL')
                 record = (run_id, count, kind, encoded)
                 if self.connection:
-                    self.connection.execute(f'INSERT INTO {self.table} VALUES (?,?,?,?)', record)
+                    self.connection.execute(f'INSERT INTO {self.table} VALUES (?,?,?,?)',
+                                            (run_id, count, kind, self._stored(kind, encoded)))
                 else:
                     self._memory.append(record)
             if self.connection and not self.connection.in_transaction:

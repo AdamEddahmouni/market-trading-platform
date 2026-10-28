@@ -34,6 +34,13 @@ ruled out the E: SSD; everything stays on D:.
   49 min, slowing down), so it was stopped before touching the state store;
   `--in-memory` reads the store once in page order into RAM, works there, and
   writes the compacted store back into the same file with the backup API.
+- After the split the AI coverage ledger (`ai_screener_coverage_records`,
+  1.6 GB) was most of the state store. Its writer now stores records with the
+  codec once a kind has a dictionary (`IMP_COVERAGE_PAYLOAD_CODEC=0` keeps them
+  plain; a codec failure never fails the append), and
+  `tools/platform/compact_coverage_ledger.py` converted the existing records
+  the same night (in RAM, SHA-256 over every decoded record, written back in
+  place).
 - The keeper starts the platform as a polled child instead of blocking its loop
   for up to 3 h, so OpenD and the collector stay watched during a long start.
 - The keeper's nightly integrity check covers the stream store too

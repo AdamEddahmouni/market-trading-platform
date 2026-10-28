@@ -253,7 +253,6 @@ def _table_counts(db: sqlite3.Connection, *, skip: tuple[str, ...] = ()) -> dict
 
 def shrink_in_memory(memory: sqlite3.Connection, state: Path, loaded: dict[str, Any]) -> dict[str, Any]:
     """Step 5 on the in-memory copy, then written back into the same file (same identity, WAL kept)."""
-    before, identity = _file_bytes(state), _identity(state)
     stream_tables = ("market_stream_records", *SMALL_TABLES)
     counts_before = _table_counts(memory, skip=stream_tables)
     memory.execute("BEGIN IMMEDIATE")
@@ -269,9 +268,19 @@ def shrink_in_memory(memory: sqlite3.Connection, state: Path, loaded: dict[str, 
         raise SplitError(f"MEMORY_COPY_INTEGRITY:{status}")
     if _table_counts(memory, skip=stream_tables) != counts_before:
         raise SplitError("MEMORY_COPY_COUNTS_CHANGED")
+    result = write_back(memory, state, loaded, skip=stream_tables)
+    if result["table_counts"] != counts_before or result["skipped_rows"]:
+        raise SplitError("STATE_STORE_COUNTS_AFTER_WRITE_BACK")
+    return {**result, "vacuum_seconds": vacuum_seconds}
+
+
+def write_back(memory: sqlite3.Connection, state: Path, loaded: dict[str, Any], *,
+               skip: tuple[str, ...] = ()) -> dict[str, Any]:
+    """Write the in-memory copy back into the same file (backup API: same identity, WAL kept), after checking that
+    nothing wrote the file since it was read. Returns the file's table counts (``skip`` tables summed apart)."""
+    before, identity = _file_bytes(state), _identity(state)
     stat = state.stat()
-    if (_identity(state) != identity or stat.st_size != loaded["bytes"] or stat.st_mtime != loaded["mtime"]
-            or before != loaded["bytes"]):
+    if stat.st_size != loaded["bytes"] or stat.st_mtime != loaded["mtime"] or before != loaded["bytes"]:
         raise SplitError("STATE_STORE_CHANGED_SINCE_LOAD")
     started = time.monotonic()
     target = sqlite3.connect(str(state), timeout=30, isolation_level=None)
@@ -282,17 +291,15 @@ def shrink_in_memory(memory: sqlite3.Connection, state: Path, loaded: dict[str, 
         mode = target.execute("PRAGMA journal_mode").fetchone()[0]
         if str(mode).lower() != "wal":
             mode = target.execute("PRAGMA journal_mode=WAL").fetchone()[0]
-        counts_after = _table_counts(target, skip=stream_tables)
-        stream_left = sum(target.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in stream_tables)
+        counts_after = _table_counts(target, skip=skip)
+        skipped_rows = sum(target.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in skip)
     finally:
         target.close()
     if _identity(state) != identity:
         raise SplitError("STATE_STORE_IDENTITY_CHANGED")
-    if counts_after != counts_before or stream_left:
-        raise SplitError("STATE_STORE_COUNTS_AFTER_WRITE_BACK")
-    return {"bytes_before": before, "bytes_after": _file_bytes(state), "vacuum_seconds": vacuum_seconds,
+    return {"bytes_before": before, "bytes_after": _file_bytes(state), "identity": list(identity),
             "write_back_seconds": round(time.monotonic() - started, 1), "checkpoint_busy": bool(busy),
-            "journal_mode": mode, "identity": list(identity), "table_counts": counts_after}
+            "journal_mode": mode, "table_counts": counts_after, "skipped_rows": skipped_rows}
 
 
 def _scope(provider: str, capability: str) -> str:

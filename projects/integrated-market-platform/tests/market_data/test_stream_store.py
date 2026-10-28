@@ -183,6 +183,46 @@ class CoverageDecodeTests(unittest.TestCase):
         self.assertEqual([r['kind'] for r in records], ['run', 'batch'])
         self.assertEqual(records[1]['i'], 99)
 
+    def fill_ledger(self, conn, runs=40):
+        ledger = CoverageLedger(conn)
+        expected = {}
+        for n in range(runs):
+            run = f'run-{n}'
+            expected[run] = [{'scope': 'CRYPTO', 'n': n, 'evidence': ['BTC/USD', 'ETH/USD'] * 20},
+                             {'batch': n, 'rows': [{'instrument_id': f'X{i}', 'class': 'AI_EVALUATED'} for i in range(30)]}]
+            ledger.append(run, 'run', expected[run][0])
+            ledger.append(run, 'batch', expected[run][1])
+        return ledger, expected
+
+    def stored_types(self, conn):
+        return dict(conn.execute("SELECT typeof(payload), COUNT(*) FROM ai_screener_coverage_records "
+                                 "GROUP BY typeof(payload)").fetchall())
+
+    def test_coverage_writes_are_compressed_once_a_kind_has_samples_and_read_back_exactly(self):
+        with tempfile.TemporaryDirectory() as tmp, LocalStateConnection(Path(tmp) / 'imp-state.sqlite3') as conn:
+            ledger, expected = self.fill_ledger(conn, runs=80)
+            types = self.stored_types(conn)
+            self.assertGreater(types.get('blob', 0), 0)
+            self.assertGreater(types.get('text', 0), 0)  # the first records of each kind, before its dictionary
+            for run, payloads in expected.items():
+                got = [{k: v for k, v in r.items() if k not in ('seq', 'kind')} for r in CoverageLedger(conn).records(run)]
+                self.assertEqual(got, payloads)
+
+    def test_coverage_codec_switch_off_keeps_records_plain(self):
+        with tempfile.TemporaryDirectory() as tmp, LocalStateConnection(Path(tmp) / 'imp-state.sqlite3') as conn, \
+                patch.dict('os.environ', {'IMP_COVERAGE_PAYLOAD_CODEC': '0'}):
+            self.fill_ledger(conn, runs=80)
+            self.assertEqual(set(self.stored_types(conn)), {'text'})
+
+    def test_a_failing_dictionary_never_fails_the_append(self):
+        with tempfile.TemporaryDirectory() as tmp, LocalStateConnection(Path(tmp) / 'imp-state.sqlite3') as conn, \
+                patch.object(codec.PayloadCodec, 'create', side_effect=RuntimeError('boom')):
+            ledger, expected = self.fill_ledger(conn, runs=80)
+            self.assertEqual(set(self.stored_types(conn)), {'text'})
+            self.assertEqual(len(CoverageLedger(conn).records('run-79')), 2)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM sqlite_schema WHERE name='payload_dictionaries'")
+                             .fetchone()[0], 0)
+
 
 class SplitToolTests(StreamStoreTestBase):
     def fill(self, count=300):
@@ -313,6 +353,61 @@ class SplitToolTests(StreamStoreTestBase):
         self.assertTrue(split.in_night_window(datetime.datetime(2026, 10, 28, 3, 44)))
         self.assertFalse(split.in_night_window(datetime.datetime(2026, 10, 28, 3, 45)))
         self.assertFalse(split.in_night_window(datetime.datetime(2026, 10, 27, 19, 59)))
+
+
+class CoverageCompactionToolTests(unittest.TestCase):
+    def test_existing_plain_records_are_compressed_exactly_in_place(self):
+        from tools.platform import compact_coverage_ledger as compact
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp) / 'imp-state.sqlite3'
+            with LocalStateConnection(state) as conn, patch.dict('os.environ', {'IMP_COVERAGE_PAYLOAD_CODEC': '0'}):
+                _, expected = CoverageDecodeTests.fill_ledger(None, conn, runs=60)
+            LocalStateConnection(state, verify=True).close()
+            identity = split._identity(state)
+            result = compact.run(state, backup_dir=Path(tmp) / 'backup', evidence=Path(tmp) / 'e.json', any_time=True,
+                                 log=lambda *a, **k: None)
+            self.assertEqual(result['compress']['rows'], 120)
+            self.assertGreater(result['compress']['converted'], 100)
+            self.assertEqual(split._identity(state), identity)
+            self.assertIsNone(receipts.receipt_problem(state))
+            with LocalStateConnection(state, require_existing=True) as conn:
+                self.assertEqual(conn.verification['mode'], 'RECEIPT')
+                kinds = dict(conn.execute("SELECT typeof(payload), COUNT(*) FROM ai_screener_coverage_records "
+                                          "GROUP BY 1").fetchall())
+                self.assertGreater(kinds.get('blob', 0), 100)
+                for run, payloads in expected.items():
+                    got = [{k: v for k, v in r.items() if k not in ('seq', 'kind')}
+                           for r in CoverageLedger(conn).records(run)]
+                    self.assertEqual(got, payloads)
+                # The live ledger reuses the tool's dictionaries for new records.
+                CoverageLedger(conn).append('run-new', 'run', {'scope': 'CRYPTO', 'n': 1,
+                                                               'evidence': ['BTC/USD', 'ETH/USD'] * 20})
+                self.assertEqual(conn.execute("SELECT typeof(payload) FROM ai_screener_coverage_records "
+                                              "WHERE run_id='run-new'").fetchone()[0], 'blob')
+
+    def test_a_verify_mismatch_leaves_the_file_untouched(self):
+        from tools.platform import compact_coverage_ledger as compact
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp) / 'imp-state.sqlite3'
+            with LocalStateConnection(state) as conn, patch.dict('os.environ', {'IMP_COVERAGE_PAYLOAD_CODEC': '0'}):
+                CoverageDecodeTests.fill_ledger(None, conn, runs=40)
+            LocalStateConnection(state, verify=True).close()
+            before = state.read_bytes()
+            real = codec.PayloadCodec.decode
+            calls = {'n': 0}
+
+            def damaged(self_, value):
+                text = real(self_, value)
+                if not isinstance(value, str):
+                    calls['n'] += 1
+                    return text.replace('CRYPTO', 'crypto', 1)
+                return text
+
+            with patch.object(codec.PayloadCodec, 'decode', damaged):
+                with self.assertRaises(split.SplitError):
+                    compact.run(state, backup_dir=None, evidence=None, any_time=True, log=lambda *a, **k: None)
+            self.assertGreater(calls['n'], 0)
+            self.assertEqual(state.read_bytes(), before)
 
 
 if __name__ == '__main__':
