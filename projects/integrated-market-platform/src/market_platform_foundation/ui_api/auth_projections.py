@@ -87,7 +87,7 @@ def build_security_readiness_payload() -> dict[str, Any]:
 
     gates = collect_default_gates(os.environ)
     checks = {
-        "auth_enforcement_mode": load_auth_config().enforcement_mode.value,
+        "enforcement_mode": load_auth_config().enforcement_mode.value,
         "role_enforcement_status": role_enforcement_status(),
     }
     return build_readiness_payload(
