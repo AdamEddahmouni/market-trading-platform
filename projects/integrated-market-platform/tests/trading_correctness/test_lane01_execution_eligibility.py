@@ -151,6 +151,28 @@ class CatalogEquityShortTests(AutoBase):
         self.assertGreater(valuation['realized_pnl_minor'], 0)
         self.assertEqual(a.store.paper_ledger.project_account()['short_margin_reserved_minor'], 0)
 
+    def test_sell_to_open_when_the_live_candidate_has_no_symbol(self):
+        # The live shape (2026-10-28 13:59Z HTGC SHORT): the candidate instrument carries no 'symbol'.
+        a = self.auto
+        original = a.ai.candidate
+
+        def live_shape(iid, now):
+            value = original(iid, now)
+            value['instrument'] = {k: v for k, v in value['instrument'].items() if k != 'symbol'}
+            return value
+
+        a.quote('KEYS', 150, -2)
+        a.opportunity('KEYS', side=OpportunitySide.SHORT)
+        with patch.object(a.ai, 'candidate', live_shape):
+            a.go(**SHORTS)
+            a.cycle()
+            a.select('KEYS')
+            cycles = [a.cycle() for _ in range(3)]
+        self.assertNotIn('BLOCKED_BY_DATA', [c['status'] for c in cycles])
+        opened = [o for c in cycles for o in c['actions'] if o['outcome'] == 'SUBMITTED']
+        self.assertEqual([(o['action'], o['side']) for o in opened], [('ENTER', 'SELL')])
+        self.assertEqual(a.position('KEYS')['side'], 'SHORT')
+
 
 class StatusEpochIndexTests(AutoBase):
     def test_a_secret_shaped_ticker_in_the_epoch_index_does_not_block_the_status_read(self):
