@@ -66,6 +66,7 @@ LABEL = "split_stream_store"
 MEMORY_URI = "file:imp-split-state-copy?mode=memory&cache=shared"
 MEMORY_HEADROOM = 1.4  # free RAM needed per byte of store: pages plus SQLite's per-page overhead and the VACUUM
 LOAD_STEP_PAGES = 65_536
+BUILD_CACHE_KIB = 2_000_000  # page cache of the new stream store while it is built (~2 GB)
 
 
 class SplitError(RuntimeError):
@@ -307,6 +308,9 @@ def build(state: Path, partial: Path, *, log=print, source_uri: str | None = Non
     db = sqlite3.connect(partial.resolve().as_uri(), uri=True, isolation_level=None)
     try:
         db.execute("PRAGMA synchronous=NORMAL")
+        # record_id (the primary key) is a hash, so every insert lands on a random page of its index; with the default
+        # 2 MB cache each one was a disk seek on the HDD (~300 rows/s). The whole new file fits in this cache.
+        db.execute(f"PRAGMA main.cache_size=-{BUILD_CACHE_KIB}")
         db.execute("ATTACH DATABASE ? AS src", (source_uri or state.resolve().as_uri() + "?mode=ro",))
         small = {}
         db.execute("BEGIN IMMEDIATE")
