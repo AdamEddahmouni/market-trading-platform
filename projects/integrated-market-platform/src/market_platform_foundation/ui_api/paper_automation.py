@@ -32,7 +32,7 @@ from datetime import UTC, datetime
 
 from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.paper_automation import (
-    ARM_ACKNOWLEDGEMENT, MIN_ENTRY_QUANTITY, AutomationStatus, IntentState, build_policy, decision_permitted, derive_status,
+    ARM_ACKNOWLEDGEMENT, AutomationStatus, entry_below_minimum, IntentState, build_policy, decision_permitted, derive_status,
     entry_risk_blockers, exposure_minor, intent_identity, optional_fields, required_fields, should_run_universe,
     size_entry, spending_gate, universe_fingerprint, universe_material_change, universe_scopes,
     overnight_limits, sessions_held, select_overnight_carry,
@@ -801,6 +801,7 @@ class PaperAutomationService:
                 # with the failure that caused it and the generation that replaced it, so the evidence survives and
                 # the new run continues under its own authorization and its own failure count.
                 summary['superseded'] = True
+                self._settle_superseded_universe_runs(work, fresh)
                 if work.get('emergency'):
                     self._event('EMERGENCY_LATCH_SUPERSEDED', cycle_id=summary['cycle_id'], run_id=summary['run_id'],
                                 reason=work['emergency'].get('reason'), last_error=work['emergency'].get('last_error'),
@@ -817,6 +818,49 @@ class PaperAutomationService:
             return summary
         finally:
             self.cycle_lock.release()
+
+    def _settle_superseded_universe_runs(self, work, fresh):
+        """A universe run this cycle started must not outlive its superseded cycle without a handle.
+
+        The superseded write-back drops the cycle's ``universe`` state, and with it the only handle that lets
+        ``_halt`` stop the run and ``_reconcile_universe_run`` record its end. Under a Pause of the same generation
+        the handle is written back, so the run continues as a tracked run would and the first cycle after Resume
+        records FINISHED. Otherwise (Stop, re-arm, lost lease) the run is recorded INTERRUPTED now, once per run
+        even when the legacy projection and its scope both name it, and, as in ``_halt``, stopped only when the
+        automation started it: a joined operator run keeps running.
+        """
+        def handles(controller):
+            states = {None: controller, **(controller.get('universes') or {})}
+            return {name: (state.get('universe') or {}) for name, state in states.items()}
+
+        known = {universe.get('active_run_id') for universe in handles(fresh).values()}
+        orphans = {name: universe for name, universe in handles(work).items()
+                   if universe.get('active_run_id') and universe['active_run_id'] not in known}
+        if not orphans:
+            return
+        if (generation_of(fresh) == generation_of(work) and fresh.get('desired_state') == 'PAUSED'
+                and fresh.get('owner_id') == self.owner_id):
+            with self.control_lock:
+                fresh = self._controller()
+                if generation_of(fresh) == generation_of(work) and fresh.get('desired_state') == 'PAUSED':
+                    for name in orphans:
+                        if name is None:
+                            fresh['universe'] = work.get('universe')
+                        else:
+                            fresh.setdefault('universes', {}).setdefault(name, {})['universe'] = work['universes'][name].get('universe')
+                    self._save(fresh, fenced=True)
+                    return
+        settled = {}
+        for universe in orphans.values():
+            settled.setdefault(universe['active_run_id'], universe.get('origin'))
+        for run_id, origin in settled.items():
+            stopped = origin == 'AUTOMATION'
+            if stopped:
+                try:
+                    self.runs.stop(work['account_id'], run_id)
+                except Exception:  # noqa: BLE001 - recording the end never depends on the run tracker
+                    pass
+            self._event('UNIVERSE_RUN_INTERRUPTED', run_id=run_id, reason='CYCLE_SUPERSEDED', stopped=stopped)
 
     def _block(self, summary, category, code):
         if not any(b['code'] == code for b in summary['blockers']):
@@ -1144,8 +1188,9 @@ class PaperAutomationService:
     def _order_bounds(self, policy):
         """The caps every entry is sized under, so the run spends no model time on a row no entry could ever size."""
         account = self.store.paper_ledger.policy
+        crypto = ('crypto_caps_version', 'crypto_max_order_notional_minor', 'crypto_max_position_notional_minor')
         return dict(risk=dict(policy['risk']), paper_account={key: account[key] for key in ('max_order_shares', 'max_position_shares')}
-                    | dict(price_scale=account.get('price_scale', 100)))
+                    | dict(price_scale=account.get('price_scale', 100)) | {key: account[key] for key in crypto if key in account})
 
     def _slice_plan(self, universe, policy, now, engine):
         """A rolling slice for the local engine: a first-pass deadline and each row's last evaluation. None otherwise."""
@@ -1498,7 +1543,8 @@ class PaperAutomationService:
             # A target the order boundary cannot admit is this decision's refusal, recorded on its intent. It never
             # aborts the scope's cycle and the decisions queued behind it.
             return finish(IntentState.BLOCKED, [_code(exc)], side=draft['side'])
-        if state == 'ENTER' and draft['side'] == 'SELL' and instrument.get('instrument_kind') not in SHORTABLE_KINDS:
+        if (state == 'ENTER' and draft['side'] == 'SELL' and instrument.get('instrument_kind') not in SHORTABLE_KINDS
+                and not (instrument.get('instrument_kind') == 'CRYPTO_PAIR' and ledger.allows_crypto_short())):
             # A SELL from flat opens a short. The approved short policy covers equities and ETFs only, so a spot pair
             # is refused here for what it is, not deferred on price and then refused for the position it lacks.
             return finish(IntentState.BLOCKED, ['SHORT_INSTRUMENT_UNSUPPORTED', str(instrument.get('instrument_kind'))], side=draft['side'])
@@ -1513,7 +1559,7 @@ class PaperAutomationService:
                 # An earlier attempt was reduced by the pre-trade risk engine and could not be re-previewed then.
                 sizing = dict(sizing, pretrade_reduced_from=quantity_wire(quantity), binding='PRETRADE_RISK_ENGINE')
                 quantity = quantity_number(carried)
-            if quantity < MIN_ENTRY_QUANTITY:
+            if entry_below_minimum(quantity, instrument):
                 return finish(IntentState.BLOCKED, ['SIZING_BELOW_MINIMUM', sizing['binding']], sizing=sizing)
         correlation = str(draft['sourceAttentionId'])
         opportunity = correlation.startswith('opportunity:')
@@ -1577,6 +1623,8 @@ class PaperAutomationService:
         if state == 'EXIT':
             if str(order.get('state')) == 'FILLED':
                 backoff.pop(decision['instrument_id'], None)
+                if quantity < abs(quantity_number((decision.get('position') or {}).get('quantity') or 0)):
+                    self.reevaluation.request_redecision(decision['instrument_id'], 'EXIT_CAPPED_REMAINDER')
             else:
                 count = int((waiting or {}).get('count') or 0) + 1
                 delay = min(policy['schedule']['cadence_seconds'] * 2 ** (count - 1), EXIT_BACKOFF_CAP_SECONDS)
@@ -1884,6 +1932,11 @@ class PaperAutomationService:
             iid = str(short['instrument_id'])
             key = 'PAI-MARGIN-' + input_hash_from_dict(dict(account=ledger.paper_account_id, instrument=iid,
                                                             entry=entries.get(iid)))[:32]
+            if ledger.instrument_for(iid).get('instrument_kind') == 'CRYPTO_PAIR':
+                # Terminal partial covers release their remainder; a new attempt must be able to close it.
+                prior = [o for o in ledger.project_orders() if str(o.get('instrument_id')) == iid
+                         and str((ledger.lookup_intent_for_order(str(o['order_id'])) or {}).get('client_order_id','')).startswith(key)]
+                key += '-' + str(len(prior))
             if ledger.lookup_idempotent_order(key):
                 continue
             self._event('SHORT_MAINTENANCE_MARGIN_BREACH', instrument_id=iid, equity_minor=status['equity_minor'],
@@ -1896,10 +1949,13 @@ class PaperAutomationService:
             return
 
     def _close_position(self, work, policy, summary, now, *, iid, held, key, action, event, headline, reason):
-        """One MARKET close of the whole held quantity: SELL a long, BUY to cover a short."""
+        """One capped MARKET close: SELL a long, BUY to cover a short."""
         from . import paper_projections
         side = 'SELL' if held > 0 else 'BUY'
         quantity = abs(held)
+        ledger = self.store.paper_ledger
+        from .screener_action import capped_exit_quantity
+        quantity = capped_exit_quantity(ledger, iid, quantity)
         body = dict(instrument_id=iid, side=side, quantity=quantity_wire(quantity), order_type='MARKET', client_order_id=key,
                     idempotency_key=key, correlation_id='lane:order-flow',
                     decision_source_snapshot=dict(source_type='workspace_lane', source_id='order-flow', source_module='order-flow',

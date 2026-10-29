@@ -1,4 +1,4 @@
-"""SOFTWARE_CONTROLLED: exact native quantities; existing minimum-one policy."""
+"""SOFTWARE_CONTROLLED: exact native quantities; minimum one for shares, the venue minimum for spot pairs."""
 from decimal import Decimal
 import unittest
 from types import SimpleNamespace
@@ -52,11 +52,13 @@ class ExactBoundaryTests(unittest.TestCase):
             with self.subTest(quantity=quantity), self.assertRaises(ValueError):
                 _parse_order_body(dict(quantity=quantity, side="BUY", client_order_id="fixture"), SimpleNamespace())
 
-    def test_build22_exact_native_units_preserve_minimum_one(self):
+    def test_build22_exact_native_units_use_the_venue_minimum_for_pairs(self):
+        # Owner decision 5 (a): a spot pair's floor is its venue minimum (0.0001 here), not one whole unit. The
+        # policy's minimum_quantity stays 1 for shares; the $1.00 minimum trade notional still applies to pairs.
         engine, policy = PreTradeRiskEngine(), build_execution_policy()
         opportunity, portfolio, quote = sample_opportunity(), flat_portfolio(), sample_quote()
         instrument = crypto("inst-biya")
-        for quantity, decision in (("1.125", "APPROVE"), ("0.125", "REJECT")):
+        for quantity, decision in (("1.125", "APPROVE"), ("0.125", "APPROVE"), ("0.0009", "REJECT")):
             with self.subTest(quantity=quantity):
                 proposal = engine.build_proposal(opportunity=opportunity, policy=policy, portfolio=portfolio, quote=quote,
                     proposal_time_ns=T+2_000_000_000, instrument_id="inst-biya", symbol="BTC/USD", instrument=instrument,

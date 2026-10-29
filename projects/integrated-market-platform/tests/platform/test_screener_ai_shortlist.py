@@ -172,13 +172,13 @@ class OrderFloorTests(unittest.TestCase):
         h.run(order_bounds=ORDER_BOUNDS)
         # Row 0 moves most but its venue minimum (150) is above the $5,000 position (50 units at $100).
         self.assertNotIn(instrument_id(0), h.sent())
-        self.assertNotIn(instrument_id(3), h.sent())  # 0.625 units: below one whole unit
+        self.assertIn(instrument_id(3), h.sent())  # draft A: 0.625 is above the venue minimum (0.0001)
         self.assertEqual(h.sent()[0], instrument_id(1))
         self.assertIn(instrument_id(2), h.sent())
         reasons = h.block["counts"]["reasons"]
-        self.assertEqual(reasons["INELIGIBLE:BELOW_ORDER_MINIMUM"], 2)
-        self.assertEqual(reasons["INELIGIBLE:MAX_POSITION_NOTIONAL"], 2)
-        self.assertEqual(h.block["shortlist"]["eligible_before_shortlist"], 8)
+        self.assertEqual(reasons["INELIGIBLE:BELOW_ORDER_MINIMUM"], 1)
+        self.assertEqual(reasons["INELIGIBLE:MAX_POSITION_NOTIONAL"], 1)
+        self.assertEqual(h.block["shortlist"]["eligible_before_shortlist"], 9)
         head = h.ledger.records(h.run_id, "run")[0]
         self.assertEqual(head["order_floor"]["paper_account"]["max_order_shares"], 100)
         reconciled(self, h.block, 10)

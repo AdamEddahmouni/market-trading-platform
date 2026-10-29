@@ -159,9 +159,13 @@ class UnsizeableFromFlatTests(unittest.TestCase):
         self.assertEqual(unsizeable_from_flat(self.BOUNDS, price_minor=125, instrument=self.pair('150')), 'PAPER_ACCOUNT_MAX_ORDER_SHARES')
         self.assertIsNone(unsizeable_from_flat(self.BOUNDS, price_minor=125, instrument=self.pair('40')))
 
-    def test_a_pair_above_the_notional_cap_fails_the_whole_unit_rule(self):
+    def test_a_pair_above_the_notional_cap_sizes_a_fraction_down_to_the_venue_minimum(self):
+        # Owner decision 5 (a): a spot pair's floor is its venue ordermin, not one whole unit. $5,000 of BTC at
+        # $80,800 is 0.06188118 BTC, above ordermin 0.00005.
         btc = self.pair('0.00005', scale=10)
-        self.assertEqual(unsizeable_from_flat(self.BOUNDS, price_minor=808_000, instrument=btc), 'MAX_POSITION_NOTIONAL')
+        self.assertIsNone(unsizeable_from_flat(self.BOUNDS, price_minor=808_000, instrument=btc))
+        self.assertEqual(unsizeable_from_flat(self.BOUNDS, price_minor=808_000, instrument=self.pair('0.07', scale=10)),
+                         'MAX_POSITION_NOTIONAL')
         eth = self.pair('0.002', scale=100)
         self.assertIsNone(unsizeable_from_flat(self.BOUNDS, price_minor=234_300, instrument=eth))
 

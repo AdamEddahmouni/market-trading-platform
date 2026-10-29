@@ -15,7 +15,7 @@ from ..local_state.paper_experiments import MAX_PAGE, paper_experiment_repositor
 from ..operating_modes import PAPER_EXECUTION_AUTHORITIES, resolve_execution_authority
 from ..paper import experiment as contract
 from ..paper.ledger import PaperExecutionLedger
-from ..risk.policy import SHORT_POLICY_DEFAULTS
+from ..risk.policy import CRYPTO_SHORT_POLICY_DEFAULTS, SHORT_POLICY_DEFAULTS
 
 if TYPE_CHECKING:
     from .store import ReplayStore
@@ -142,6 +142,20 @@ def create_experiment(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any
     allow_short = body.get("allow_short", False)
     if type(allow_short) is not bool:
         raise ValueError("EXPERIMENT_ALLOW_SHORT_INVALID: allow_short must be true or false")
+    allow_crypto_short = body.get("allow_crypto_short", False)
+    if type(allow_crypto_short) is not bool:
+        raise ValueError("EXPERIMENT_ALLOW_CRYPTO_SHORT_INVALID: allow_crypto_short must be true or false")
+    if allow_crypto_short and not allow_short:
+        raise ValueError("CRYPTO_SHORT_REQUIRES_ALLOW_SHORT")
+    crypto_caps = body.get("crypto_notional_caps")
+    if crypto_caps is not None:
+        from ..risk.policy import CRYPTO_CAP_TERMS
+
+        # Both caps or neither, positive whole minor units; validated again by the policy builder.
+        if not isinstance(crypto_caps, dict) or set(crypto_caps) != set(CRYPTO_CAP_TERMS) or any(
+            type(value) is not int or value <= 0 for value in crypto_caps.values()
+        ):
+            raise ValueError("EXPERIMENT_CRYPTO_CAPS_INVALID: " + " and ".join(CRYPTO_CAP_TERMS) + " are positive integers")
 
     authority = resolve_execution_authority(requested_mode=contract.EXPERIMENT_EXECUTION_MODE)
     if authority not in PAPER_EXECUTION_AUTHORITIES:
@@ -156,7 +170,7 @@ def create_experiment(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any
         persist_ledger(previous)
     created_at_ns = monotonic_wall_ns()
     experiment_id = contract.new_experiment_id(name=name, created_at_ns=created_at_ns)
-    policy = contract.build_experiment_policy(allow_short=allow_short)
+    policy = contract.build_experiment_policy(allow_short=allow_short, crypto_caps=crypto_caps, allow_crypto_short=allow_crypto_short)
     data_provider = "MOOMOO" if store.data_mode == "LIVE_OBSERVATIONAL" else store.data_provider
     ledger = PaperExecutionLedger.open_session(
         replay_session_id=store.session_id,
@@ -249,9 +263,18 @@ def experiment_view(store: ReplayStore, record: dict[str, Any] | None) -> dict[s
         "max_position_shares": policy["max_position_shares"],
         "policy_version": policy["policy_version"],
         "allow_short": bool(policy.get("allow_short", False)),
+        "allow_crypto_short": bool(policy.get("allow_crypto_short", False)),
     }
     if policy.get("allow_short"):
         view["risk_limits"]["short_terms"] = {key: policy[key] for key in SHORT_POLICY_DEFAULTS}
+    if policy.get("allow_crypto_short"):
+        view["risk_limits"]["crypto_short_terms"] = {
+            key: policy[key] for key in ("crypto_short_policy_version", *CRYPTO_SHORT_POLICY_DEFAULTS)
+        }
+    if policy.get("crypto_caps_version"):
+        view["risk_limits"]["crypto_notional_caps"] = {
+            key: policy[key] for key in ("crypto_caps_version", "crypto_max_order_notional_minor", "crypto_max_position_notional_minor")
+        }
     view["bound_to_running_account"] = store.paper_ledger.experiment_id == record["experiment_id"]
     return view
 

@@ -23,8 +23,25 @@ UNIVERSE_SESSIONS = dict(US_EQUITIES=('REGULAR',), US_ETFS=('REGULAR',),
 # The governed handoff and the deterministic exit are MARKET_NOW_IF_GATES_PASS.
 SUPPORTED_ORDER_TYPES = ('MARKET',)
 REGULAR_SESSION_MINUTES = 390
-# The automation refuses an entry below one whole unit of any instrument, fractional pairs included.
+# The automation refuses an entry below one whole unit of a share-counted instrument. A spot pair's floor is the
+# venue's own minimum order (ordermin, on its lot step), which ``order_quantity`` validates again at the ledger.
 MIN_ENTRY_QUANTITY = 1
+
+
+def minimum_entry_quantity(instrument=None):
+    """The smallest entry the automation sends for this instrument; one rule for the order path and the pre-model floor."""
+    if (instrument or {}).get('instrument_kind') == 'CRYPTO_PAIR':
+        try:
+            minimum = Decimal(str(instrument['minimum_quantity']))
+        except (KeyError, InvalidOperation):
+            return None  # no venue minimum: no entry is sized (INSTRUMENT_QUANTITY_RULES_UNAVAILABLE upstream)
+        return minimum if minimum.is_finite() and minimum > 0 else None
+    return Decimal(MIN_ENTRY_QUANTITY)
+
+
+def entry_below_minimum(quantity, instrument=None):
+    minimum = minimum_entry_quantity(instrument)
+    return minimum is None or Decimal(str(quantity)) <= 0 or Decimal(str(quantity)) < minimum
 
 
 class AutomationStatus(StrEnum):
@@ -394,8 +411,15 @@ def size_entry(policy, *, price_minor, positions, buying_power_minor, ledger_pol
         # Share-count caps remain upper bounds in base units/contracts; no allowance is multiplied per scope.
         bounds = {name: (Decimal(value) / unit_cost / step).to_integral_value(rounding=ROUND_FLOOR) * step
                   for name, value in amounts.items()}
-        bounds.update(PAPER_ACCOUNT_MAX_ORDER_SHARES=Decimal(ledger_policy['max_order_shares']),
-                      PAPER_ACCOUNT_MAX_POSITION_SHARES=Decimal(ledger_policy['max_position_shares']))
+        if instrument['instrument_kind'] == 'CRYPTO_PAIR' and ledger_policy.get('crypto_caps_version'):
+            # The account's frozen crypto terms replace the unit caps with dollar caps (owner decision 5).
+            caps = dict(PAPER_ACCOUNT_MAX_ORDER_NOTIONAL=ledger_policy['crypto_max_order_notional_minor'],
+                        PAPER_ACCOUNT_MAX_POSITION_NOTIONAL=ledger_policy['crypto_max_position_notional_minor'])
+            bounds.update({name: (Decimal(value) / unit_cost / step).to_integral_value(rounding=ROUND_FLOOR) * step
+                           for name, value in caps.items()})
+        else:
+            bounds.update(PAPER_ACCOUNT_MAX_ORDER_SHARES=Decimal(ledger_policy['max_order_shares']),
+                          PAPER_ACCOUNT_MAX_POSITION_SHARES=Decimal(ledger_policy['max_position_shares']))
         binding = min(bounds, key=lambda name: (bounds[name], name))
         quantity = (bounds[binding] / step).to_integral_value(rounding=ROUND_FLOOR) * step
         quantity = quantity if quantity >= minimum else Decimal(0)
@@ -425,7 +449,7 @@ def unsizeable_from_flat(order_bounds, *, price_minor, instrument=None):
                         buying_power_minor=risk['max_aggregate_exposure_minor'],
                         ledger_policy=order_bounds['paper_account'], instrument=instrument)
     quantity = Decimal(str(sizing['quantity']))
-    if quantity < MIN_ENTRY_QUANTITY:
+    if entry_below_minimum(quantity, instrument):
         return sizing['binding']  # the reason ``execute_decision`` would record with SIZING_BELOW_MINIMUM
     minimum = (instrument or {}).get('minimum_notional')
     if minimum is not None and quantity * Decimal(price_minor) / Decimal(str(instrument['price_scale'])) < Decimal(str(minimum)):

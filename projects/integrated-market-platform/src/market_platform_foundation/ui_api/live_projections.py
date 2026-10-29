@@ -331,16 +331,18 @@ def _apply_portfolio_marks(store: ReplayStore, runtime: Any) -> None:
                 mark = dict(mark_minor=quote["last_price_minor"], mark_provider=quote["source"],
                     mark_as_of_ns=quote["as_of_time_ns"], mark_quality="PASS", freshness_ms=0)
         elif runtime is not None and store.data_mode == "LIVE_OBSERVATIONAL":
+            # Hold our own reference on every pass, cached mark or not: a quote cached from
+            # another consumer's released subscription would otherwise leave the position with
+            # no new events, and its exits fill only against post-intent events. Idempotent.
+            try:
+                runtime.subscribe(
+                    instrument_id=instrument_id,
+                    capabilities=["BASIC_QUOTE"],
+                    consumer_id=PORTFOLIO_MARK_CONSUMER,
+                )
+            except Exception:  # noqa: BLE001 — a failed subscribe leaves the mark unavailable
+                pass
             mark = runtime.live_mark_for(instrument_id)
-            if mark is None:
-                try:
-                    runtime.subscribe(
-                        instrument_id=instrument_id,
-                        capabilities=["BASIC_QUOTE"],
-                        consumer_id=PORTFOLIO_MARK_CONSUMER,
-                    )
-                except Exception:  # noqa: BLE001 — a failed subscribe leaves the mark unavailable
-                    pass
         existing = ledger.mark_for(instrument_id)
         if mark is not None and int(mark["mark_minor"]) > 0:
             ledger.apply_live_mark(

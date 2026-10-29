@@ -1,7 +1,7 @@
 """Explicit decision requests, server reconstruction, history and Paper drafts."""
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_CEILING
+from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
 from ..paper.contracts import quantity_number, quantity_wire
 
 import json
@@ -32,6 +32,36 @@ from ..rt01.execution_decision_trace.types import EligibilityDecisionSnapshot, E
 
 def _iso(seconds):
     return datetime.fromtimestamp(seconds, UTC).isoformat().replace('+00:00','Z')
+
+
+def capped_exit_quantity(ledger, instrument_id, quantity):
+    """Server-sized, lot-aligned close under the frozen crypto order cap."""
+    instrument = ledger.instrument_for(instrument_id)
+    if instrument.get('instrument_kind') != 'CRYPTO_PAIR' or not ledger.policy.get('crypto_caps_version'):
+        return quantity
+    mark = ledger.mark_for(instrument_id) or {}
+    if not mark.get('mark_minor'):
+        return quantity  # The canonical preview still requires usable market evidence.
+    unit_minor = Decimal(mark['mark_minor']) / Decimal(instrument['price_scale']) * Decimal(ledger.policy['price_scale'])
+    step = Decimal(instrument['quantity_step'])
+    maximum = (Decimal(ledger.policy['crypto_max_order_notional_minor']) / unit_minor / step).to_integral_value(rounding=ROUND_FLOOR) * step
+    close = min(quantity, maximum)
+    if close < quantity:
+        # A capped close must leave enough for a later venue-valid order.
+        minimum = Decimal(instrument['minimum_quantity'])
+        if instrument.get('minimum_notional') is not None:
+            minimum = max(minimum, Decimal(instrument['minimum_notional']) * Decimal(ledger.policy['price_scale']) / unit_minor)
+        minimum = (minimum / step).to_integral_value(rounding=ROUND_CEILING) * step
+        if quantity - close < minimum:
+            close = ((quantity - minimum) / step).to_integral_value(rounding=ROUND_FLOOR) * step
+        if close < minimum:
+            return Decimal(0)  # No legal partition under the frozen cap; preview fails closed.
+        # When the whole position splits into capped, venue-valid orders, keep the remainder splittable too:
+        # a maximal chunk can otherwise strand an above-minimum remainder that no capped order can close.
+        orders = (quantity / maximum).to_integral_value(rounding=ROUND_CEILING)
+        if orders * minimum <= quantity:
+            close = min(close, quantity - (orders - 1) * minimum)
+    return close
 
 
 class ScreenerActionService:
@@ -354,6 +384,8 @@ class ScreenerActionService:
         state=record['action_state']
         if state not in ('ENTER','EXIT'): raise ValueError('ACTION_NOT_HANDOFF_ELIGIBLE')
         quantity=quantity_wire(abs(quantity_number(b['context']['position']['quantity']))) if state=='EXIT' else 1
+        if state=='EXIT':
+            quantity=quantity_wire(capped_exit_quantity(self.store.paper_ledger,record['instrument_id'],quantity_number(quantity)))
         # Entry uses the existing minimal operator draft (one unit), not model
         # sizing. Workspace always runs its independent preview/risk pipeline.
         side=('SELL' if b['context']['position']['state']=='LONG' else 'BUY') if state=='EXIT' else ('BUY' if record['direction']=='LONG' else 'SELL')
@@ -365,8 +397,8 @@ class ScreenerActionService:
     def validate_order_source(self, parsed, instrument):
         """Revalidate bounded Action provenance at both existing Paper boundaries.
 
-        Operators may size entry drafts in Workspace. Exits must close the exact
-        currently held quantity; model proposals never own either quantity.
+        Operators may size entry drafts in Workspace. Exits use the exact
+        server-derived capped close quantity; model proposals never own quantity.
         """
         source=parsed.get('decision_source_snapshot') or {}
         reasons=source.get('reasons',[])
@@ -420,11 +452,17 @@ class ScreenerActionService:
             price = decimal_to_minor_units(str(record['reference_quote']['source_value']),scale=scale)
         # Existing BUILD 22 defaults govern NAV/exposure; ledger hard caps remain
         # an additional independent authority in the interactive preview below.
+        max_trade=int(ledger.policy['max_order_shares'])*price
+        max_position=int(ledger.policy['max_position_shares'])*price
+        if fractional and ledger.policy.get('crypto_caps_version'):
+            # The account's frozen crypto terms are dollar caps (owner decision 5 (b)), not units times price.
+            max_trade=int(ledger.policy['crypto_max_order_notional_minor'])
+            max_position=int(ledger.policy['crypto_max_position_notional_minor'])
         policy=build_execution_policy(allow_short=ledger.allows_short(),
             max_total_open_orders=int(ledger.policy['max_open_orders']),
             max_open_orders_per_symbol=int(ledger.policy['max_open_orders']),
-            max_trade_notional_minor=int(ledger.policy['max_order_shares'])*price,
-            max_position_notional_minor=int(ledger.policy['max_position_shares'])*price,
+            max_trade_notional_minor=max_trade,
+            max_position_notional_minor=max_position,
             price_scale=scale,currency=ledger.policy.get('currency','USD'),max_portfolio_snapshot_age_ns=30_000_000_000)
         portfolio=snapshot_from_paper_ledger(ledger,captured_at_ns=now)
         if record['opportunity_id']:

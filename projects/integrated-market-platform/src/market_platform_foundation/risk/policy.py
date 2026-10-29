@@ -20,6 +20,22 @@ SHORT_POLICY_DEFAULTS = dict(
     short_ssr_drop_bps=1000,              # no new shorts in a name down 10% or more on the day
 )
 
+# Paper-only crypto notional caps (owner decision 5, draft 2026-10-28). The share caps are whole-share equity
+# limits; a spot pair is bounded by dollars instead. A policy without these keys keeps its exact body and hash and
+# applies the share caps to CRYPTO_PAIR as before; choosing them is a content change and yields a new account.
+CRYPTO_CAPS_VERSION = "paper-crypto-notional-caps/1.0.0"
+CRYPTO_CAP_TERMS = ("crypto_max_order_notional_minor", "crypto_max_position_notional_minor")
+
+# Paper-only spot-crypto short selling (owner decision 3, draft 2026-10-28). Requires the equity short terms (the
+# margin book, maintenance cover and borrow accrual are shared) and adds its own, stricter, crypto terms. There is no
+# borrow market behind this: the simulator lends any pair at any size (SIMULATED_EASY_TO_BORROW).
+CRYPTO_SHORT_POLICY_VERSION = "paper-crypto-short/1.0.0"
+CRYPTO_SHORT_POLICY_DEFAULTS = dict(
+    crypto_short_initial_margin_bps=10000,       # proceeds held plus 100% of the short's value: no leverage
+    crypto_short_maintenance_margin_bps=5000,    # account equity must stay at or above 50% of open crypto short value
+    crypto_short_borrow_fee_bps_per_year=4380,   # illustrative simulated annual rate, accrued daily; not a venue quote
+)
+
 
 def build_risk_policy(
     *,
@@ -34,12 +50,23 @@ def build_risk_policy(
     currency: str = "USD",
     price_scale: int = 100,
     allow_short: bool = False,
+    crypto_max_order_notional_minor: int | None = None,
+    crypto_max_position_notional_minor: int | None = None,
+    allow_crypto_short: bool = False,
     **short_terms: int,
 ) -> dict[str, Any]:
-    if set(short_terms) - set(SHORT_POLICY_DEFAULTS):
-        raise TypeError("unknown short policy terms: " + ",".join(sorted(set(short_terms) - set(SHORT_POLICY_DEFAULTS))))
+    if type(allow_crypto_short) is not bool:
+        raise ValueError("CRYPTO_SHORT_FLAG_INVALID")
+    known = set(SHORT_POLICY_DEFAULTS) | set(CRYPTO_SHORT_POLICY_DEFAULTS)
+    if set(short_terms) - known:
+        raise TypeError("unknown short policy terms: " + ",".join(sorted(set(short_terms) - known)))
+    crypto_terms = {key: short_terms.pop(key) for key in list(short_terms) if key in CRYPTO_SHORT_POLICY_DEFAULTS}
     if short_terms and not allow_short:
         raise ValueError("SHORT_TERMS_WITHOUT_ALLOW_SHORT")
+    if (allow_crypto_short or crypto_terms) and not allow_short:
+        raise ValueError("CRYPTO_SHORT_REQUIRES_ALLOW_SHORT")
+    if crypto_terms and not allow_crypto_short:
+        raise ValueError("CRYPTO_SHORT_TERMS_WITHOUT_ALLOW_CRYPTO_SHORT")
     body = {
         "commission_minor_per_share": commission_minor_per_share,
         "currency": currency,
@@ -58,6 +85,16 @@ def build_risk_policy(
         if any(type(value) is not int or value < 0 for value in terms.values()):
             raise ValueError("SHORT_POLICY_TERM_INVALID")
         body.update(allow_short=True, short_policy_version=SHORT_POLICY_VERSION, **terms)
+    caps = (crypto_max_order_notional_minor, crypto_max_position_notional_minor)
+    if any(value is not None for value in caps):
+        if any(type(value) is not int or value <= 0 for value in caps):
+            raise ValueError("CRYPTO_CAP_TERM_INVALID")
+        body.update(crypto_caps_version=CRYPTO_CAPS_VERSION, **dict(zip(CRYPTO_CAP_TERMS, caps)))
+    if allow_crypto_short:
+        terms = {**CRYPTO_SHORT_POLICY_DEFAULTS, **crypto_terms}
+        if any(type(value) is not int or value < 0 for value in terms.values()):
+            raise ValueError("SHORT_POLICY_TERM_INVALID")
+        body.update(allow_crypto_short=True, crypto_short_policy_version=CRYPTO_SHORT_POLICY_VERSION, **terms)
     return {
         **body,
         "risk_policy_identity_hash": sha256_bytes(canonical_bytes(body)),

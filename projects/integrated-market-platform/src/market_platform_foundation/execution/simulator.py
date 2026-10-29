@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_FLOOR
+from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
 from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
@@ -62,6 +62,7 @@ class BarConservativeSimulator:
         risk_decision: dict[str, Any],
         bars: list[dict[str, Any]],
         squeeze_context: dict[str, Any] | None = None,
+        position_quantity: int | Decimal | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any] | None]:
         assert_simulation_execution_allowed(
             intent.get("execution_mode") or self.policy.get("execution_mode")
@@ -188,6 +189,31 @@ class BarConservativeSimulator:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_NO_ELIGIBLE_VOLUME"]
             return self._finalize(order, None, intent=intent)
+
+        if fractional and position_quantity is not None:
+            # The canonical Paper caller supplies the current account position.
+            # Check the actual candidate fill, including participation reductions,
+            # before consuming this print's capacity or recording a financial fill.
+            current = exact_quantity(position_quantity)
+            signed_fill = fill_qty if direction == "long" else -fill_qty
+            residual = abs(current) - fill_qty
+            if current * signed_fill < 0 and residual > 0:
+                minimum = exact_quantity(instrument["minimum_quantity"])
+                minimum_notional = instrument.get("minimum_notional")
+                if residual < minimum or (
+                    minimum_notional is not None and residual * raw_price < exact_quantity(minimum_notional)
+                ):
+                    # A fill already reduced by print participation is trimmed to keep a legal residual at this
+                    # price, as a partial fill keeps a legal order remainder; a full-size close is still rejected.
+                    legal = minimum
+                    if minimum_notional is not None:
+                        by_notional = (exact_quantity(minimum_notional) / raw_price / step).to_integral_value(rounding=ROUND_CEILING) * step
+                        legal = max(legal, by_notional)
+                    trimmed = ((abs(current) - legal) / step).to_integral_value(rounding=ROUND_FLOOR) * step
+                    if fill_qty == approved_qty or trimmed < minimum:
+                        order.update(state="REJECTED", reason_codes=["SIM_CRYPTO_CLOSE_RESIDUAL_BELOW_MINIMUM"])
+                        return self._finalize(order, None, intent=intent)
+                    fill_qty = trimmed
 
         self._bar_allocations[allocation_key] = prior + fill_qty
         fill_body = {

@@ -699,5 +699,79 @@ class ExperimentHttpRouteTests(_Base):
         self.assertEqual(current["state"], "NO_ACTIVE_PAPER_EXPERIMENT")
 
 
+class FrozenCryptoPolicyVisibilityTests(unittest.TestCase):
+    """Offline response contract: serialize the frozen policy without changing it."""
+
+    def view(self, policy):
+        import copy
+        from types import SimpleNamespace
+
+        record = dict(experiment_id="fixture-experiment", risk_policy=policy)
+        before = copy.deepcopy(record)
+        store = SimpleNamespace(paper_ledger=SimpleNamespace(experiment_id="fixture-experiment"))
+        result = paper_experiment.experiment_view(store, record)
+        self.assertEqual(record, before)
+        self.assertTrue(result["bound_to_running_account"])
+        self.assertNotIn("risk_policy", result)
+        return result["risk_limits"]
+
+    def test_legacy_policy_reports_disabled_without_terms(self):
+        from market_platform_foundation.risk.policy import build_risk_policy
+
+        policy = build_risk_policy()
+        limits = self.view(policy)
+        self.assertIs(limits.get("allow_crypto_short"), False)
+        self.assertNotIn("crypto_short_terms", limits)
+        self.assertEqual(limits["max_order_shares"], policy["max_order_shares"])
+
+    def test_explicit_disabled_crypto_keeps_equity_short_terms(self):
+        from market_platform_foundation.risk.policy import build_risk_policy
+
+        policy = dict(build_risk_policy(allow_short=True), allow_crypto_short=False)
+        limits = self.view(policy)
+        self.assertIs(limits.get("allow_crypto_short"), False)
+        self.assertNotIn("crypto_short_terms", limits)
+        self.assertEqual(limits["short_terms"], {key: policy[key] for key in paper_experiment.SHORT_POLICY_DEFAULTS})
+
+    def test_approved_terms_and_caps_are_visible(self):
+        from market_platform_foundation.risk.policy import build_risk_policy
+
+        policy = build_risk_policy(allow_short=True, allow_crypto_short=True,
+            crypto_max_order_notional_minor=500000, crypto_max_position_notional_minor=500000)
+        limits = self.view(policy)
+        self.assertIs(limits.get("allow_crypto_short"), True)
+        self.assertEqual(limits.get("crypto_short_terms"), {
+            "crypto_short_policy_version": "paper-crypto-short/1.0.0",
+            "crypto_short_initial_margin_bps": 10000,
+            "crypto_short_maintenance_margin_bps": 5000,
+            "crypto_short_borrow_fee_bps_per_year": 4380,
+        })
+        self.assertEqual(limits["crypto_notional_caps"]["crypto_max_order_notional_minor"], 500000)
+        self.assertEqual(limits["crypto_notional_caps"]["crypto_max_position_notional_minor"], 500000)
+
+    def test_custom_frozen_values_and_version_are_not_replaced_by_defaults(self):
+        from market_platform_foundation.risk.policy import build_risk_policy
+
+        policy = build_risk_policy(allow_short=True, allow_crypto_short=True,
+            crypto_short_initial_margin_bps=12000, crypto_short_maintenance_margin_bps=6500,
+            crypto_short_borrow_fee_bps_per_year=1234)
+        policy["crypto_short_policy_version"] = "fixture-frozen-version"
+        limits = self.view(policy)
+        self.assertEqual(limits.get("crypto_short_terms"), {key: policy[key] for key in (
+            "crypto_short_policy_version", "crypto_short_initial_margin_bps",
+            "crypto_short_maintenance_margin_bps", "crypto_short_borrow_fee_bps_per_year")})
+
+    def test_serialized_terms_are_detached_from_frozen_policy(self):
+        from market_platform_foundation.risk.policy import build_risk_policy
+
+        policy = build_risk_policy(allow_short=True, allow_crypto_short=True)
+        identity = policy["risk_policy_identity_hash"]
+        limits = self.view(policy)
+        self.assertIn("crypto_short_terms", limits)
+        limits["crypto_short_terms"]["crypto_short_initial_margin_bps"] = 1
+        self.assertEqual(policy["crypto_short_initial_margin_bps"], 10000)
+        self.assertEqual(policy["risk_policy_identity_hash"], identity)
+
+
 if __name__ == "__main__":
     unittest.main()

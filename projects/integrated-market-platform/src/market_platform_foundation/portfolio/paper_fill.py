@@ -158,9 +158,14 @@ def apply_paper_fill_to_portfolio(
         or existing.native_currency != currency or existing.multiplier != multiplier
     ):
         raise ValueError("POSITION_ECONOMICS_MISMATCH")
-    if kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT", "CRYPTO_PAIR"}:
+    crypto_short = (kind == "CRYPTO_PAIR" and policy.get("allow_short") is True
+                    and policy.get("allow_crypto_short") is True
+                    and policy.get("crypto_short_policy_version") == "paper-crypto-short/1.0.0")
+    if kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT"} or (kind == "CRYPTO_PAIR" and not crypto_short):
         if position_before < 0 or (signed_qty < 0 and abs_qty > position_before):
             raise ValueError("UNSUPPORTED_RISK_MODEL: short/oversell fill")
+    if crypto_short and position_before * signed_qty < 0 and abs_qty > abs(position_before):
+        raise ValueError("POSITION_REVERSAL_NOT_ALLOWED")
     if kind == "CRYPTO_PAIR":
         if currency != str(policy.get("currency", "USD")).upper() or currency != "USD":
             raise ValueError("UNSUPPORTED_SETTLEMENT_CURRENCY: spot requires funded USD")
@@ -280,7 +285,7 @@ def apply_paper_fill_to_portfolio(
     else:
         raise ValueError(f"UNSUPPORTED_INSTRUMENT_KIND:{kind}")
 
-    if kind == "CRYPTO_PAIR" and signed_qty > 0:
+    if kind == "CRYPTO_PAIR" and signed_qty > 0 and position_before >= 0:
         cash = next((balance.settled for balance in portfolio.cash_balances if balance.currency == currency),
                     Decimal("0"))
         if cash + cash_delta < 0:

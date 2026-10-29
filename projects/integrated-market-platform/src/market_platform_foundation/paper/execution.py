@@ -101,6 +101,15 @@ def _enforce_pretrade_admission(
                 raise ValueError("REQUIRED_PRICE_MISSING")
             if quantity * exact_quantity(str(raw)) < exact_quantity(instrument["minimum_notional"]):
                 raise ValueError("ORDER_NOTIONAL_MINIMUM_INVALID")
+        if side == "SELL" and ledger.allows_short():
+            from .short_gate import enforce_equity_sell
+            payload = bars[-1].get("bar_payload") if bars else {}
+            raw = (payload or {}).get("low") or (payload or {}).get("close")
+            account_price = Decimal(str(raw)) * Decimal(ledger.policy["price_scale"]) if raw is not None else None
+            enforce_equity_sell(ledger=ledger, intent=intent, kind=kind, position_qty=position_qty,
+                reserved_sell=ledger.reserved_sell_quantity(str(intent["instrument_id"])), price_minor=account_price,
+                costs_minor=costs_minor, buying_power_minor=int(account["buying_power_minor"]))
+            return
         if side == "SELL":
             reserved = ledger.reserved_sell_quantity(str(intent["instrument_id"]))
             if quantity > max(Decimal(0), position_qty - reserved):
@@ -119,7 +128,12 @@ def _enforce_pretrade_admission(
         price = exact_quantity(str(raw))
         needed = quantity * price * Decimal(str(instrument.get("contract_multiplier", "1"))) * Decimal(ledger.policy["price_scale"])
         needed += costs_minor
-        available = Decimal(account["cash_minor"]) - obligations.get(currency, 0)
+        if position_qty < 0 and ledger.allows_crypto_short():
+            from .short_gate import enforce_equity_buy
+            enforce_equity_buy(intent=intent, position_qty=position_qty, required_minor=0, buying_power_minor=0)
+            return
+        available = (Decimal(account["buying_power_minor"]) if ledger.allows_short()
+                     else Decimal(account["cash_minor"]) - Decimal(obligations.get(currency, 0)))
         if needed > available:
             raise ValueError("INSUFFICIENT_CASH")
         return
@@ -268,6 +282,24 @@ def _ledger_simulator(ledger: PaperExecutionLedger) -> BarConservativeSimulator:
     return simulator
 
 
+def _crypto_notional_cap_reasons(policy, instrument, bars, intent, quantity, current, projected) -> list[str]:
+    """Order and position notional at the newest bar's adverse price, in the account's minor units.
+
+    A reduction is never refused for a position whose value grew past the cap; no price fails closed.
+    """
+    payload = (bars[-1].get("bar_payload") or {}) if bars else {}
+    raw = payload.get("high" if intent["direction"] == "long" else "low") or payload.get("close")
+    if raw is None:
+        return ["RISK_CRYPTO_NOTIONAL_PRICE_UNAVAILABLE"]
+    unit = exact_quantity(str(raw)) * Decimal(str(instrument.get("contract_multiplier", "1"))) * int(policy["price_scale"])
+    reasons = []
+    if quantity * unit > int(policy["crypto_max_order_notional_minor"]):
+        reasons.append("RISK_MAX_ORDER_NOTIONAL_EXCEEDED")
+    if abs(projected) > abs(current) and abs(projected) * unit > int(policy["crypto_max_position_notional_minor"]):
+        reasons.append("RISK_MAX_POSITION_NOTIONAL_EXCEEDED")
+    return reasons
+
+
 def execute_order_intent(
     *,
     intent: dict[str, Any],
@@ -303,11 +335,15 @@ def execute_order_intent(
         reasons = []
         if ledger.kill_switch.active:
             reasons.append("RISK_KILL_SWITCH_ACTIVE")
-        if quantity > ledger.policy["max_order_shares"]:
-            reasons.append("RISK_MAX_ORDER_EXCEEDED")
         projected = current + (quantity if intent["direction"] == "long" else -quantity)
-        if abs(projected) > ledger.policy["max_position_shares"]:
-            reasons.append("RISK_MAX_POSITION_EXCEEDED")
+        if ledger.policy.get("crypto_caps_version"):
+            # The account's frozen crypto terms bound a spot pair in dollars, not in units (owner decision 5).
+            reasons.extend(_crypto_notional_cap_reasons(ledger.policy, instrument, bars, intent, quantity, current, projected))
+        else:
+            if quantity > ledger.policy["max_order_shares"]:
+                reasons.append("RISK_MAX_ORDER_EXCEEDED")
+            if abs(projected) > ledger.policy["max_position_shares"]:
+                reasons.append("RISK_MAX_POSITION_EXCEEDED")
         if ledger.open_order_count >= ledger.policy["max_open_orders"]:
             reasons.append("RISK_MAX_OPEN_ORDERS")
         decision.update(decision="REJECT" if reasons else "APPROVE", reason_codes=reasons,
@@ -323,6 +359,7 @@ def execute_order_intent(
         risk_decision=decision,
         bars=bars,
         squeeze_context=squeeze_context,
+        **({"position_quantity": current} if instrument.get("instrument_kind") == "CRYPTO_PAIR" else {}),
     )
     for key in (
         "lineage_refs",

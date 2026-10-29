@@ -467,5 +467,89 @@ class CryptoAutonomousExecutionTests(AutoBase):
         self.assertIn(('subscribe', self.iid, (BOOK, TRADES)), self.tape.calls)
 
 
+class BackgroundPrintBoundaryTests(unittest.TestCase):
+    """Additional exact-boundary probes; no servers, providers, model, or wall-clock waits."""
+
+    def setUp(self):
+        self.tape = Tape(100 * S)
+        self.tape.ack(IID, 101 * S)
+        self.reader = PaperMarketEvidence(kraken_runtime=self.tape)
+
+    def test_age_limit_is_inclusive_and_one_nanosecond_older_is_stale(self):
+        self.tape.trade(IID, 1.0, 3000.0, received_ns=105*S, event_ns=105*S)
+        self.assertEqual(len(self.reader.crypto_trade_bars(IID, now_ns=120*S)), 1)
+        self.assertEqual(self.reader.crypto_trade_bars(IID, now_ns=120*S+1), [])
+
+    def test_future_receipt_by_one_nanosecond_is_rejected(self):
+        self.tape.trade(IID, 1.0, 3000.0, received_ns=120*S+1, event_ns=120*S)
+        self.assertEqual(self.reader.crypto_trade_bars(IID, now_ns=120*S), [])
+
+    def test_reconnect_and_subscription_cutoff_exclude_old_prints(self):
+        self.tape.trade(IID, 1.0, 3000.0, received_ns=118*S, event_ns=118*S)
+        self.tape.lifecycle.connected_ns = 118*S+1
+        self.assertEqual(self.reader.crypto_trade_bars(IID, now_ns=120*S), [])
+        self.tape.ack(IID, 119*S)
+        self.tape.trade(IID, 1.0, 3000.0, received_ns=119*S-1, event_ns=119*S-1)
+        self.assertEqual(self.reader.crypto_trade_bars(IID, now_ns=120*S), [])
+        self.tape.trade(IID, 1.0, 3000.0, received_ns=119*S, event_ns=119*S)
+        bars = self.reader.crypto_trade_bars(IID, now_ns=120*S)
+        self.assertEqual([b['available_time'] for b in bars], [119*S])
+        self.assertEqual(self.tape.calls, [])
+
+    def _wait(self, *, print_at_last_read=False):
+        elapsed = [0.0]
+        reads = []
+        self.tape.trade(IID, 1.0, 3000.0, received_ns=118*S, event_ns=118*S)
+        initial = self.reader.crypto_trade_bars(IID, now_ns=120*S)
+        ledger = book(); before = list(ledger.events)
+        def latest(iid):
+            reads.append(elapsed[0])
+            if print_at_last_read and len(reads) == 3:
+                self.tape.trade(IID, 1.0, 3000.0, received_ns=119*S, event_ns=119*S)
+            return self.reader.crypto_trade_bars(iid, now_ns=120*S)
+        def sleep(seconds): elapsed[0] += seconds
+        with patch.dict(os.environ, dict(IMP_LIVE_OBSERVATIONAL='1', IMP_MOOMOO_LIVE='1', IMP_LIVE_EXECUTION_WAIT_MS='100')), \
+             patch('market_platform_foundation.market_data.live_runtime.get_live_runtime', return_value=SimpleNamespace()), \
+             patch.object(paper_projections, '_crypto_execution_bars', side_effect=latest), \
+             patch('time.monotonic', side_effect=lambda: elapsed[0]), patch('time.sleep', side_effect=sleep):
+            bars = paper_projections._wait_for_post_intent_bars(SimpleNamespace(paper_ledger=ledger),
+                instrument_id=IID, created_time_ns=118*S, bars=initial, instrument=nano())
+        self.assertEqual(ledger.events, before)
+        self.assertLessEqual(elapsed[0], 0.100001)
+        self.assertEqual(len(reads), 3)
+        return bars
+
+    def test_timeout_with_equal_intent_print_cannot_manufacture_a_new_bar(self):
+        self.assertFalse(any(b['available_time'] > 118*S for b in self._wait()))
+
+    def test_final_deadline_observation_accepts_only_a_real_fresh_print(self):
+        bars = self._wait(print_at_last_read=True)
+        self.assertEqual([b['available_time'] for b in bars if b['available_time'] > 118*S], [119*S])
+
+    def test_equal_intent_print_is_not_a_fill_and_cash_is_unchanged(self):
+        ledger = book()
+        self.tape.trade(IID, 1.0, 3000.0, received_ns=110*S, event_ns=110*S)
+        result = submit_interactive_order(ledger=ledger,
+            bars=self.reader.crypto_trade_bars(IID, now_ns=115*S), symbol=IID, instrument_id=IID,
+            instrument=nano(), quantity='20', side='BUY', observation_time=110*S,
+            client_order_id='equal', idempotency_key='equal')
+        self.assertIsNone(result['fill'])
+        self.assertEqual(result['order']['reason_codes'], ['SIM_NO_POST_SIGNAL_BAR'])
+        self.assertEqual(ledger.project_account()['cash_minor'], 10_000_000)
+        self.assertEqual(ledger.project_positions(), [])
+
+    def test_same_intent_and_print_cannot_duplicate_a_fill(self):
+        ledger = book()
+        self.tape.trade(IID, 1.0, 3000.0, received_ns=111*S, event_ns=111*S)
+        kwargs=dict(ledger=ledger,bars=self.reader.crypto_trade_bars(IID,now_ns=115*S),
+            symbol=IID,instrument_id=IID,instrument=nano(),quantity='20',side='BUY',observation_time=110*S,
+            client_order_id='repeat',idempotency_key='repeat')
+        first=submit_interactive_order(**kwargs);events=list(ledger.events)
+        second=submit_interactive_order(**kwargs)
+        self.assertEqual(second['order']['order_id'],first['order']['order_id'])
+        self.assertEqual(ledger.events,events)
+        self.assertEqual(ledger.project_positions()[0]['quantity'],'20')
+
+
 if __name__ == '__main__':
     unittest.main()

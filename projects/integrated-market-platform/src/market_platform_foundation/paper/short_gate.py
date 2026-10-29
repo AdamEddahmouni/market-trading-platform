@@ -48,13 +48,13 @@ def enforce_equity_sell(
     ledger: Any,
     intent: Mapping[str, Any],
     kind: str,
-    position_qty: int,
+    position_qty: int | Decimal,
     reserved_sell: int | Decimal,
-    price_minor: int | None,
+    price_minor: int | Decimal | None,
     costs_minor: int,
     buying_power_minor: int,
 ) -> None:
-    """Admit or refuse one equity/ETF SELL on a short-enabled Paper account."""
+    """Admit an equity/ETF sell or an explicitly opted-in crypto sell; prices are account-scale."""
     quantity = exact_quantity(intent.get("desired_quantity", 0))
     owned = max(0, position_qty)
     available_to_sell = max(Decimal(0), Decimal(owned) - Decimal(reserved_sell))
@@ -65,6 +65,15 @@ def enforce_equity_sell(
             "POSITION_REVERSAL_NOT_ALLOWED: "
             f"{{'owned_quantity': {owned}, 'available_to_sell': {available_to_sell}}}"
         )
+    crypto = kind == "CRYPTO_PAIR" and ledger.allows_crypto_short()
+    if crypto:
+        if price_minor is None or price_minor <= 0:
+            raise ValueError("REQUIRED_PRICE_MISSING: crypto short requires an account-scale price")
+        required = int((quantity * Decimal(price_minor) * int(ledger.policy["crypto_short_initial_margin_bps"]) / 10_000
+                        + costs_minor).to_integral_value(rounding=ROUND_CEILING))
+        if required > buying_power_minor:
+            raise ValueError("INSUFFICIENT_SHORT_MARGIN")
+        return  # USD spot simulation: no equity minimum-price or SSR rule.
     if kind not in SHORTABLE_KINDS:
         raise ValueError(f"SHORT_INSTRUMENT_UNSUPPORTED: {kind}")
     if quantity != quantity.to_integral_value():

@@ -61,6 +61,14 @@ _GATE_REASON_MAP = {
 }
 
 
+def _minimum_quantity(policy: ExecutionPolicyV1, proposal: TradeProposalV1) -> Any:
+    """Whole units for shares; for a spot pair the venue's own minimum order (owner decision 5 (a))."""
+    instrument = proposal.metadata.get("instrument") or {}
+    if proposal.metadata.get("quantity_step") is not None and instrument.get("minimum_quantity") is not None:
+        return exact_quantity(instrument["minimum_quantity"])
+    return policy.minimum_quantity
+
+
 def _gate_reason_code(message: str) -> RiskReasonCode:
     return _GATE_REASON_MAP.get(message, RiskReasonCode.FAIL_CLOSED)
 
@@ -363,7 +371,8 @@ class PreTradeRiskEngine:
                 reason_codes=[RiskReasonCode.DAILY_LOSS_LIMIT],
             )
 
-        if proposal.requested_quantity < policy.minimum_quantity:
+        minimum_quantity = _minimum_quantity(policy, proposal)
+        if proposal.requested_quantity < minimum_quantity:
             return self._finalize(
                 proposal=proposal,
                 policy=policy,
@@ -460,8 +469,8 @@ class PreTradeRiskEngine:
             if required_cash > available:
                 if policy.allow_size_reduction and proposal.reference_price_minor > 0:
                     approved_qty = ((Decimal(available) / proposal.reference_price_minor / exact_quantity(proposal.metadata["quantity_step"])).to_integral_value(rounding=ROUND_FLOOR) * exact_quantity(proposal.metadata["quantity_step"]) if proposal.metadata.get("quantity_step") is not None else available // proposal.reference_price_minor)
-                    decision = RiskDecisionKind.REDUCE if approved_qty >= policy.minimum_quantity else RiskDecisionKind.REJECT
-                    if approved_qty < policy.minimum_quantity:
+                    decision = RiskDecisionKind.REDUCE if approved_qty >= minimum_quantity else RiskDecisionKind.REJECT
+                    if approved_qty < minimum_quantity:
                         approved_qty = 0
                     reason_codes.append(RiskReasonCode.INSUFFICIENT_PAPER_CASH)
                     reason_codes.append(RiskReasonCode.SIZE_REDUCED)
@@ -473,7 +482,7 @@ class PreTradeRiskEngine:
         if proposal.metadata.get("quantity_step") is not None:
             step = exact_quantity(proposal.metadata["quantity_step"])
             approved_qty = (Decimal(approved_qty) / step).to_integral_value(rounding=ROUND_FLOOR) * step
-            if approved_qty < policy.minimum_quantity or int((approved_qty * proposal.reference_price_minor).to_integral_value(rounding=ROUND_CEILING)) < policy.minimum_trade_notional_minor:
+            if approved_qty < minimum_quantity or int((approved_qty * proposal.reference_price_minor).to_integral_value(rounding=ROUND_CEILING)) < policy.minimum_trade_notional_minor:
                 approved_qty = Decimal(0)
                 decision = RiskDecisionKind.REJECT
                 reason_codes.append(RiskReasonCode.REQUESTED_SIZE_TOO_SMALL)
