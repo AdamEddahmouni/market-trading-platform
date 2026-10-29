@@ -11,6 +11,7 @@ from market_platform_foundation.ui_api.paper_performance import PerformanceServi
 from market_platform_foundation.evaluation.performance_calendar import session_bounds, NS
 from tests.trading_correctness.test_paper_experiment_accounting import _experiment_ledger, _Orders, _mark
 from market_platform_foundation.paper.experiment import build_experiment_record
+from market_platform_foundation.intelligence.inference.action_decision import PROMPT_ID
 
 class PerformanceServiceTests(unittest.TestCase):
     def setUp(self):
@@ -164,7 +165,7 @@ class PerformanceServiceTests(unittest.TestCase):
             repo.return_value.get_controller.return_value=dict(policy_id="policy-1")
             config=runtime_configuration(self.store)
         self.assertEqual(config["ai"]["model"],"fixture-local")
-        self.assertEqual(config["prompt_id"],"screener.action_decision.v5")
+        self.assertEqual(config["prompt_id"],PROMPT_ID)
 
 
     def test_route_policy_and_dispatch_without_opening_server(self):
