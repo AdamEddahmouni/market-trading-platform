@@ -310,5 +310,20 @@ class StartupReportTests(unittest.TestCase):
         assert_no_secrets_in_payload(second)
 
 
+class BootEpochTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'nt', 'Windows boot clock')
+    def test_boot_epoch_is_derived_from_uptime_since_boot(self):
+        # boot_epoch relies on time.monotonic() being GetTickCount64 (uptime since boot) on Windows.
+        self.assertEqual(time.get_clock_info('monotonic').implementation, 'GetTickCount64()')
+        expected = time.time() - time.monotonic()
+        self.assertAlmostEqual(receipts.boot_epoch(), expected, delta=1.0)
+
+    def test_boot_epoch_is_stable_between_calls(self):
+        first = receipts.boot_epoch()
+        if first is None:
+            self.skipTest('no uptime source on this platform')
+        self.assertAlmostEqual(receipts.boot_epoch(), first, delta=1.0)
+
+
 if __name__ == '__main__':
     unittest.main()

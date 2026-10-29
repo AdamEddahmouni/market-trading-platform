@@ -57,7 +57,9 @@ class FakeScorer:
 
 class LocalIntelligenceTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmp = Path(tempfile.mkdtemp())
+        folder = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)  # Windows: a late SQLite handle
+        self.addCleanup(folder.cleanup)
+        self.tmp = Path(folder.name)
         self.db = self.tmp / "imp-state.sqlite3"
         with sqlite3.connect(self.db) as con:
             con.execute("CREATE TABLE news_collection_records (record_id TEXT PRIMARY KEY, provider_id TEXT, source_id TEXT, "

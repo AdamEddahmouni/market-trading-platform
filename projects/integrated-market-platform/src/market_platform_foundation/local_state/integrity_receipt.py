@@ -84,11 +84,8 @@ def lock_path(store: Path) -> Path:
 def boot_epoch() -> float | None:
     """When this PC booted, from its uptime (the keeper's own measure)."""
     if os.name == "nt":
-        import ctypes
-
-        tick = ctypes.windll.kernel32.GetTickCount64
-        tick.restype = ctypes.c_ulonglong
-        return time.time() - tick() / 1000.0
+        # On Windows time.monotonic() is GetTickCount64 (milliseconds since boot), without ctypes.
+        return time.time() - time.monotonic()
     try:
         return time.time() - float(Path("/proc/uptime").read_text().split()[0])
     except (OSError, ValueError, IndexError):
