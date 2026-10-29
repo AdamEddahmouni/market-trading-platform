@@ -1650,7 +1650,13 @@ class PaperAutomationService:
                 continue
             from . import paper_projections
             try:
-                instrument = paper_projections._admit_focus_instrument(self.store, iid)
+                try:
+                    instrument = paper_projections._admit_focus_instrument(self.store, iid)
+                except ValueError:
+                    # US equity identities live in XA-01 memory only, so a restart forgets a held one. Re-register it
+                    # from its catalog row (the same rule as entries) so it stays closable; else it stays blocked.
+                    register_catalog_equity(iid, 'US_EQUITIES')
+                    instrument = paper_projections._admit_focus_instrument(self.store, iid)
             except ValueError:
                 # Retain unknown owned exposure as blocked carry; canonical preview
                 # will refuse its close without aborting other instruments.
