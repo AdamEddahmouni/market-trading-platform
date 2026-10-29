@@ -12,6 +12,10 @@ from .fill_model import assert_simulation_execution_allowed, stamp_fill_model_pr
 
 SIMULATOR_VERSION = "phase7.bar-conservative/1.1.0"
 SOURCE_CAPABILITY = "BAR_OHLCV_1M"
+# A trimmed or capped crypto close leaves the venue minimum notional plus this margin, so one lower print cannot
+# strand the remainder below the minimum (owner decision 2026-10-29). Legality checks still use the exact minimum.
+CRYPTO_RESIDUAL_NOTIONAL_BUFFER = Decimal("1.02")
+CRYPTO_CLOSE_TRIMMED = "SIM_CRYPTO_CLOSE_TRIMMED_TO_LEGAL_RESIDUAL"
 
 
 @dataclass(frozen=True)
@@ -185,6 +189,13 @@ class BarConservativeSimulator:
                 fill_qty = ((approved_qty - minimum) / step).to_integral_value(rounding=ROUND_FLOOR) * step
             if fill_qty < minimum:
                 fill_qty = 0
+            minimum_notional = instrument.get("minimum_notional")
+            if fill_qty > 0 and position_quantity is not None and minimum_notional is not None:
+                # Nor does a partial opening (or adding) fill leave a position no venue-valid order could close.
+                current = exact_quantity(position_quantity)
+                opening = current == 0 or (current > 0) == (direction == "long")
+                if opening and (abs(current) + fill_qty) * raw_price < exact_quantity(minimum_notional):
+                    fill_qty = 0
         if fill_qty <= 0:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_NO_ELIGIBLE_VOLUME"]
@@ -205,15 +216,22 @@ class BarConservativeSimulator:
                 ):
                     # A fill already reduced by print participation is trimmed to keep a legal residual at this
                     # price, as a partial fill keeps a legal order remainder; a full-size close is still rejected.
-                    legal = minimum
-                    if minimum_notional is not None:
-                        by_notional = (exact_quantity(minimum_notional) / raw_price / step).to_integral_value(rounding=ROUND_CEILING) * step
-                        legal = max(legal, by_notional)
-                    trimmed = ((abs(current) - legal) / step).to_integral_value(rounding=ROUND_FLOOR) * step
+                    def trim_to(buffer):
+                        legal = minimum
+                        if minimum_notional is not None:
+                            target = exact_quantity(minimum_notional) * buffer
+                            legal = max(legal, (target / raw_price / step).to_integral_value(rounding=ROUND_CEILING) * step)
+                        return ((abs(current) - legal) / step).to_integral_value(rounding=ROUND_FLOOR) * step
+
+                    # The buffered residual when that trim is still a legal fill, else the exact minimum.
+                    trimmed = trim_to(CRYPTO_RESIDUAL_NOTIONAL_BUFFER)
+                    if trimmed < minimum:
+                        trimmed = trim_to(Decimal(1))
                     if fill_qty == approved_qty or trimmed < minimum:
                         order.update(state="REJECTED", reason_codes=["SIM_CRYPTO_CLOSE_RESIDUAL_BELOW_MINIMUM"])
                         return self._finalize(order, None, intent=intent)
                     fill_qty = trimmed
+                    order["reason_codes"] = [CRYPTO_CLOSE_TRIMMED]  # informational: the order is still a partial fill
 
         self._bar_allocations[allocation_key] = prior + fill_qty
         fill_body = {

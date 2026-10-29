@@ -1510,7 +1510,7 @@ class PaperAutomationService:
             blockers = entry_risk_blockers(policy, positions=positions, valuation=ledger.project_valuation(),
                                            day_start_equity_minor=(work.get('day') or {}).get('start_equity_minor'),
                                            pending_orders=pending, minutes_to_close=session.get('minutes_to_close'), session_label=session.get('label'),
-                                           carry_pending=bool((work.get('carry') or {}).get('pending')), close_guard_minutes=EOD_FLATTEN_MINUTES)
+                                           carry_pending=self._carry_blocks_entries(work, session), close_guard_minutes=EOD_FLATTEN_MINUTES)
             if blockers:
                 return finish(IntentState.BLOCKED, blockers)
         backoff = work.get('exit_backoff') or {}
@@ -1661,6 +1661,15 @@ class PaperAutomationService:
                 continue
             rows.append(dict(position, quantity=quantity_wire(min(abs(own), abs(held)) * (1 if held > 0 else -1))))
         return rows
+
+    @staticmethod
+    def _carry_blocks_entries(work, session):
+        """An unplanned US equity carry holds back equity-session entries until it is closed at the open.
+
+        The continuous (crypto) scope never waits on the equity bell (owner decision 2026-10-29); every
+        portfolio-level gate (valuation, exposure, daily loss, margin, working orders) still applies to it.
+        """
+        return session.get('label') != 'CONTINUOUS' and bool((work.get('carry') or {}).get('pending'))
 
     def _detect_unplanned_carry(self, work, closing_date):
         carry = work['carry']
@@ -1955,7 +1964,14 @@ class PaperAutomationService:
         quantity = abs(held)
         ledger = self.store.paper_ledger
         from .screener_action import capped_exit_quantity
-        quantity = capped_exit_quantity(ledger, iid, quantity)
+        try:
+            quantity = capped_exit_quantity(ledger, iid, quantity)
+        except (ValueError, KeyError, TypeError, ArithmeticError) as exc:  # a bad instrument field blocks this close only
+            outcome = dict(decision_id=None, instrument_id=iid, action=action, side=side, quantity=quantity_wire(quantity),
+                           client_order_id=key, outcome='BLOCKED', reason_codes=['PAPER_CLOSE_SIZING_' + _code(exc)])
+            self._event(event, **outcome)
+            summary['actions'].append(outcome)
+            return outcome
         body = dict(instrument_id=iid, side=side, quantity=quantity_wire(quantity), order_type='MARKET', client_order_id=key,
                     idempotency_key=key, correlation_id='lane:order-flow',
                     decision_source_snapshot=dict(source_type='workspace_lane', source_id='order-flow', source_module='order-flow',

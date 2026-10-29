@@ -34,21 +34,22 @@ class ResidualExecutionGuardTests(unittest.TestCase):
             with self.subTest(short=is_short):
                 self.setUp();self.opened(is_short)
                 close=capped_exit_quantity(self.book,IID,Decimal('1.6'))
-                self.assertEqual(close,Decimal('1.35'))
+                self.assertEqual(close,Decimal('1.345'))  # leaves $0.50 + 2% buffer at the $2.00 mark
                 cash=self.book.project_account()['cash_minor'];quantity=self.book.project_positions()[0]['quantity']
-                result=self.order(str(close),side='BUY' if is_short else 'SELL',price=1.99)
+                result=self.order(str(close),side='BUY' if is_short else 'SELL',price=1.95)  # 0.255 x $1.95 < $0.50
                 self.assert_rejected_unchanged(result,cash,quantity)
 
     def test_participation_partial_fill_is_trimmed_to_a_legal_residual(self):
-        # Owner decision (b): eligible 1.4 would leave 0.2 x $1.99 < $0.50, so the fill is trimmed to keep 0.252.
+        # Owner decision (b): eligible 1.4 would leave 0.2 x $1.99 < $0.50, so the fill is trimmed to keep 0.257
+        # (the $0.50 minimum plus the 2% buffer of 2026-10-29).
         self.opened(cap=1000)
         self.tape.trade(IID,1.99,140,received_ns=131*S,event_ns=131*S)
         bars=PaperMarketEvidence(kraken_runtime=self.tape).crypto_trade_bars(IID,now_ns=135*S)
         result=submit_interactive_order(ledger=self.book,bars=bars,symbol=IID,instrument_id=IID,
             instrument=self.instrument,quantity='1.6',side='BUY',observation_time=130*S,
             client_order_id='partial',idempotency_key='partial')
-        self.assertEqual((result['order']['state'],result['fill']['fill_quantity']),('PARTIALLY_FILLED','1.348'))
-        self.assertEqual(self.book.project_positions()[0]['quantity'],'-0.252')
+        self.assertEqual((result['order']['state'],result['fill']['fill_quantity']),('PARTIALLY_FILLED','1.343'))
+        self.assertEqual(self.book.project_positions()[0]['quantity'],'-0.257')
 
     def test_rejected_fill_does_not_consume_print_participation_capacity(self):
         self.opened()
@@ -79,12 +80,12 @@ class ResidualExecutionGuardTests(unittest.TestCase):
         self.assertEqual(first['order'].get('reason_codes',[]),[REASON])
         self.mark(1.99)
         resized=capped_exit_quantity(self.book,IID,Decimal('1.6'))
-        self.assertEqual(resized,Decimal('1.348'))
+        self.assertEqual(resized,Decimal('1.343'))  # $0.50 + 2% buffer at $1.99
         second=self.order(str(resized),side='BUY',price=1.99)
         self.assertEqual(second['order']['state'],'FILLED')
         self.assertNotEqual(second['order_id'],first['order_id'])
-        self.assertEqual(self.book.project_positions()[0]['quantity'],'-0.252')
-        self.assertEqual(self.order('0.252',side='BUY',price=1.99)['order']['state'],'FILLED')
+        self.assertEqual(self.book.project_positions()[0]['quantity'],'-0.257')
+        self.assertEqual(self.order('0.257',side='BUY',price=1.99)['order']['state'],'FILLED')
         self.assertEqual(self.book.project_positions(),[])
 
     def test_venue_quantity_minimum_is_checked_even_without_a_notional_minimum(self):

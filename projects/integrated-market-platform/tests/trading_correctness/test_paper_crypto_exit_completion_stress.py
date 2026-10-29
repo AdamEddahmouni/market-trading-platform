@@ -337,7 +337,8 @@ class DisruptionStressTests(StressBase):
         'no_post_intent_print_then_fresh': (['2.0'], {0: 'no_post_intent_print', 1: 'no_post_intent_print'}),
         'disconnected_then_reconnected': (['2.0'], {0: 'disconnected', 2: 'disconnected'}),
         'off_tick_prints_then_valid': (['2.0000005', '2.0000005', '2.0000005', '2.0'], {}),
-        'residual_reject_then_stale_then_fresh': (['1.99', '1.99', '1.99'], {1: 'no_post_intent_print', 2: 'disconnected'}),
+        # $1.95 is below the buffered residual (0.255 x $1.95 < $0.50), so the guard still rejects first.
+        'residual_reject_then_stale_then_fresh': (['1.95', '1.95', '1.95'], {1: 'no_post_intent_print', 2: 'disconnected'}),
     }
 
     def test_interleaved_rejections_never_mutate_and_recovery_completes(self):
@@ -400,10 +401,10 @@ class ControllerStressTests(retry.ResidualControllerRetryTests):
         trades = len(self.store.paper_ledger.project_trades())
         self.tape.market(self.iid, 8000.0, 10.0)  # 1/100 participation: 0.1 eligible < 0.112; a 0.1 fill would leave $96 < $200
         thin = self.exits(a, 400, is_short)
-        self.assertEqual([(row['order_state'], row['filled_quantity']) for row in thin], [('PARTIALLY_FILLED', '0.087')], thin)
+        self.assertEqual([(row['order_state'], row['filled_quantity']) for row in thin], [('PARTIALLY_FILLED', '0.086')], thin)  # trim keeps the 2% buffer
         self.assertNotIn(REASON, thin[0].get('reason_codes') or [])
         self.assertEqual(len(self.store.paper_ledger.project_trades()), trades + 1)
-        self.assertEqual(abs(Decimal(a.position(self.iid)['quantity'])), Decimal('0.025'))  # $200 at $8,000: legal
+        self.assertEqual(abs(Decimal(a.position(self.iid)['quantity'])), Decimal('0.026'))  # $208 at $8,000: $200 + 2% buffer
         self.tape.market(self.iid, 8000.0, 1000.0, prints=0)  # feed gap: no fresh prints
         gap = [row for seconds in (900, 900) for row in self.exits(a, seconds, is_short)]
         self.assertTrue(all(Decimal(str(row.get('filled_quantity') or 0)) == 0 for row in gap), gap)
@@ -411,7 +412,7 @@ class ControllerStressTests(retry.ResidualControllerRetryTests):
         self.tape.market(self.iid, 8000.0, 1000.0)  # liquidity and freshness recover
         filled = [row for seconds in (900, 900, 5, 5, 5) for row in self.exits(a, seconds, is_short)
                   if Decimal(str(row.get('filled_quantity') or 0)) > 0]
-        self.assertEqual([row['filled_quantity'] for row in filled], ['0.025'], filled)
+        self.assertEqual([row['filled_quantity'] for row in filled], ['0.026'], filled)
         self.assertIsNone(a.position(self.iid))
         print('EXIT_STRESS_RESULT ' + json.dumps(dict(family='ControllerStressTests', verdict='COMPLETED_AFTER_RECOVERY',
             case=dict(short=is_short, thin_print='10', eligible='0.1', position='0.112', clamp=True),

@@ -8513,3 +8513,10 @@ Authoritative release design: docs/architecture/PAPER_CRYPTO_SIMULATION.md. Runt
 - Held-quote fix (`ui_api/live_projections.py`): held equities keep their own quote subscription every pass. Root cause and evidence: `destination-tests/20261029-overnight/D1-ROOT-CAUSE.md`. New `tests/trading_correctness/test_paper_held_quote_subscription.py` failed 3/8 on the old source and passes 8/8.
 - Exit series reviewed after deployment by a fresh-context agent of the same model (not human-independent): `destination-tests/20261029-overnight/D2-REVIEW-REPORT.md`; no critical/high findings.
 - Behavior documented in `docs/architecture/PAPER_CRYPTO_SIMULATION.md`. Local commit only; not pushed or merged.
+
+## 2026-10-29 — owner decisions after the exit-series review
+
+- Residual buffer (minimum notional + 2%, exact-minimum fallback) in `screener_action.capped_exit_quantity` and the simulator trim; trim reason code `SIM_CRYPTO_CLOSE_TRIMMED_TO_LEGAL_RESIDUAL`; no partial opening fill below the minimum notional; close-sizing faults block one close only; an unplanned equity carry no longer blocks the continuous crypto scope.
+- New `tests/trading_correctness/test_paper_owner_fixes_20261029.py` (11 tests) failed on the old source and passes. Six existing crypto tests had exact-$0.50 residual expectations; they now expect the buffered values, and two adverse-price scenarios move from $1.99 to $1.95 so the residual guard is still exercised.
+- Sizing property sweep (555,500 points, offline): 0 violations with the buffer. A first version without the exact-minimum fallback failed the cap-partition stress cases (caps $0.50–$0.65); the fallback was added before integration.
+- Evidence: `destination-tests/20261028-release-bundle/execute/background/runs/ownerfix*`, `sweep-buffer-*`. Local commit only.

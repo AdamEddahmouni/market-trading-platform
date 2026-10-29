@@ -45,23 +45,37 @@ def capped_exit_quantity(ledger, instrument_id, quantity):
     unit_minor = Decimal(mark['mark_minor']) / Decimal(instrument['price_scale']) * Decimal(ledger.policy['price_scale'])
     step = Decimal(instrument['quantity_step'])
     maximum = (Decimal(ledger.policy['crypto_max_order_notional_minor']) / unit_minor / step).to_integral_value(rounding=ROUND_FLOOR) * step
-    close = min(quantity, maximum)
-    if close < quantity:
-        # A capped close must leave enough for a later venue-valid order.
-        minimum = Decimal(instrument['minimum_quantity'])
-        if instrument.get('minimum_notional') is not None:
-            minimum = max(minimum, Decimal(instrument['minimum_notional']) * Decimal(ledger.policy['price_scale']) / unit_minor)
-        minimum = (minimum / step).to_integral_value(rounding=ROUND_CEILING) * step
-        if quantity - close < minimum:
-            close = ((quantity - minimum) / step).to_integral_value(rounding=ROUND_FLOOR) * step
-        if close < minimum:
-            return Decimal(0)  # No legal partition under the frozen cap; preview fails closed.
-        # When the whole position splits into capped, venue-valid orders, keep the remainder splittable too:
-        # a maximal chunk can otherwise strand an above-minimum remainder that no capped order can close.
-        orders = (quantity / maximum).to_integral_value(rounding=ROUND_CEILING)
-        if orders * minimum <= quantity:
-            close = min(close, quantity - (orders - 1) * minimum)
-    return close
+    if quantity <= maximum:
+        return quantity
+    # A capped close must leave enough for a later venue-valid order: the minimum notional plus a buffer when that
+    # still splits the position, else the exact minimum, so the buffer never makes a closable position unclosable.
+    from ..execution.simulator import CRYPTO_RESIDUAL_NOTIONAL_BUFFER
+    floor = Decimal(instrument['minimum_quantity'])
+    notional = instrument.get('minimum_notional')
+    exact = max(floor, Decimal(notional) * Decimal(ledger.policy['price_scale']) / unit_minor) if notional is not None else floor
+    buffered = max(floor, Decimal(notional) * CRYPTO_RESIDUAL_NOTIONAL_BUFFER * Decimal(ledger.policy['price_scale']) / unit_minor) \
+        if notional is not None else floor
+    close_buffered, splits_buffered = _capped_close(quantity, maximum, buffered, step)
+    close_exact, splits_exact = _capped_close(quantity, maximum, exact, step)
+    if close_buffered > 0 and (splits_buffered or not splits_exact):
+        return close_buffered
+    return close_exact
+
+
+def _capped_close(quantity, maximum, minimum, step):
+    """One capped chunk leaving at least ``minimum``, and whether the whole position splits into legal orders."""
+    minimum = (minimum / step).to_integral_value(rounding=ROUND_CEILING) * step
+    close = maximum
+    if quantity - close < minimum:
+        close = ((quantity - minimum) / step).to_integral_value(rounding=ROUND_FLOOR) * step
+    if close < minimum:
+        return Decimal(0), False  # No legal partition under the frozen cap; preview fails closed.
+    # When the whole position splits into capped, venue-valid orders, keep the remainder splittable too:
+    # a maximal chunk can otherwise strand an above-minimum remainder that no capped order can close.
+    orders = (quantity / maximum).to_integral_value(rounding=ROUND_CEILING)
+    if orders * minimum <= quantity:
+        return min(close, quantity - (orders - 1) * minimum), True
+    return close, False
 
 
 class ScreenerActionService:

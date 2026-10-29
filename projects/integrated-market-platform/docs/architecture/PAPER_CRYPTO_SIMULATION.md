@@ -40,6 +40,16 @@ Rollback source/manifest copies are execute/extension-preimages. A new crypto-en
 
 **Limits.** These checks use actual execution evidence, not future prices. A later price move can still make a remaining position fall below the minimum notional. With liquidity below one legal lot, an exit waits at a legal position. Like other partial fills, a partial or trimmed fill may be below the minimum notional. Non-crypto instruments are unaffected.
 
+**Owner decisions of 2026-10-29 (after the fresh-context review):**
+- *Residual buffer.* Capped sizing and the participation trim leave the minimum notional **plus 2%** (`CRYPTO_RESIDUAL_NOTIONAL_BUFFER`), so one lower print cannot strand the remainder. When the buffer would leave no legal split or trim, the exact minimum is used instead, so the buffer never makes a closable position unclosable. Legality checks still use the exact venue minimum.
+- *Trim visibility.* A trimmed close carries the informational reason code `SIM_CRYPTO_CLOSE_TRIMMED_TO_LEGAL_RESIDUAL`; the order is still `PARTIALLY_FILLED`.
+- *No opening dust.* A participation-limited opening (or adding) fill that would leave a position below the minimum notional at its fill price is not made (`SIM_NO_ELIGIBLE_VOLUME`).
+- *Close sizing faults.* A bad instrument field while sizing an automation close blocks that close (`PAPER_CLOSE_SIZING_*`), not the whole cycle.
+
+## Unplanned equity carry and the crypto scope (owner decision 2026-10-29)
+
+An unplanned US equity carry (an automation position left open over a close it was not approved to carry) holds back **equity-session** entries until it is closed at the next open. The continuous crypto scope keeps trading; every portfolio-level gate (valuation, exposure, daily loss, short margin, working orders) still applies to it.
+
 ## Held equity quotes (serving since 2026-10-29 03:50 UTC)
 
 Held equities keep their own `paper-portfolio-marks` quote subscription on every portfolio-mark pass, whether or not a cached mark exists. Before this, a held equity whose candidate subscription was released kept a stale cached mark and was never resubscribed, so market exits found no post-intent L1 event (`SIM_NO_POST_SIGNAL_BAR`). On 2026-10-28 that exhausted RCL's six end-of-day closes and left an unplanned carry that blocked all entries. Quota refusals are still recorded, never worked around; crypto marks are unchanged.

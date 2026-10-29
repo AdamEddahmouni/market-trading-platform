@@ -22,16 +22,16 @@ class LiquidityClampTests(stress.StressBase):
         for is_short in (False, True):
             with self.subTest(short=is_short):
                 entry = self.one(is_short, '1.6', '2.0', 140.0)  # eligible 1.4 would leave 0.2 = $0.40 < $0.50
-                self.assertEqual((entry['outcome'], entry['filled']), ('PARTIALLY_FILLED', '1.35'), entry)
-                self.assertEqual(abs(self.position()), Decimal('0.25'))
+                self.assertEqual((entry['outcome'], entry['filled']), ('PARTIALLY_FILLED', '1.345'), entry)
+                self.assertEqual(abs(self.position()), Decimal('0.255'))  # $0.50 + 2% buffer
                 self.assertTrue(entry['remainder_cancelled'])
 
     def test_trim_uses_the_actual_fill_price(self):
         for is_short in (False, True):
             with self.subTest(short=is_short):
-                entry = self.one(is_short, '1.6', '1.99', 140.0)  # ceil($0.50 / $1.99 to 0.001) = 0.252
-                self.assertEqual((entry['outcome'], entry['filled']), ('PARTIALLY_FILLED', '1.348'), entry)
-                self.assertEqual(abs(self.position()), Decimal('0.252'))
+                entry = self.one(is_short, '1.6', '1.99', 140.0)  # ceil($0.51 / $1.99 to 0.001) = 0.257
+                self.assertEqual((entry['outcome'], entry['filled']), ('PARTIALLY_FILLED', '1.343'), entry)
+                self.assertEqual(abs(self.position()), Decimal('0.257'))
 
     def test_full_size_close_with_an_illegal_residual_is_still_rejected(self):
         for is_short in (False, True):

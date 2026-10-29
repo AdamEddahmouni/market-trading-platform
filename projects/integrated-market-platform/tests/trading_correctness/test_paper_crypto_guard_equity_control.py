@@ -51,7 +51,7 @@ class EquityGuardControlTests(unittest.TestCase):
         for direction, position in (('short', '1.6'), ('long', '-1.6')):
             with self.subTest(direction=direction):
                 order, fill = close(CRYPTO, '1.6', position, '2.000000', '140', direction)
-                trimmed = fill is not None and Decimal(fill['fill_quantity']) == Decimal('1.35')
+                trimmed = fill is not None and Decimal(fill['fill_quantity']) == Decimal('1.345')  # 2% buffer
                 rejected = fill is None and order.get('reason_codes') == [REASON]
                 self.assertTrue(trimmed or rejected, (order, fill))
 

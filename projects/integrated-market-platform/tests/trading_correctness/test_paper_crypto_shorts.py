@@ -335,10 +335,10 @@ class BackgroundExitBoundaryTests(unittest.TestCase):
                 self.book=book(crypto_max_order_notional_minor=300,crypto_max_position_notional_minor=300)
                 self.order('1.6',side='SELL' if short else 'BUY',price=1.0);self.mark(2.0)
                 quantity=capped_exit_quantity(self.book,IID,Decimal('1.6'))
-                self.assertEqual(quantity,Decimal('1.350'))
+                self.assertEqual(quantity,Decimal('1.345'))  # $0.50 + 2% buffer
                 self.assertEqual(self.order(str(quantity),side='BUY' if short else 'SELL',price=2.0)['order']['state'],'FILLED')
-                self.assertEqual(abs(Decimal(self.book.project_positions()[0]['quantity'])),Decimal('0.25'))
-                self.assertEqual(self.order('0.25',side='BUY' if short else 'SELL',price=2.0)['order']['state'],'FILLED')
+                self.assertEqual(abs(Decimal(self.book.project_positions()[0]['quantity'])),Decimal('0.255'))
+                self.assertEqual(self.order('0.255',side='BUY' if short else 'SELL',price=2.0)['order']['state'],'FILLED')
                 self.assertEqual(self.book.project_positions(),[])
                 self.assertEqual(self.book.project_account()['cash_minor'],99_840 if short else 100_160)
 
