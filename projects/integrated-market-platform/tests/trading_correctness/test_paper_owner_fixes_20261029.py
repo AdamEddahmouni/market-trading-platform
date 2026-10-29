@@ -6,6 +6,7 @@
 - F2: a participation-limited opening (or adding) crypto fill never creates a position below the venue minimum
   notional at its fill price: such a fill is not made.
 - F5: a bad instrument field while sizing an automation close blocks that close, not the whole cycle.
+- F4: close events (margin cover, end-of-day, open close) keep the order's own reason codes.
 - Carry: an unplanned US equity carry blocks equity-session entries only; the continuous crypto scope trades on,
   and every portfolio-level gate still applies to it.
 """
@@ -124,6 +125,35 @@ class CloseSizingFaultTests(unittest.TestCase):
         self.assertEqual(outcome['reason_codes'], ['PAPER_CLOSE_SIZING_KeyError'])
         self.assertEqual(summary['actions'], [outcome])
         self.assertEqual(events[0][0], 'PAPER_EOD_FLATTEN')
+
+
+class CloseEventReasonCodeTests(unittest.TestCase):
+    def test_close_outcome_keeps_the_order_reason_codes(self):
+        import contextlib
+        from types import SimpleNamespace
+        from unittest.mock import patch
+
+        class Ledger:
+            def instrument_for(self, iid):
+                return dict(instrument_kind='TRADABLE_SECURITY')
+
+            def lookup_order(self, order_id):
+                return dict(state='PARTIALLY_FILLED', reason_codes=[TRIMMED], cumulative_filled_quantity='1.345')
+
+        service = controller.PaperAutomationService.__new__(controller.PaperAutomationService)
+        service.store = SimpleNamespace(paper_ledger=Ledger())
+        service.submit_lock = contextlib.nullcontext
+        service._still_permitted = lambda work: True
+        service._submit = lambda body: dict(order_id='O-1')
+        service._cancel_order = lambda order_id, reason: True
+        service._event = lambda kind, **payload: None
+        summary = dict(actions=[])
+        with patch('market_platform_foundation.ui_api.paper_projections.preview_paper_order',
+                   return_value=dict(preview=dict(risk_status='PASS', preview_id='P-1'))):
+            outcome = service._close_position(dict(arming=dict(arming_id='A')), dict(policy_id='P'), summary, 1.0, iid='RCL',
+                                              held=Decimal(-1), key='PAI-COVER-x-1', action='MARGIN_COVER',
+                                              event='PAPER_MARGIN_COVER', headline='h', reason=dict(code='C', label='L'))
+        self.assertEqual(outcome['reason_codes'], ['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION', TRIMMED])
 
 
 if __name__ == '__main__':

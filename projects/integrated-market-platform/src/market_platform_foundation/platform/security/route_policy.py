@@ -168,6 +168,9 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.PAPER_PORTFOLIO)
         if path == "/paper/trace":
             return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+        if path == "/paper/journal":
+            # Read-only export of the append-only ledger journal and per-date borrow, for accounting reconciliation.
+            return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_PORTFOLIO)
         if path == "/paper/strategy-profitability":
             return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path == "/captures":

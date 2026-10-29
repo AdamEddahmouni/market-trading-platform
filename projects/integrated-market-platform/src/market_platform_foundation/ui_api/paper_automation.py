@@ -1992,7 +1992,8 @@ class PaperAutomationService:
                         submission = self._submit(dict(body, preview_id=preview['preview_id']))
                         order = self.store.paper_ledger.lookup_order(str(submission.get('order_id'))) or submission.get('order') or {}
                         outcome.update(outcome='SUBMITTED', order_id=submission.get('order_id'), order_state=order.get('state'),
-                                       reason_codes=['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION'],
+                                       # The order's own codes (a guard rejection, a trim) stay visible to operators.
+                                       reason_codes=['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION', *(order.get('reason_codes') or [])][:8],
                                        filled_quantity=quantity_wire(order.get('cumulative_filled_quantity') or 0))
                         if str(order.get('state')) in _WORKING:
                             self._cancel_order(str(submission.get('order_id')), 'UNFILLED_REMAINDER')

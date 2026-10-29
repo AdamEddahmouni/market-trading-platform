@@ -867,7 +867,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
             if path == "/paper/sessions":
                 self._send_json(paper_projections.list_paper_sessions(self.store))
                 return
-            if path in {"/paper/trades", "/paper/equity-history"} or path == "/paper/experiments" or path.startswith("/paper/experiments/"):
+            if path in {"/paper/trades", "/paper/equity-history", "/paper/journal"} or path == "/paper/experiments" or path.startswith("/paper/experiments/"):
                 from . import paper_experiment
 
                 query = parse_qs(parsed.query)
@@ -890,6 +890,14 @@ class UiApiHandler(BaseHTTPRequestHandler):
                             experiment_id=_q("experiment_id"),
                             cursor=_q("cursor"),
                             limit=int(limit_raw) if limit_raw else 25,
+                        )
+                    elif path == "/paper/journal":
+                        after_raw = _q("after")
+                        payload = paper_experiment.journal_payload(
+                            self.store,
+                            experiment_id=_q("experiment_id"),
+                            after=int(after_raw) if after_raw else None,
+                            limit=int(limit_raw) if limit_raw else 200,
                         )
                     elif path == "/paper/equity-history":
                         before_raw = _q("before")

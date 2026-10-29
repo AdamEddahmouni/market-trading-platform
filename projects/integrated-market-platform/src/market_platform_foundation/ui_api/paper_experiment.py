@@ -468,6 +468,64 @@ def trades_payload(
     }
 
 
+JOURNAL_MAX_PAGE = 500
+
+
+def ledger_journal(ledger: PaperExecutionLedger, *, after: int | None = None, limit: int = 200) -> dict[str, Any]:
+    """Read-only export of the append-only ledger journal and its per-date borrow accruals.
+
+    Events come back in sequence order exactly as recorded, ``after`` being the last sequence already read.
+    ``contiguous`` says whether the whole journal's sequence numbers run without a gap, so a reconciliation can
+    tell a complete journal from a partial one. Reading appends nothing.
+    """
+    import copy
+
+    page = min(max(int(limit), 1), JOURNAL_MAX_PAGE)
+    if after is not None and int(after) < 0:
+        raise ValueError("JOURNAL_CURSOR_INVALID")
+    events = sorted(ledger.events, key=lambda event: int(event["sequence"]))
+    sequences = [int(event["sequence"]) for event in events]
+    remaining = [event for event in events if after is None or int(event["sequence"]) > int(after)]
+    rows = remaining[:page]
+    borrow = [
+        dict(sequence=int(event["sequence"]), **{key: event["payload"].get(key) for key in (
+            "accrual_date", "instrument_id", "quantity", "fee_minor", "fee_bps_per_year",
+            "short_market_value_minor", "borrow_basis", "as_of_ns")})
+        for event in events if event["event_type"] == "ShortBorrowFeeAccrued"
+    ]
+    account = ledger.project_account()
+    return {
+        "borrow_accruals": borrow,
+        "borrow_total_minor": sum(int(row["fee_minor"] or 0) for row in borrow),
+        "contiguous": all(later == earlier + 1 for earlier, later in zip(sequences, sequences[1:])),
+        "events": copy.deepcopy(rows),
+        "first_sequence": sequences[0] if sequences else None,
+        "last_sequence": sequences[-1] if sequences else None,
+        "next_after": int(rows[-1]["sequence"]) if rows and len(remaining) > page else None,
+        "page_size": page,
+        "paper_account_id": ledger.paper_account_id,
+        "projected_total_borrow_fees_minor": account.get("total_borrow_fees_minor"),
+        "total_count": len(events),
+    }
+
+
+def journal_payload(
+    store: ReplayStore,
+    *,
+    experiment_id: str | None = None,
+    after: int | None = None,
+    limit: int = 200,
+) -> dict[str, Any]:
+    """The journal of one experiment's ledger (default: the active one), paged by sequence."""
+    record = _resolve(store, experiment_id)
+    ledger = _ledger_for(store, record) if record else None
+    if ledger is None:
+        return {"experiment_id": record["experiment_id"] if record else None, "events": [], "borrow_accruals": [],
+                "total_count": 0, "contiguous": True, "next_after": None,
+                "page_size": min(max(int(limit), 1), JOURNAL_MAX_PAGE)}
+    return {"experiment_id": record["experiment_id"], **ledger_journal(ledger, after=after, limit=limit)}
+
+
 def equity_history_payload(
     store: ReplayStore,
     *,

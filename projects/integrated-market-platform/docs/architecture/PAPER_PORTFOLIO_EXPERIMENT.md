@@ -174,6 +174,7 @@ All routes are loopback UI API routes under the existing route policy.
 | `POST /paper/experiments/{id}/close` | `state.write` | close when flat |
 | `GET /paper/trades?cursor&limit&experiment_id` | `state.read` | newest-first trade page (max 100) |
 | `GET /paper/equity-history?before&limit&experiment_id` | `state.read` | newest-first snapshot page (max 100) |
+| `GET /paper/journal?after&limit&experiment_id` | `audit.read` | the ledger's own journal events in sequence order (max 500 per page), `contiguous` flag, every per-date borrow accrual and the projected borrow total; read-only (2026-10-29) |
 
 `GET /paper/portfolio` gains additive `experiment`, `valuation`, `assumptions`
 and `boundary` blocks. A preview response gains `experiment_context` (experiment,

@@ -8520,3 +8520,9 @@ Authoritative release design: docs/architecture/PAPER_CRYPTO_SIMULATION.md. Runt
 - New `tests/trading_correctness/test_paper_owner_fixes_20261029.py` (11 tests) failed on the old source and passes. Six existing crypto tests had exact-$0.50 residual expectations; they now expect the buffered values, and two adverse-price scenarios move from $1.99 to $1.95 so the residual guard is still exercised.
 - Sizing property sweep (555,500 points, offline): 0 violations with the buffer. A first version without the exact-minimum fallback failed the cap-partition stress cases (caps $0.50–$0.65); the fallback was added before integration.
 - Evidence: `destination-tests/20261028-release-bundle/execute/background/runs/ownerfix*`, `sweep-buffer-*`. Local commit only.
+
+## 2026-10-29 — read-only journal export and close-event reason codes
+
+- `GET /paper/journal` (`audit.read`): the experiment ledger's journal in sequence order, paged by `after`, with a `contiguous` flag, per-date `ShortBorrowFeeAccrued` rows and `projected_total_borrow_fees_minor`. Reading appends nothing. It closes the gap that kept the strict accounting validator at `insufficient_evidence`. New `tests/trading_correctness/test_paper_journal_export.py` (7 tests): fails on the old source, passes.
+- Automation close outcomes (end-of-day, open close, margin cover) keep the order's own reason codes after `PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION` (review F4), so guard rejections and trims stay visible. Test in `test_paper_owner_fixes_20261029.py`.
+- Full validation on `fa379324`: 10,083 tests, 0 failures, 1 error (known formulas `apps` import). Local commit only.
