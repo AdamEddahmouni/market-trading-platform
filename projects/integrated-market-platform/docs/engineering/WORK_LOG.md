@@ -8530,3 +8530,10 @@ Authoritative release design: docs/architecture/PAPER_CRYPTO_SIMULATION.md. Runt
 ## 2026-10-29 — held US equities stay closable after a restart
 
 US_EQUITIES identities reach XA-01 only in memory, when an entry is admitted. After the 2026-10-29 03:50Z restart RCL (-1, unplanned carry) was unregistered, so every 09:30 open close was refused `UNKNOWN_INSTRUMENT` and the carry blocked all entries. `_owned_positions` now re-registers a held equity that fails admission from its US_EQUITIES catalog row (`register_catalog_equity`, the same rule as entries) and admits it again; a catalog refusal still leaves blocked carry. New `tests/trading_correctness/test_paper_held_equity_reregistration.py` (2 tests) fails before, passes after. Installed during RTH with owner approval; full validation deferred to after 20:00 ET.
+
+## 2026-10-29 — crypto entry price wait (owner decision D12, option A)
+
+- Owner choice: wait up to 30 s at preview for a fresh print, for pairs with at least 2,000 trades a day only. Evidence: on 2026-10-28, pairs with ≥ 2,000 trades/day had a ≤ 15 s print a median 35% of the time, and 69% with a 30 s wait (`destination-tests/20261028-trading-blockers/crypto_09_liquidity_threshold.out.txt`).
+- `PaperAutomationService._await_entry_print`: crypto ENTER only, before the preview. Liquidity comes from the crypto screener's cached Kraken ticker `trade_count`; the stream check uses the acknowledged TRADES subscription. Polls 0.25 s, at most 30 s per execution pass. The freshness gate, the preview and the decision-expiry check are unchanged and run after the wait.
+- New `tests/trading_correctness/test_paper_crypto_entry_price_wait.py` (8 tests): the 4 wait tests fail on the old source, all 8 pass after. Neighbouring suites pass under the guarded runner (crypto live execution, sizing caps, shorts, owner fixes, re-registration, Lane 01 eligibility: 95 tests).
+- Local commit only; not installed. Installing needs separate owner approval. Full validation after 20:00 ET.

@@ -67,6 +67,11 @@ _ENDED_UNFILLED = ('REJECTED', 'CANCELLED', 'EXPIRED', 'RISK_REJECTED')
 # After an exit order ends without closing the position, the next exit order for that instrument waits
 # cadence * 2^n, capped here. A new order always needs a new Action Decision; this only spaces them out.
 EXIT_BACKOFF_CAP_SECONDS = 900
+# Owner decision D12 option A (2026-10-29): a crypto entry on a pair with at least this many venue trades in 24 h
+# waits for a fresh print before its preview, polling at this interval, at most this long per execution pass.
+PRICE_WAIT_MIN_TRADES_24H = 2000
+PRICE_WAIT_POLL_SECONDS = 0.25
+PRICE_WAIT_SECONDS = 30
 # Open equity positions are closed once this close to the regular-session bell (owner policy 2026-10-23).
 OVERNIGHT_REVIEW_MINUTES = 45
 EOD_MAX_ATTEMPTS = 6
@@ -261,6 +266,7 @@ class PaperAutomationService:
         self._revives = []
         self._scope_services = {}
         self.catalog_row = _universe_catalog_row  # the scope catalog an equity target is admitted from
+        self._price_wait_left = PRICE_WAIT_SECONDS  # reset by each execution pass
         self._scope_context = ContextVar('paper_scope_' + self.owner_id, default=None)
         self._session_context = ContextVar('paper_session_' + self.owner_id, default=None)
 
@@ -1428,6 +1434,7 @@ class PaperAutomationService:
     def _execute_pending(self, work, policy, summary, session):
         ledger = self.store.paper_ledger
         now = _iso(self.clock())
+        self._price_wait_left = PRICE_WAIT_SECONDS
         loop = self.reevaluation._loop() or {}
         positions = [p for p in ledger.project_positions() if p.get('quantity')]
         held = [p['instrument_id'] for p in positions]
@@ -1561,6 +1568,8 @@ class PaperAutomationService:
                 quantity = quantity_number(carried)
             if entry_below_minimum(quantity, instrument):
                 return finish(IntentState.BLOCKED, ['SIZING_BELOW_MINIMUM', sizing['binding']], sizing=sizing)
+            if instrument.get('instrument_kind') == 'CRYPTO_PAIR':
+                self._await_entry_print(intent, str(draft['instrumentId']), instrument)
         correlation = str(draft['sourceAttentionId'])
         opportunity = correlation.startswith('opportunity:')
         context = draft['sourceContext']
@@ -1636,6 +1645,51 @@ class PaperAutomationService:
         """The controller's only order route: the canonical Workspace Paper submit, under the caller's submit lock."""
         from . import paper_projections
         return paper_projections.submit_paper_order(self.store, body)['submission']
+
+    def _await_entry_print(self, intent, instrument_id, instrument):
+        """Owner decision D12 option A: a liquid pair's entry waits briefly for a fresh venue print before its preview.
+
+        Freshness is unchanged: the preview still prices only from prints within the quote age and still defers
+        REQUIRED_PRICE_MISSING when none arrived; this only waits for one to arrive. It applies to pairs with at least
+        PRICE_WAIT_MIN_TRADES_24H trades in the screener's last 24 h ticker and an acknowledged TRADES stream. A thin
+        pair, unknown liquidity or no stream is previewed at once as before. One execution pass waits at most
+        PRICE_WAIT_SECONDS in total, and the preview re-checks the decision's authority after the wait.
+        """
+        from . import paper_projections
+        intent.pop('price_wait', None)  # a retried entry records only its own attempt's wait
+        polls_left = int(self._price_wait_left / PRICE_WAIT_POLL_SECONDS)
+        if polls_left <= 0:
+            return
+        try:
+            row = self.catalog_row(instrument_id, 'CRYPTO') or {}
+        except Exception:  # noqa: BLE001 - unreadable liquidity is treated as thin: no wait
+            return
+        trades = ((row.get('fields') or {}).get('trade_count') or {}).get('value')
+        if isinstance(trades, bool) or not isinstance(trades, (int, float)) or trades < PRICE_WAIT_MIN_TRADES_24H:
+            return
+        runtime = self._crypto_stream_runtime(create=False)
+        if runtime is None:
+            return
+        with runtime._lock:
+            streaming = (runtime.lifecycle.connection_state == 'CONNECTED'
+                         and runtime.subscriptions.activated_at(instrument_id=instrument_id, capability=CRYPTO_TRADES) is not None)
+        if not streaming:
+            return
+
+        def fresh():
+            return bool(paper_projections._bars_for_paper_execution(self.store, instrument_id=instrument_id, instrument=instrument))
+
+        if fresh():
+            return
+        polls, arrived = 0, False
+        while polls < polls_left and not arrived:
+            self.sleep(PRICE_WAIT_POLL_SECONDS)
+            polls += 1
+            arrived = fresh()
+        self._price_wait_left -= polls * PRICE_WAIT_POLL_SECONDS
+        wait = dict(trades_24h=int(trades), polls=polls, waited_seconds=polls * PRICE_WAIT_POLL_SECONDS, fresh_print=arrived)
+        intent['price_wait'] = wait
+        self._event('PAPER_ENTRY_PRICE_WAIT', intent_id=intent['intent_id'], instrument_id=instrument_id, **wait)
 
     def _owned_positions(self):
         quantities = _automation_quantities(self.store.paper_ledger)

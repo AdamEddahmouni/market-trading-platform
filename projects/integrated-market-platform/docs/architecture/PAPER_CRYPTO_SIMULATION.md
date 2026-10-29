@@ -53,3 +53,12 @@ An unplanned US equity carry (an automation position left open over a close it w
 ## Held equity quotes (serving since 2026-10-29 03:50 UTC)
 
 Held equities keep their own `paper-portfolio-marks` quote subscription on every portfolio-mark pass, whether or not a cached mark exists. Before this, a held equity whose candidate subscription was released kept a stale cached mark and was never resubscribed, so market exits found no post-intent L1 event (`SIM_NO_POST_SIGNAL_BAR`). On 2026-10-28 that exhausted RCL's six end-of-day closes and left an unplanned carry that blocked all entries. Quota refusals are still recorded, never worked around; crypto marks are unchanged.
+
+## Entry price wait (owner decision D12 option A, 2026-10-29; built, not installed)
+
+A crypto **entry** on a liquid pair waits up to 30 s for a fresh Kraken print before its preview, instead of being deferred `REQUIRED_PRICE_MISSING` at once.
+- *Liquid* means at least `PRICE_WAIT_MIN_TRADES_24H` (2,000) trades in the crypto screener's last 24 h ticker (`trade_count`), with an acknowledged TRADES stream for the pair. A thin pair, unknown liquidity or no stream is previewed at once, as before.
+- Freshness is unchanged: the preview still prices only from prints within the quote age, and still defers `REQUIRED_PRICE_MISSING` when none arrived. Nothing older is accepted.
+- The controller polls every `PRICE_WAIT_POLL_SECONDS` (0.25 s). One execution pass waits at most `PRICE_WAIT_SECONDS` (30 s) in total, so several entries cannot stall a cycle.
+- The preview re-checks the decision's validity after the wait, so waiting never extends a decision. Exits and equities are unchanged.
+- Each wait is recorded on the intent (`price_wait`: trades, polls, seconds waited, whether a print arrived) and as a `PAPER_ENTRY_PRICE_WAIT` controller event.
