@@ -4,14 +4,21 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
+from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any
 
 from .live_admission import ADMISSION_EXECUTION
+from .observational_state import _session_price
 
-# Participation uses this synthetic size so a 1/100 cap can fill 1 share.
-# It is SIMULATION_POLICY, not venue-reported market volume.
-SIMULATION_POLICY_VOLUME = 100
 LIVE_L1_TIMEFRAME = "LIVE_L1_SNAPSHOT"
+# A live L1 bar's participation volume is the venue's own count of shares traded in the trailing window that ends at
+# the bar: the change in the cumulative day volume Moomoo carries on every QUOTE push and market snapshot. A bar with
+# no earlier count inside the window, or whose count went down (a new day), has no volume evidence and fills nothing.
+TRADED_VOLUME_WINDOW_NS = 60_000_000_000
+TRADED_VOLUME_BASIS = "VENUE_TRADED_VOLUME_60S"
+# Market snapshots (every 2 s) carry the touch; QUOTE pushes do not. A snapshot's bid/ask prices the pushes that
+# follow it for this long, after which a push is priced at its own last trade only.
+TOUCH_MAX_AGE_NS = 5_000_000_000
 
 
 def _is_l1_capability(capability: str) -> bool:
@@ -19,26 +26,49 @@ def _is_l1_capability(capability: str) -> bool:
     return "L1" in cap or cap in {"BASIC_QUOTE", "QUOTE"}
 
 
-def _snapshot_price(payload: dict[str, Any]) -> float | None:
-    for key in (
-        "after_price",
-        "last_price",
-        "last",
-        "bid_price",
-        "best_bid",
-        "ask_price",
-        "best_ask",
-    ):
+def _positive(payload: dict[str, Any], *keys: str) -> Decimal | None:
+    for key in keys:
         value = payload.get(key)
-        if value is None or value == "":
+        if value is None or value == "" or isinstance(value, bool):
             continue
         try:
-            price = float(value)
-        except (TypeError, ValueError):
+            number = Decimal(str(value))
+        except (InvalidOperation, ValueError):
             continue
-        if price > 0:
-            return price
+        if number.is_finite() and number > 0:
+            return number
     return None
+
+
+def _touch(payload: dict[str, Any]) -> tuple[Decimal, Decimal] | None:
+    bid, ask = _positive(payload, "bid_price", "best_bid"), _positive(payload, "ask_price", "best_ask")
+    return (bid, ask) if bid is not None and ask is not None and ask >= bid else None
+
+
+def _cumulative_volume(payload: dict[str, Any]) -> int | None:
+    value = payload.get("volume")
+    if value is None or value == "" or isinstance(value, bool):
+        return None
+    try:
+        number = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    return int(number) if number.is_finite() and number >= 0 else None
+
+
+def _snapshot_price(payload: dict[str, Any]) -> Decimal | None:
+    """The price of the payload's own session: the last regular trade during regular hours, never a stale
+    extended-hours field (Moomoo keeps the previous session's ``after_price`` in regular-hours quotes)."""
+    value, _field = _session_price(payload)
+    if value is not None and value > 0:
+        return Decimal(str(value))
+    touch = _touch(payload)
+    return (touch[0] + touch[1]) / 2 if touch else None
+
+
+def _quantum(price_scale: int) -> Decimal:
+    text = str(int(price_scale))
+    return Decimal(1).scaleb(-(len(text) - 1)) if text.strip("0") == "1" else Decimal("0.0001")
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,49 +174,76 @@ class LiveExecutionEventBuffer:
 
         eligible iff available_time <= observation_time_ns (knowledge horizon).
         BarConservativeSimulator still requires available_time > intent.created_time.
+        Open and close are the session price; high is the ask and low the bid when a touch is known (a market buy
+        pays the ask, a sale receives the bid), rounded against the account. Volume is the venue's traded shares in
+        the trailing TRADED_VOLUME_WINDOW_NS, from earlier events only (no look-ahead).
         """
 
+        quantum = _quantum(price_scale)
         bars: list[dict[str, Any]] = []
+        counts: dict[str, list[tuple[int, int]]] = defaultdict(list)
+        window_start: dict[str, int] = defaultdict(int)
+        touches: dict[str, tuple[int, Decimal, Decimal]] = {}
         for row in self._visible_events(
             observation_time_ns=observation_time_ns,
             instrument_id=instrument_id,
             provider_generation=provider_generation,
         ):
             payload = row.envelope.get("payload") if isinstance(row.envelope.get("payload"), dict) else {}
+            history = counts[row.instrument_id]
+            cumulative = _cumulative_volume(payload)
+            volume = 0
+            if cumulative is not None:
+                first = window_start[row.instrument_id]
+                while first < len(history) and history[first][0] < row.available_time_ns - TRADED_VOLUME_WINDOW_NS:
+                    first += 1
+                window_start[row.instrument_id] = first
+                if first < len(history) and cumulative >= history[first][1]:
+                    volume = cumulative - history[first][1]
+                history.append((row.available_time_ns, cumulative))
+            own_touch = _touch(payload)
+            if own_touch is not None:
+                touches[row.instrument_id] = (row.available_time_ns, *own_touch)
             price = _snapshot_price(payload)
             if price is None:
                 continue
-            price_minor = int(round(float(price) * price_scale))
-            display = f"{float(price):.4f}"
+            high = low = price
+            touch = touches.get(row.instrument_id)
+            if touch is not None and row.available_time_ns - touch[0] <= TOUCH_MAX_AGE_NS:
+                low, high = min(price, touch[1]), max(price, touch[2])
+            close = price.quantize(quantum, rounding=ROUND_HALF_UP)
+            high = high.quantize(quantum, rounding=ROUND_CEILING)
+            low = low.quantize(quantum, rounding=ROUND_FLOOR)
+            minor = {name: int(value * price_scale) for name, value in (("open", close), ("high", high), ("low", low))}
             bars.append(
                 {
                     "available_time": row.available_time_ns,
                     "bar_payload": {
-                        "close": display,
+                        "close": str(close),
                         "event_time": row.event_time_ns,
-                        "high": display,
-                        "low": display,
-                        "open": display,
+                        "high": str(high),
+                        "low": str(low),
+                        "open": str(close),
                         "provider": row.provider,
                         "quality": row.quality,
                         "source": "LIVE_L1_SNAPSHOT",
                         "timeframe": LIVE_L1_TIMEFRAME,
-                        "volume": SIMULATION_POLICY_VOLUME,
-                        "volume_basis": "SIMULATION_POLICY",
+                        "volume": volume,
+                        "volume_basis": TRADED_VOLUME_BASIS,
                     },
-                    "close_minor": price_minor,
+                    "close_minor": minor["open"],
                     "event_time": row.event_time_ns,
                     "event_type": "BAR_OHLCV_1M",
-                    "high_minor": price_minor,
+                    "high_minor": minor["high"],
                     "instrument_id": row.instrument_id,
-                    "low_minor": price_minor,
-                    "open_minor": price_minor,
+                    "low_minor": minor["low"],
+                    "open_minor": minor["open"],
                     "provider": row.provider,
                     "provider_generation": row.provider_generation,
                     "quality": row.quality,
                     "source": "LIVE_L1_SNAPSHOT",
-                    "volume": SIMULATION_POLICY_VOLUME,
-                    "volume_basis": "SIMULATION_POLICY",
+                    "volume": volume,
+                    "volume_basis": TRADED_VOLUME_BASIS,
                 }
             )
         return bars

@@ -144,3 +144,11 @@ Calibration/shakedown observations must be tagged and excluded from a campaign's
 ## Promotion rule
 
 Strategy Paper results may support implementability claims only when the execution-model calibration state required by that strategy's readiness vector is satisfied. Signal-quality evidence may be analyzed separately when execution realism is deliberately out of scope and labeled `SIGNAL_ONLY`.
+
+## Live US equity fill bars (owner decision 2026-10-29)
+
+Live internal-simulation equity orders fill against `LIVE_L1_SNAPSHOT` bars built from admitted Moomoo L1 events (QUOTE pushes and 2 s market snapshots).
+- **Price.** Open and close are the payload's own session price (`observational_state._session_price`, the same rule as portfolio marks): during regular hours the last regular trade. The stale extended-hours fields Moomoo keeps in regular-hours quotes (`after_price`, `pre_price`, `overnight_price`) are never used then.
+- **Touch.** High is the ask and low the bid when a touch is known, from the event itself or a market snapshot at most 5 s older (`TOUCH_MAX_AGE_NS`). A market buy pays the ask and a sale receives the bid. Sub-tick prices round against the account (high up, low down).
+- **Volume.** A bar's volume is the venue's shares traded in the trailing 60 s (`TRADED_VOLUME_BASIS = VENUE_TRADED_VOLUME_60S`): the change in the cumulative day volume between the earliest earlier event inside the window and this one. No earlier count in the window, no volume field, or a count that went down (a new day) gives volume 0, so the order fills nothing (`SIM_NO_ELIGIBLE_VOLUME`). The frozen account participation cap applies to that real volume. After the regular close the regular-session count stops moving, so no equity fill is made from it.
+- Before this decision the buffer priced every bar from `after_price` first and gave it a synthetic `SIMULATION_POLICY` volume of 100, so fills used the previous after-hours price and a 1/100 cap always filled one share. Fills recorded before the 2026-10-29 install keep their recorded prices; they are not market truth.

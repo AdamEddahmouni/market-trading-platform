@@ -39,6 +39,8 @@ def _quote_record(
         "bid_vol": 1,
         "code": f"US.{instrument_id}",
         "last_price": last_price,
+        # Cumulative day volume, as every Moomoo QUOTE push and snapshot carries it: 10,000 shares per sequence.
+        "volume": 1_000_000 + 10_000 * sequence,
     }
     if extra_payload:
         payload.update(extra_payload)
@@ -99,14 +101,14 @@ class LiveExecutableBarTests(unittest.TestCase):
         bar = bars[0]
         self.assertEqual(bar["bar_payload"]["timeframe"], LIVE_L1_TIMEFRAME)
         self.assertEqual(bar["source"], "LIVE_L1_SNAPSHOT")
-        self.assertEqual(bar["volume_basis"], "SIMULATION_POLICY")
+        self.assertEqual(bar["volume_basis"], "VENUE_TRADED_VOLUME_60S")
         self.assertEqual(bar["available_time"], 200)
         self.assertEqual(bar["event_time"], 100)
         self.assertIn("open", bar["bar_payload"])
         self.assertIn("high", bar["bar_payload"])
         self.assertIn("low", bar["bar_payload"])
         self.assertIn("close", bar["bar_payload"])
-        self.assertEqual(bar["volume"], 100)
+        self.assertEqual(bar["volume"], 0)  # the first quote has no earlier count: no traded-volume evidence yet
 
     def test_pre_intent_event_not_executable(self) -> None:
         buffer = LiveExecutionEventBuffer()
@@ -247,9 +249,11 @@ class CaptureReplayAvailabilityTests(unittest.TestCase):
         self.assertEqual(order_pre["state"], "REJECTED")
         decision, order, fill = _execute(ledger, bars, created_time=created)
         self.assertEqual(decision["decision"], "APPROVE")
-        self.assertIsNotNone(fill)
-        self.assertEqual(order["state"], "FILLED")
-        self.assertGreater(int(fill["fill_time"]), created)
+        # The capture is after the close: AAPL's regular-session day volume does not move, so the post-intent quote
+        # activates the order but no traded volume exists to fill it against.
+        self.assertGreater(int(order["activation_time"]), created)
+        self.assertIsNone(fill)
+        self.assertIn("SIM_NO_ELIGIBLE_VOLUME", order["reason_codes"])
 
 
 class ActiveOperatorInstrumentTests(unittest.TestCase):
@@ -871,9 +875,10 @@ class P31LiveOperatorVerticalSliceTests(unittest.TestCase):
         self.assertEqual(preview["execution_provider"], "INTERNAL")
         decision, order, fill = _execute(ledger, bars, created_time=created)
         self.assertEqual(decision["decision"], "APPROVE")
-        self.assertEqual(order["state"], "FILLED")
-        self.assertIsNotNone(fill)
-        self.assertGreater(int(fill["fill_time"]), created)
+        # After the close the regular-session day volume is frozen: activated, nothing to fill against.
+        self.assertGreater(int(order["activation_time"]), created)
+        self.assertIsNone(fill)
+        self.assertIn("SIM_NO_ELIGIBLE_VOLUME", order["reason_codes"])
         self.assertEqual(ledger.data_provider, "MOOMOO")
         self.assertEqual(ledger.execution_provider, "INTERNAL")
         trace = ledger.project_execution_trace(order_id=order["order_id"])
