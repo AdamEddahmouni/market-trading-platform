@@ -24,6 +24,8 @@ class RoutePolicy:
     capability: str | None
     account_scope: AccountScopeKind = AccountScopeKind.NONE
     public_in_enforced_mode: bool = False
+    # AUD-039: a non-GET route with no explicit entry below is refused, never authorized as a read.
+    refused: bool = False
 
 
 CANARY_ADMIN_COMMANDS = frozenset(
@@ -84,8 +86,11 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
                            account_scope=AccountScopeKind.PAPER_LEDGER)
     if path.startswith("/evaluation/prospective/"):
         # Evaluation artifacts have state-write authority only; never order authority.
-        return RoutePolicy(capability="audit.read" if method_upper == "GET" or path.endswith("/rerun") else "state.write",
-                           account_scope=AccountScopeKind.PAPER_LEDGER)
+        if method_upper == "GET" or (method_upper == "POST" and path == "/evaluation/prospective/rerun"):
+            return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+        if method_upper == "POST" and path == "/evaluation/prospective/runs":
+            return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
+        return RoutePolicy(capability=None, refused=True)
     if path.startswith("/evaluation/evidence/") and method_upper == "GET":
         # Stored news, the inference dry-run plan, the decision journal and the as-of replay. Reads only.
         return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
@@ -239,12 +244,37 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             return RoutePolicy(capability="state.write")
         if path == "/intelligence/ingest/enrichment" or path.startswith("/intelligence/ingest/enrichment/"):
             return RoutePolicy(capability="intelligence.ingest.write")
+        # AUD-039: these mutating routes used to fall through to the read default.
+        if path in {"/intelligence/ingest/news", "/intelligence/ingest/research-artifact-attachment"}:
+            return RoutePolicy(capability="intelligence.ingest.write")
+        if path in {"/screener/window", "/screener/window/release", "/screener/panels", "/screener/panels/release"}:
+            # Explicitly read-scoped (test_screener_s4): viewport/panel demand for data the caller is viewing, keyed
+            # by its own client_id and bounded by the subscription quota; it writes no state or order.
+            return RoutePolicy(capability="state.read")
+        if path.startswith("/opportunities/") and path.endswith(("/watch", "/dismiss", "/review")):
+            return RoutePolicy(capability="state.write")
+        if path == "/paper/orders/replace":
+            # A replace cancels and re-submits a working Paper order: order authority, like /paper/orders.
+            return RoutePolicy(capability="paper.order.submit", account_scope=AccountScopeKind.PAPER_LEDGER)
+        if path == "/paper/forward-tests/submit":
+            return RoutePolicy(capability="paper.order.submit", account_scope=AccountScopeKind.PAPER_LEDGER)
+        if path in {"/paper/forward-tests/sessions", "/paper/forward-tests/decisions", "/paper/forward-tests/lock",
+                    "/paper/forward-tests/observe", "/paper/forward-tests/evaluate"}:
+            return RoutePolicy(capability="state.write")
+        if path in {"/paper/broker/orders/poll", "/paper/broker/reconciliation"}:
+            # Both append broker-paper results to the Paper ledger; neither submits an order.
+            return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
 
     if method_upper == "PUT":
         if path.startswith("/intelligence/ingest/enrichment/"):
             return RoutePolicy(capability="intelligence.ingest.write")
+        if path.startswith("/intelligence/trade-reviews/") and path.endswith("/operator"):
+            return RoutePolicy(capability="state.write")
 
-    return RoutePolicy(capability="state.read")
+    if method_upper in {"GET", "HEAD"}:
+        return RoutePolicy(capability="state.read")
+    # Fail closed: an unmapped mutation (a new handler, a typo, an unknown action) is refused in every mode.
+    return RoutePolicy(capability=None, refused=True)
 
 
 def resolve_account_scope(

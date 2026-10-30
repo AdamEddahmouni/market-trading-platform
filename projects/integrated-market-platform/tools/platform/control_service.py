@@ -53,6 +53,23 @@ _SERVICE_PORTS: dict[str, tuple[str, int]] = {
 }
 
 
+def browser_refusal(method: str, headers: Any) -> str | None:
+    """AUD-001: the lifecycle API serves browsers only from the IMP UI, with a JSON body for actions.
+
+    Mirrors market_platform_foundation.platform.security.origin_policy (this process does not import src/).
+    A request without browser markers (the launcher, the keeper, tests) is not a page and is unaffected."""
+    lowered = {str(key).lower(): str(value) for key, value in headers.items()}
+    if lowered.get("sec-fetch-site", "").strip().lower() == "cross-site":
+        return "CROSS_SITE_REQUEST"
+    if "origin" in lowered and lowered["origin"].strip() not in ALLOWED_ORIGINS:
+        return "ORIGIN_NOT_ALLOWED"
+    browser = "origin" in lowered or any(key.startswith("sec-fetch-") for key in lowered)
+    content_type = lowered.get("content-type", "").split(";", 1)[0].strip().lower()
+    if method == "POST" and browser and content_type != "application/json":
+        return "CONTENT_TYPE_NOT_JSON"
+    return None
+
+
 def normalize_action(value: object) -> str | None:
     action = str(value or "").strip().lower()
     return action if action in ALLOWED_ACTIONS else None
@@ -200,6 +217,9 @@ def control_error_payload(reason_code: str, message: str) -> dict[str, str]:
         "CONTROL_ROUTE_NOT_FOUND": "VALIDATION_ERROR",
         "CONTROL_JSON_INVALID": "VALIDATION_ERROR",
         "CONTROL_ACTION_INVALID": "VALIDATION_ERROR",
+        "ORIGIN_NOT_ALLOWED": "AUTH_ERROR",
+        "CROSS_SITE_REQUEST": "AUTH_ERROR",
+        "CONTENT_TYPE_NOT_JSON": "AUTH_ERROR",
     }
     try:
         category = categories[reason_code]
@@ -266,15 +286,24 @@ class ControlHandler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin")
         if origin in ALLOWED_ORIGINS:
             self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Vary", "Origin")
         self.end_headers()
         self.wfile.write(body)
+
+    def _refuse_browser_request(self, method: str) -> bool:
+        refusal = browser_refusal(method, self.headers)
+        if refusal is None:
+            return False
+        self._send_error(refusal, "Request refused: lifecycle actions are accepted only from the IMP UI.",
+                         status=HTTPStatus.FORBIDDEN)
+        return True
 
     def _send_error(self, reason_code: str, message: str, *, status: HTTPStatus) -> None:
         self._send(control_error_payload(reason_code, message), status)
 
     def do_OPTIONS(self) -> None:
         origin = self.headers.get("Origin")
-        if origin is not None and origin not in ALLOWED_ORIGINS:
+        if browser_refusal("OPTIONS", self.headers) is not None:
             self.send_response(HTTPStatus.FORBIDDEN)
             self.end_headers()
             return
@@ -286,6 +315,8 @@ class ControlHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:
+        if self._refuse_browser_request("GET"):
+            return
         parsed = urlparse(self.path)
         if parsed.path == "/control/status":
             self._send(build_control_status(self.root))
@@ -309,6 +340,8 @@ class ControlHandler(BaseHTTPRequestHandler):
         )
 
     def do_POST(self) -> None:
+        if self._refuse_browser_request("POST"):
+            return
         parsed = urlparse(self.path)
         if parsed.path != "/control/actions":
             self._send_error(

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   useClosePaperExperimentMutation,
@@ -130,6 +130,11 @@ export function PaperExperimentPanel({ data, canAct, onViewTrace }: Props) {
   const experiment = data.experiment;
   const valuation = data.valuation;
   const close = useClosePaperExperimentMutation();
+  const [confirmingClose, setConfirmingClose] = useState(false);
+  const confirmCloseRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (confirmingClose) confirmCloseRef.current?.focus();
+  }, [confirmingClose]);
   const tradesQuery = usePaperTradesInfiniteQuery(experiment?.experiment_id);
   const equityQuery = usePaperEquityHistoryQuery(experiment?.experiment_id);
   if (!experiment || !valuation || !data.boundary || !data.assumptions) return null;
@@ -178,9 +183,22 @@ export function PaperExperimentPanel({ data, canAct, onViewTrace }: Props) {
           </p>
         </div>
         {active && canAct ? (
-          <button type="button" onClick={() => close.mutate(experiment.experiment_id)} disabled={close.isPending}>
-            Close experiment
-          </button>
+          confirmingClose ? (
+            // AUD-043: closing finalizes the record and blocks execution for good; there is no reopen path.
+            <span className="experiment-close-confirm" role="group" aria-label="Close the Paper experiment"
+              data-testid="experiment-close-confirm">
+              <span>Close this experiment permanently? It cannot be reopened, and the account stops trading.</span>
+              <button ref={confirmCloseRef} type="button" disabled={close.isPending}
+                onClick={() => { setConfirmingClose(false); close.mutate(experiment.experiment_id); }}>
+                Close permanently
+              </button>
+              <button type="button" disabled={close.isPending} onClick={() => setConfirmingClose(false)}>Cancel</button>
+            </span>
+          ) : (
+            <button type="button" onClick={() => setConfirmingClose(true)} disabled={close.isPending}>
+              Close experiment
+            </button>
+          )
         ) : null}
       </header>
       {close.isError ? (

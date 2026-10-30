@@ -184,6 +184,8 @@ class ProductAcceptanceHarness:
             raise RuntimeError("npm is required for product acceptance harness")
 
         api_env = build_e2e_backend_environment(state_dir=self._state_dir)
+        # AUD-001: the API serves browsers only from allowlisted UI origins; admit this run's UI port.
+        api_env["IMP_UI_ALLOWED_ORIGINS"] = f"http://{self.ui_host}:{self.ui_port}"
         with self._api_log.open("w", encoding="utf-8") as api_log_handle:
             self._api_proc = subprocess.Popen(
                 [

@@ -41,6 +41,9 @@ export default defineConfig({
   },
   server: {
     port: uiPort,
+    // The API and control service accept browser requests only from this exact origin (AUD-001), so a busy port
+    // must fail the start instead of silently moving the UI to a port the backend will refuse.
+    strictPort: true,
     proxy: {
       "/evaluation": apiTarget,
       "/context": apiTarget,
