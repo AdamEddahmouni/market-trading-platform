@@ -212,7 +212,7 @@ def build_run(*, records, equity, policy, cutoff, git_sha, evidence_class, sourc
     if policy != POLICY:
         raise ValueError('UNKNOWN_OR_MUTATED_EVALUATION_POLICY')
     cutoff_ns = ns_of(cutoff)
-    if cutoff_ns is None or evidence_class not in CLASSES or len(git_sha)!=40:
+    if cutoff_ns is None or evidence_class not in CLASSES or not isinstance(git_sha,str) or len(git_sha)!=40:
         raise ValueError('INVALID_EVALUATION_CONFIG')
     if len(records)>10000 or len(equity)>10000:
         raise ValueError('EVALUATION_BOUND_EXCEEDED')

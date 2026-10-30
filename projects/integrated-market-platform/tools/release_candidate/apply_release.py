@@ -22,6 +22,13 @@ from pathlib import Path
 
 RC = Path(os.environ.get('RC_DIR') or Path(__file__).resolve().parent)  # RC_DIR: a package built into another folder
 RECORD = 'APPLIED.json'
+# The identity writer ships in tools/release, or next to this file in a package built into another folder.
+sys.path[:0] = [str(Path(__file__).resolve().parent), str(Path(__file__).resolve().parents[1] / 'release')]
+try:
+    import write_build_identity  # noqa: E402
+except ImportError:  # an older package: the apply still works and its record says no identity was written
+    write_build_identity = None
+IDENTITY = 'BUILD-IDENTITY.json'
 
 
 def sha(path):
@@ -84,6 +91,21 @@ def apply(target, preimage_dir, manifest, *, rc=RC, entries=None):
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(rc / 'delta' / item['path'], destination)
     record['complete'] = len(entries) == len(manifest['files'])
+    if record['complete'] and write_build_identity is None:
+        record['identity'] = None
+        record['identity_skipped'] = 'WRITE_BUILD_IDENTITY_NOT_SHIPPED'
+    elif record['complete']:
+        # The serving tree has no git metadata: name the revision this release was built from (AUD-037/040). The
+        # previous identity is saved like any replaced file, so rollback restores it.
+        identity = target / IDENTITY
+        if identity.exists():
+            saved = preimage_dir / 'files' / IDENTITY
+            saved.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(identity, saved)
+        record['identity'] = {'preexisting': identity.exists()}
+        (preimage_dir / RECORD).write_text(json.dumps(record, indent=1), encoding='utf-8')
+        record['identity'].update(write_build_identity.write(target, revision=manifest['commit'],
+                                                             release=manifest['release'], replace=True))
     record['finished_utc'] = datetime.now(timezone.utc).isoformat()
     (preimage_dir / RECORD).write_text(json.dumps(record, indent=1), encoding='utf-8')
     return record
@@ -108,6 +130,12 @@ def rollback(target, preimage_dir, manifest):
         while parent != target and not any(parent.iterdir()):  # folders the release created
             parent.rmdir()
             parent = parent.parent
+    identity = record.get('identity')
+    if identity is not None:
+        if identity.get('preexisting'):
+            shutil.copy2(preimage_dir / 'files' / IDENTITY, target / IDENTITY)
+        elif (target / IDENTITY).exists():
+            (target / IDENTITY).unlink()
     remaining = verify(target, manifest)
     return {'restored': len(record['replaced']), 'removed': len(record['added']) - len(kept), 'added_files_left_because_changed': kept,
             'tree_matches_pre_release_manifest': not remaining and not kept, 'problems': remaining}

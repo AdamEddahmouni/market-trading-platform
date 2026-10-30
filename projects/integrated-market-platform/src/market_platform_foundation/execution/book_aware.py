@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .fill_model import assert_simulation_execution_allowed, stamp_fill_model_provenance
+from .fill_model import assert_simulation_execution_allowed, build_provenance_of, stamp_fill_model_provenance
 from .simulator import BarConservativeSimulator
 
 BOOK_AWARE_SIMULATOR_VERSION = "phase9.book-aware-l2/1.0.0"
@@ -59,6 +59,9 @@ class BookAwareL2Simulator(BarConservativeSimulator):
             registry_id=self.registry_id,
             execution_mode=mode,
             git_sha=str(order.get("git_sha") or "") or None,
+            build_provenance=build_provenance_of(order),
+            price_source=order.get("price_source"),
+            bar_construction=order.get("bar_construction"),
         )
 
     def simulate(

@@ -71,8 +71,9 @@ def runtime_configuration(store):
             model=None
         elif model not in offered:
             model=offered[0] if offered else None
-    from ..git_ref import read_git_head
-    return dict(git_sha=read_git_head(),automation_policy_id=(controller or {}).get("policy_id"),
+    from ..build_identity import source_revision
+    # The serving tree has no git metadata: the release's BUILD-IDENTITY.json names the revision (AUD-037).
+    return dict(git_sha=source_revision(),automation_policy_id=(controller or {}).get("policy_id"),
         ledger_policy_id=store.paper_ledger.policy.get("risk_policy_identity_hash"),
         ai=dict(engine=engine,model=model),
         prompt_id=prompt.prompt_id,prompt_version=prompt.version,prompt_hash=prompt.content_hash,

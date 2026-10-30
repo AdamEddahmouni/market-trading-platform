@@ -362,7 +362,7 @@ class EvidenceReviewService:
         journal = build_daily_journal(snapshots, day=selected.isoformat(), observation_as_of=as_of)
         later, later_reason = {}, None
         try:
-            for record in self.evaluation().project(cutoff=as_of)['inputs']['records']:
+            for record in self.evaluation().decision_records(cutoff=as_of):
                 if record.get('action_decision_id'):
                     later[record['action_decision_id']] = record
         except (ValueError, KeyError, TypeError) as exc:

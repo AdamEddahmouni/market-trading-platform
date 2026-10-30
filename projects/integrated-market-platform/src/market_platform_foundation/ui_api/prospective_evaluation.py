@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 
 from ..evaluation.prospective import POLICY, build_run, fingerprint, ns_of, rerun
 from ..evaluation.sources import construct_records
-from ..git_ref import read_git_head
+from ..build_identity import resolve_build_identity
 from ..local_state.action_decisions import action_repository
 from ..local_state.evaluations import evaluation_repository
 from ..local_state.paper_experiments import paper_experiment_repository
@@ -32,8 +32,36 @@ class ProspectiveEvaluationService:
     def now(self):
         return datetime.fromtimestamp(self.clock(),UTC).isoformat().replace('+00:00','Z')
 
+    def decision_records(self, *, cutoff):
+        """The evaluation records at ``cutoff`` without building a run: the decision journal's later evidence.
+
+        They do not depend on the code revision, so a deployment without one still shows what happened later."""
+        return self._collect(cutoff)[1]
+
     def project(self, *, cutoff=None, evidence_class=None):
         cutoff=cutoff or self.now()
+        experiment,records,equity=self._collect(cutoff)
+        cohort=evidence_class or experiment['evidence_class']
+        equity=equity if cohort==experiment['evidence_class'] else []
+        sources=[dict(kind='paper_experiment',id=experiment['experiment_id'],hash=fingerprint({k:v for k,v in experiment.items() if k not in ('status','ended_at_ns','closing')}),
+                      fill_model_id=experiment['fill_model_id'],cost_policy_id=experiment['cost_policy_id'],risk_policy_id=experiment['risk_policy_id'])]
+        sources.append(dict(kind='execution_environment',python=sys.version.split()[0],os=platform.system(),
+                            timezone='America/New_York',code_sources={
+                                name:fingerprint(Path(__file__).parents[1].joinpath(name).read_text(encoding='utf-8-sig'))
+                                for name in ('evaluation/prospective.py','evaluation/sources.py','ui_api/prospective_evaluation.py')}))
+        # A run is pinned to the revision that computed it. The serving tree has no git metadata; its revision comes
+        # from the release's BUILD-IDENTITY.json (build_identity.py). Without one the run is refused by name, never
+        # recorded under a guessed revision (AUD-040).
+        identity=resolve_build_identity()
+        if not identity['source_revision']:
+            raise ValueError('BUILD_REVISION_UNAVAILABLE:'+identity['revision_source'])
+        result=build_run(records=records,equity=equity,policy=POLICY,cutoff=cutoff,git_sha=identity['source_revision'],
+                         evidence_class=cohort,source_refs=sources)
+        result['account_id']=self.account
+        result['experiment_id']=experiment['experiment_id']
+        return result
+
+    def _collect(self, cutoff):
         cut=ns_of(cutoff)
         if cut is None or cut>ns_of(self.now()):
             raise ValueError('INVALID_EVALUATION_CUTOFF')
@@ -70,19 +98,7 @@ class ProspectiveEvaluationService:
             trades=ledger.project_trades()
         records=construct_records(decisions=decisions,candidate_reader=lambda i:self.actions.get('candidate_run',i),
                                   trades=trades,experiment=experiment,snapshots=snapshots,observations=observations,cutoff=cut)
-        cohort=evidence_class or experiment['evidence_class']
-        equity=equity if cohort==experiment['evidence_class'] else []
-        sources=[dict(kind='paper_experiment',id=experiment['experiment_id'],hash=fingerprint({k:v for k,v in experiment.items() if k not in ('status','ended_at_ns','closing')}),
-                      fill_model_id=experiment['fill_model_id'],cost_policy_id=experiment['cost_policy_id'],risk_policy_id=experiment['risk_policy_id'])]
-        sources.append(dict(kind='execution_environment',python=sys.version.split()[0],os=platform.system(),
-                            timezone='America/New_York',code_sources={
-                                name:fingerprint(Path(__file__).parents[1].joinpath(name).read_text(encoding='utf-8-sig'))
-                                for name in ('evaluation/prospective.py','evaluation/sources.py','ui_api/prospective_evaluation.py')}))
-        result=build_run(records=records,equity=equity,policy=POLICY,cutoff=cutoff,git_sha=read_git_head(),
-                         evidence_class=cohort,source_refs=sources)
-        result['account_id']=self.account
-        result['experiment_id']=experiment['experiment_id']
-        return result
+        return experiment,records,equity
 
     @staticmethod
     def summary(run, *, finalized=False):
