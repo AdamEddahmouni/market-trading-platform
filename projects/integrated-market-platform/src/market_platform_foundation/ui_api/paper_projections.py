@@ -597,6 +597,38 @@ def _require_valid_preview(
         raise ValueError(str(exc)) from exc
 
 
+def _reregister_held_equity_for_reduction(store: ReplayStore, focus: str, body: dict[str, Any]) -> None:
+    """Keep a held US equity closable by an operator after a restart, without widening what can be opened.
+
+    US equity identities reach XA-01 only in process memory (paper_automation.register_catalog_equity), so a restarted
+    API refuses every operator close of a carried equity as UNKNOWN_INSTRUMENT. Only an order that strictly reduces
+    the position already held re-registers it, from its US_EQUITIES catalog row (the controller's rule); an entry, an
+    increase or a reversal registers nothing, and admission still runs every check afterwards.
+    """
+    from ..paper.contracts import quantity_number
+    from .paper_automation import register_catalog_equity
+
+    try:
+        admit_order_instrument(focus)
+        return
+    except InstrumentAdmissionError as exc:
+        if exc.code != "UNKNOWN_INSTRUMENT":
+            return
+    side = str(body.get("side", "")).upper()
+    try:
+        quantity = quantity_number(body.get("quantity", 0))
+    except (TypeError, ValueError, ArithmeticError):
+        return
+    position = next((row for row in store.paper_ledger.project_positions() if str(row.get("instrument_id")) == focus), None)
+    if position is None or quantity <= 0:
+        return
+    held = quantity_number(position.get("quantity") or 0)
+    if position.get("side") == "SHORT":
+        held = -abs(held)
+    if (side == "SELL" and 0 < quantity <= held) or (side == "BUY" and held < 0 and quantity <= -held):
+        register_catalog_equity(focus, "US_EQUITIES")
+
+
 def _admit_focus_instrument(store: ReplayStore, focus: str) -> dict[str, Any]:
     """Admit the order target at the real preview/submit boundary (BL-0203).
 
@@ -638,6 +670,7 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
     _assert_live_execution_allowed(store, submit=False)
     _parse_order_body(body, store, validate_quantity=False)
     focus = _require_order_instrument(store, body.get("instrument_id") or body.get("symbol"))
+    _reregister_held_equity_for_reduction(store, focus, body)
     instrument = _admit_focus_instrument(store, focus)
     parsed = _parse_order_body(body, store, instrument=instrument)
     from .screener_action import action_service
@@ -820,6 +853,7 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
     _assert_live_execution_allowed(store, submit=True)
     focus = _require_order_instrument(store, body.get("instrument_id") or body.get("symbol"))
     from .screener_action import action_service
+    _reregister_held_equity_for_reduction(store, focus, body)
     instrument = _admit_focus_instrument(store, focus)
     parsed = _parse_order_body(body, store, instrument=instrument)
     paper_experiment.assert_experiment_instrument_supported(store, instrument)
