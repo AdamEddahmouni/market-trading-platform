@@ -6,7 +6,11 @@ import math
 from typing import Literal
 
 CallPut = Literal["call", "put"]
-IV_SOLVER_VERSION = "bsm_newton_v1"
+# v2 (2026-10-29, AUD-036/038): European discounted-strike admission bounds and a bracketed Newton solver.
+# v1 compared against undiscounted spot intrinsic and ran unguarded Newton from 0.3.
+IV_SOLVER_VERSION = "bsm_bracketed_newton_v2"
+# Above this volatility a price is treated as indistinguishable from the upper no-arbitrage bound.
+_MAX_VOLATILITY = 1000.0
 
 
 def _norm_cdf(x: float) -> float:
@@ -48,28 +52,54 @@ def implied_volatility(
     max_iter: int = 50,
     tolerance: float = 1e-6,
 ) -> float | None:
-    """Newton-Raphson IV solver — fail-closed on invalid inputs."""
+    """European BSM implied volatility — fail-closed on invalid inputs.
+
+    A price is admitted only strictly inside the European no-arbitrage bounds, which use the discounted strike:
+    call ``max(S - K e^{-rT}, 0) < C < S``, put ``max(K e^{-rT} - S, 0) < P < K e^{-rT}`` (any sign of ``r``).
+    The BSM price rises monotonically in volatility between those bounds, so the root is bracketed and found by
+    Newton steps that fall back to bisection whenever a step leaves the bracket. ``None`` means out of domain or
+    no volatility reprices within ``tolerance`` (price units) in ``max_iter`` iterations.
+    """
+    values = (market_price, spot, strike, time_years, rate)
+    if not all(math.isfinite(value) for value in values):
+        return None
     if market_price <= 0 or spot <= 0 or strike <= 0 or time_years <= 0:
         return None
-    intrinsic = max(spot - strike, 0.0) if call_put == "call" else max(strike - spot, 0.0)
-    if market_price < intrinsic:
+    discounted_strike = strike * math.exp(-rate * time_years)
+    if call_put == "call":
+        lower, upper = max(spot - discounted_strike, 0.0), spot
+    else:
+        lower, upper = max(discounted_strike - spot, 0.0), discounted_strike
+    if not lower < market_price < upper:
         return None
-    sigma = 0.3
+
+    def price_at(sigma: float) -> float:
+        return bsm_price(spot, strike, time_years, rate, sigma, call_put)
+
+    # Bracket [lo, hi]: price(lo) < market_price <= price(hi). price(0+) is the lower bound.
+    lo, hi = 0.0, 1.0
+    while price_at(hi) < market_price:
+        lo, hi = hi, hi * 2.0
+        if hi > _MAX_VOLATILITY:
+            return None
+    sqrt_t = math.sqrt(time_years)
+    sigma = 0.3 if lo < 0.3 < hi else 0.5 * (lo + hi)
     for _ in range(max_iter):
-        price = bsm_price(spot, strike, time_years, rate, sigma, call_put)
-        diff = price - market_price
+        diff = price_at(sigma) - market_price
         if abs(diff) < tolerance:
             return round(sigma, 8)
-        sqrt_t = math.sqrt(time_years)
+        if diff < 0:
+            lo = sigma
+        else:
+            hi = sigma
         d1 = (math.log(spot / strike) + (rate + 0.5 * sigma ** 2) * time_years) / (
             sigma * sqrt_t
         )
         vega = spot * _norm_pdf(d1) * sqrt_t
-        if vega <= 1e-12:
-            return None
-        sigma -= diff / vega
-        if sigma <= 0:
-            sigma = 0.01
+        step = sigma - diff / vega if vega > 1e-12 else lo - 1.0
+        sigma = step if lo < step < hi else 0.5 * (lo + hi)
+        if hi - lo <= 1e-14 * max(1.0, hi):
+            break
     return None
 
 
