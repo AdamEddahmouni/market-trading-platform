@@ -117,7 +117,9 @@ def _snapshot_payload(ctx: OperatorControlContext, *, as_of_ns: int) -> dict[str
         "authority_boundary": "OPERATOR_CONTROL_PLANE",
         "execution_mode_label": "LIVE_CANARY",
         "paper_live_distinct": True,
-        "real_money_warning": "LIVE CANARY — REAL MONEY — HUMAN CONFIRMATION REQUIRED",
+        "real_money_warning": ("BROKER PAPER CANARY — SANDBOX — READ-ONLY"
+                               if ctx.canary_policy.broker.endswith(".paper")
+                               else "LIVE CANARY — REAL MONEY — HUMAN CONFIRMATION REQUIRED"),
         "snapshot": _dataclass_to_dict(snap),
         "account_id": ctx.canary_policy.account_ref,
         "broker": ctx.canary_policy.broker,

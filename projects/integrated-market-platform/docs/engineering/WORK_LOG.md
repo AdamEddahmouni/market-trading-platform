@@ -8572,3 +8572,9 @@ US_EQUITIES identities reach XA-01 only in memory, when an entry is admitted. Af
 - Independent 1,400-case repricing found two returned IVs whose eight-decimal rounding exceeded the documented 1e-6 price tolerance (maximum error 1.0323274e-6). Tightening the existing grid assertion from 1e-5 to the actual contract reproduced the failure.
 - Solver v3 retains its converged value when rounding would exceed tolerance; otherwise the eight-decimal output is unchanged. Formula ledger version updated; financial math plus the strengthened IV regressions: 506/506 pass (`iv-financial-green-336b07dc.json`).
 - The audit grid's 33 remaining volatility-threshold misses all reprice within 1e-6; 279 numerically unidentifiable cases and the explicitly documented nonpositive-time/volatility sentinel contract remain limitations, not universal solver correctness claims. Historical records unchanged.
+
+## 2026-10-29 — truthful sandbox canary labels (AUD-018)
+
+- Confirmed the API and read-only canary page hard-coded REAL MONEY for the existing tradier.paper fixture contexts. New backend and UI assertions failed first (one backend assertion, three UI mode cases).
+- Paper broker identities now display BROKER PAPER CANARY / SANDBOX / READ-ONLY; non-Paper identities retain the existing human-confirmation real-money warning. Operational identities, mode routing, query enablement, execution gates and controls are unchanged.
+- Account isolation/operator control plane: 21/21 pass. Canary UI: 4/4 pass with network blocked, including the retained non-Paper warning and no POSTs. Evidence: canary-label-green-f747582e.json and canary-ui-green-f747582e.txt. No production install.

@@ -32,6 +32,12 @@ class AccountSnapshotCacheIsolationTests(unittest.TestCase):
             alt["snapshot"]["broker_health"],
         )
 
+    def test_paper_canary_is_labelled_as_sandbox_not_real_money(self) -> None:
+        payload = canary_projections.build_canary_snapshot_payload(account_id="fp-canary-local")
+        self.assertIn("BROKER PAPER", payload["real_money_warning"])
+        self.assertIn("SANDBOX", payload["real_money_warning"])
+        self.assertNotIn("REAL MONEY", payload["real_money_warning"])
+
     def test_unknown_account_fails_closed(self) -> None:
         with self.assertRaises(ValueError):
             canary_projections.build_canary_snapshot_payload(account_id="fp-unknown")

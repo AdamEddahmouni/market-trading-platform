@@ -55,16 +55,29 @@ const reliabilityPayload = {
   alert_delivery_configured: true,
 };
 
+let canaryBroker = "tradier.paper";
+
 describe("LiveCanaryControlPlanePage", () => {
   beforeEach(() => {
+    canaryBroker = "tradier.paper";
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation(async (path: string) => ({
         ok: true,
         json: async () =>
-          path.includes("/canary/reliability") ? reliabilityPayload : snapshotPayload,
+          path.includes("/canary/reliability") ? reliabilityPayload : { ...snapshotPayload, snapshot: { ...snapshotPayload.snapshot, broker: canaryBroker } },
       })),
     );
+  });
+
+  it("retains the real-money warning for a non-paper broker identity", async () => {
+    canaryBroker = "fixture.live";
+    const client = new QueryClient();
+    render(<QueryClientProvider client={client}><MemoryRouter>
+      <LiveCanaryControlPlanePage mode="LIVE" />
+    </MemoryRouter></QueryClientProvider>);
+    expect(await screen.findByTestId("live-canary-control-plane")).toBeInTheDocument();
+    expect(screen.getByText(/REAL MONEY.*HUMAN CONFIRMATION REQUIRED/i)).toBeInTheDocument();
   });
 
   it.each(["DEMO", "PAPER", "LIVE"] as const)(
@@ -79,7 +92,8 @@ describe("LiveCanaryControlPlanePage", () => {
         </QueryClientProvider>,
       );
       expect(await screen.findByTestId("live-canary-control-plane")).toBeInTheDocument();
-      expect(screen.getByText(/REAL MONEY/i)).toBeInTheDocument();
+      expect(screen.getByText(/BROKER PAPER CANARY.*SANDBOX/i)).toBeInTheDocument();
+      expect(screen.queryByText(/REAL MONEY/i)).not.toBeInTheDocument();
       expect(screen.getByText(/PAPER — INTERNAL SIMULATION ONLY/i)).toBeInTheDocument();
       expect(screen.getByRole("heading", { name: "Safety State" })).toBeInTheDocument();
       expect(screen.getByRole("heading", { name: "Incidents" })).toBeInTheDocument();

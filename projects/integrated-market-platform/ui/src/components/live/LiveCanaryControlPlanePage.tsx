@@ -51,6 +51,9 @@ export function LiveCanaryControlPlanePage({ mode }: Props) {
     return <p className="error">Failed to load operator control plane.</p>;
   }
 
+  const canaryWarning = snap.broker?.endsWith(".paper")
+    ? "BROKER PAPER CANARY — SANDBOX — READ-ONLY"
+    : "LIVE CANARY — REAL MONEY — HUMAN CONFIRMATION REQUIRED";
   const programCapRemaining = snap.program_cap_remaining ?? {};
   const actionQueue = (snap as { action_queue?: Array<Record<string, unknown>> }).action_queue ?? [];
 
@@ -58,7 +61,7 @@ export function LiveCanaryControlPlanePage({ mode }: Props) {
     <div className="live-canary-control-plane" data-testid="live-canary-control-plane">
       <header className="live-safety-header" role="banner">
         <div className="live-banner-critical">
-          <strong>LIVE CANARY — REAL MONEY — HUMAN CONFIRMATION REQUIRED</strong>
+          <strong>{canaryWarning}</strong>
         </div>
         <div className="live-mode-row">
           <span className="mode-label">EXECUTION MODE:</span>
