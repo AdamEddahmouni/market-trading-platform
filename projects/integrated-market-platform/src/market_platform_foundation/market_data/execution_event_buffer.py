@@ -11,6 +11,10 @@ from .live_admission import ADMISSION_EXECUTION
 from .observational_state import _session_price
 
 LIVE_L1_TIMEFRAME = "LIVE_L1_SNAPSHOT"
+# AUD-014: these bars keep event_type BAR_OHLCV_1M for the simulator contract, but they are built from L1 quote
+# snapshots, not vendor one-minute bars. Every bar names its construction so the fills it prices record it
+# (execution/fill_model.py ``bar_construction``). Bump this when the construction below changes.
+LIVE_L1_BAR_CONSTRUCTION = "live-l1-snapshot.session-price.touch-high-low.venue-volume-60s/1"
 # A live L1 bar's participation volume is the venue's own count of shares traded in the trailing window that ends at
 # the bar: the change in the cumulative day volume Moomoo carries on every QUOTE push and market snapshot. A bar with
 # no earlier count inside the window, or whose count went down (a new day), has no volume evidence and fills nothing.
@@ -231,6 +235,7 @@ class LiveExecutionEventBuffer:
                         "volume": volume,
                         "volume_basis": TRADED_VOLUME_BASIS,
                     },
+                    "bar_construction": LIVE_L1_BAR_CONSTRUCTION,
                     "close_minor": minor["open"],
                     "event_time": row.event_time_ns,
                     "event_type": "BAR_OHLCV_1M",

@@ -8,7 +8,7 @@ from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
 from ..numeric import apply_participation_cap, decimal_to_minor_units
-from .fill_model import assert_simulation_execution_allowed, stamp_fill_model_provenance
+from .fill_model import BUILD_PROVENANCE_KEYS, assert_simulation_execution_allowed, stamp_fill_model_provenance
 
 SIMULATOR_VERSION = "phase7.bar-conservative/1.1.0"
 SOURCE_CAPABILITY = "BAR_OHLCV_1M"
@@ -32,7 +32,8 @@ class BarConservativeSimulator:
     def __init__(self, *, policy: dict[str, Any]) -> None:
         self.policy = policy
         self._bar_allocations: dict[tuple[str, int], int | Decimal] = {}
-        self._git_sha: str | None = None
+        # Build fields resolved once for this simulator and reused for every order it stamps (build_identity.py).
+        self._build_provenance: dict[str, Any] | None = None
 
     def reset_allocations(self) -> None:
         self._bar_allocations = {}
@@ -43,10 +44,13 @@ class BarConservativeSimulator:
         fill: dict[str, Any] | None,
         *,
         intent: dict[str, Any],
+        fill_bar: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any] | None]:
         mode = assert_simulation_execution_allowed(
             intent.get("execution_mode") or self.policy.get("execution_mode")
         )
+        payload = (fill_bar or {}).get("bar_payload")
+        payload = payload if isinstance(payload, dict) else {}
         order, fill = stamp_fill_model_provenance(
             order=order,
             fill=fill,
@@ -54,9 +58,11 @@ class BarConservativeSimulator:
             source_capability=SOURCE_CAPABILITY,
             registry_id=self.registry_id,
             execution_mode=mode,
-            git_sha=self._git_sha,
+            build_provenance=self._build_provenance,
+            price_source=(fill_bar or {}).get("source") or payload.get("source"),
+            bar_construction=(fill_bar or {}).get("bar_construction"),
         )
-        self._git_sha = str(order.get("git_sha") or "UNAVAILABLE")
+        self._build_provenance = {key: order.get(key) for key in BUILD_PROVENANCE_KEYS}
         return order, fill
 
     def simulate(
@@ -254,7 +260,7 @@ class BarConservativeSimulator:
         }
         order["state"] = "FILLED" if fill_qty == approved_qty else "PARTIALLY_FILLED"
         order["filled_quantity"] = serialized_quantity(fill_qty, instrument)
-        return self._finalize(order, fill, intent=intent)
+        return self._finalize(order, fill, intent=intent, fill_bar=fill_bar)
 
     def _effective_participation_policy(
         self,
