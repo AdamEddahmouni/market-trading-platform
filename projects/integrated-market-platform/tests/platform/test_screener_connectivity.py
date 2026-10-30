@@ -152,7 +152,9 @@ class ProjectionTests(unittest.TestCase):
     def test_http_route_uses_guarded_read_scope(self):
         from market_platform_foundation.ui_api.server import UiApiHandler
         from market_platform_foundation.platform.security.route_policy import policy_for_route
+        from http.client import HTTPMessage
         handler = object.__new__(UiApiHandler)
+        handler.headers = HTTPMessage()
         handler.path = '/screener/connectivity?instrument=NVDA&universe=US_EQUITIES'
         handler._authorize_request = Mock(return_value=True)
         handler._send_json = Mock()

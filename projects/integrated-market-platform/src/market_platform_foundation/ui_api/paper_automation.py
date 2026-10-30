@@ -202,22 +202,23 @@ def market_session(epoch):
     """US regular-session facts from the existing label and the versioned NYSE execution calendar. No date is guessed:
     outside the calendar's coverage the session is CALENDAR_UNAVAILABLE (fail closed). On an early-close day the
     regular session ends at 13:00 ET, so minutes_to_close, the entry guard and the EOD flatten see the real close."""
-    from .. import nyse_calendar
+    from ..nyse_calendar import close_minutes, covers, is_early_close, is_trading_day
+    from ..nyse_calendar import coverage as calendar_coverage
     moment = datetime.fromtimestamp(epoch, UTC).astimezone(ET)
     day = moment.date()
-    coverage = nyse_calendar.coverage(day)
-    if not nyse_calendar.covers(day):
+    coverage = calendar_coverage(day)
+    if not covers(day):
         return dict(label='CALENDAR_UNAVAILABLE', trading_day=False, session_date=day.isoformat(), minutes_to_close=None,
                     early_close_metadata='UNAVAILABLE', **coverage)
-    trading = nyse_calendar.is_trading_day(day)
+    trading = is_trading_day(day)
     label = us_equity_session_label(moment) if trading else 'CLOSED'
     minutes = None
     if trading:
-        close = nyse_calendar.close_minutes(day)
+        close = close_minutes(day)
         if label == 'REGULAR' and moment.hour * 60 + moment.minute >= close:
             label = 'AFTER_HOURS'  # after an early close the regular session is over
         minutes = close - (moment.hour * 60 + moment.minute) if label == 'REGULAR' else None
-    early = 'EARLY_CLOSE' if trading and nyse_calendar.is_early_close(day) else 'REGULAR_CLOSE' if trading else 'NO_SESSION'
+    early = 'EARLY_CLOSE' if trading and is_early_close(day) else 'REGULAR_CLOSE' if trading else 'NO_SESSION'
     return dict(label=label, trading_day=trading, session_date=day.isoformat(), minutes_to_close=minutes,
                 early_close_metadata=early, **coverage)
 
@@ -1817,10 +1818,10 @@ class PaperAutomationService:
         work['carry'] = carry
         if first_cycle or carry['session_date'] != day or not session.get('trading_day'):
             from datetime import date
-            from .. import nyse_calendar
+            from ..nyse_calendar import CalendarUnavailable, previous_trading_day
             try:
-                previous = nyse_calendar.previous_trading_day(date.fromisoformat(day))
-            except nyse_calendar.CalendarUnavailable:
+                previous = previous_trading_day(date.fromisoformat(day))
+            except CalendarUnavailable:
                 previous = None  # outside coverage no previous session can be named; none is guessed
             if previous is not None:
                 self._detect_unplanned_carry(work, previous.isoformat())
@@ -1830,17 +1831,16 @@ class PaperAutomationService:
                 carry.update(session_date=day, approved={}, reviewed={}, closing=[], blocked=[])
 
     def _hold_sessions(self, position, session):
-        from .. import nyse_calendar
+        from ..nyse_calendar import COVERED_YEARS, is_trading_day
         entry = position.get('first_entry_time_ns')
         if not entry:
             return 999  # unknown position age cannot authorize an overnight hold
         entry_date = datetime.fromtimestamp(entry / 1e9, UTC).astimezone(ET).date().isoformat()
         if entry_date > session['session_date']:
             return 999
-        years = nyse_calendar.COVERED_YEARS
-        if any(year not in years for year in range(int(entry_date[:4]), int(session['session_date'][:4]) + 1)):
+        if any(year not in COVERED_YEARS for year in range(int(entry_date[:4]), int(session['session_date'][:4]) + 1)):
             return 999
-        return sessions_held(entry_date, session['session_date'], nyse_calendar.is_trading_day)
+        return sessions_held(entry_date, session['session_date'], is_trading_day)
 
     def _review_context(self, iid, work, policy):
         session = self.session(self.clock())

@@ -9,19 +9,18 @@ Never used to authorize execution.
 """
 from datetime import date, datetime, timedelta
 
-from .. import nyse_calendar
+from ..nyse_calendar import EARLY_CLOSES, ET, HOLIDAYS, is_trading_day
+from ..nyse_calendar import session_bounds as _calendar_session_bounds
 
 VERSION = "paper-performance-nyse/2"
-ET = nyse_calendar.ET
 NS = 1_000_000_000
-HOLIDAYS = nyse_calendar.HOLIDAYS
-EARLY = nyse_calendar.EARLY_CLOSES
+EARLY = EARLY_CLOSES
 
 def trading_day(day: date) -> bool:
-    return nyse_calendar.is_trading_day(day)
+    return is_trading_day(day)
 
 def session_bounds(day: date) -> tuple[int,int]:
-    opening,closing = nyse_calendar.session_bounds(day)
+    opening,closing = _calendar_session_bounds(day)
     return int(opening.timestamp())*NS,int(closing.timestamp())*NS
 
 def sessions_after(day: date, count: int) -> list[date]:

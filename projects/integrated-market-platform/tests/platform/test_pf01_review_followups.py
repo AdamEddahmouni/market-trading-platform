@@ -131,6 +131,9 @@ class FailureClassTests(ReviewCase):
             collector.step()
         self.assertEqual(collector.status()['state'], 'RETRYING')
 
+    # Query-only reads go to the reader pool by default; this pins the shared-connection path (IMP_STATE_READ_POOL=0,
+    # the rollback configuration) whose fetches must stay inside the shared lock.
+    @patch.dict(os.environ, {'IMP_STATE_READ_POOL': '0'})
     def test_status_reads_fetch_inside_the_shared_connection_lock(self):
         connection = LocalStateConnection(self.path, require_existing=True)
         self.addCleanup(connection.close)

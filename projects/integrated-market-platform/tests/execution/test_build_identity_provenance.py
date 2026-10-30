@@ -52,7 +52,7 @@ def _simulate(simulator_class=BarConservativeSimulator, bars=None):
 
 class ResolutionOrderTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp())
+        self.tmp = Path(self.enterContext(tempfile.TemporaryDirectory()))
         self.app = _app(self.tmp)
 
     def resolve(self, **env):
@@ -103,7 +103,7 @@ class ResolutionOrderTests(unittest.TestCase):
 
 class ReleaseApplyIdentityTests(unittest.TestCase):
     def test_apply_writes_the_release_commit_and_rollback_restores_the_previous_identity(self):
-        tmp = Path(tempfile.mkdtemp())
+        tmp = Path(self.enterContext(tempfile.TemporaryDirectory()))
         app = _app(tmp)
         write_build_identity.write(app, revision=OTHER, release="previous")
         before = (app / "BUILD-IDENTITY.json").read_bytes()
@@ -125,7 +125,7 @@ class ReleaseApplyIdentityTests(unittest.TestCase):
 
 class FillProvenanceTests(unittest.TestCase):
     def test_a_non_git_deployment_stamps_the_release_revision_on_new_fills(self):
-        tmp = Path(tempfile.mkdtemp())
+        tmp = Path(self.enterContext(tempfile.TemporaryDirectory()))
         app = _app(tmp)
         written = write_build_identity.write(app, revision=REVISION, release="rel-1")
         with NO_GIT, patch.dict("os.environ", {"IMP_BUILD_IDENTITY_FILE": str(app / "BUILD-IDENTITY.json")}):
@@ -135,7 +135,8 @@ class FillProvenanceTests(unittest.TestCase):
         self.assertEqual(order["git_sha"], REVISION)
 
     def test_without_any_identity_the_fill_says_unavailable_and_keeps_its_id(self):
-        with patch.dict("os.environ", {"IMP_BUILD_IDENTITY_FILE": str(Path(tempfile.mkdtemp()) / "none.json")}):
+        tmp = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        with patch.dict("os.environ", {"IMP_BUILD_IDENTITY_FILE": str(tmp / "none.json")}):
             with NO_GIT:
                 _, bare = _simulate()
             _, with_git = _simulate()
@@ -169,12 +170,13 @@ class ProspectiveRevisionTests(unittest.TestCase):
         experiment = dict(experiment_id="EXP-1", evidence_class="PROSPECTIVE_SIGNAL_ONLY", fill_model_id="f",
                           cost_policy_id="c", risk_policy_id="r", paper_account_id="A")
         service._collect = lambda cutoff: (experiment, [], [])
-        with NO_GIT, patch.dict("os.environ", {"IMP_BUILD_IDENTITY_FILE": str(Path(tempfile.mkdtemp()) / "x.json")}):
+        tmp = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        with NO_GIT, patch.dict("os.environ", {"IMP_BUILD_IDENTITY_FILE": str(tmp / "x.json")}):
             with self.assertRaisesRegex(ValueError, "BUILD_REVISION_UNAVAILABLE:UNAVAILABLE"):
                 service.project(cutoff=datetime(2026, 10, 29, tzinfo=timezone.utc).isoformat())
 
     def test_project_with_a_release_identity_records_that_revision(self):
-        tmp = Path(tempfile.mkdtemp())
+        tmp = Path(self.enterContext(tempfile.TemporaryDirectory()))
         app = _app(tmp)
         write_build_identity.write(app, revision=REVISION, release="rel-1")
         service = ProspectiveEvaluationService.__new__(ProspectiveEvaluationService)

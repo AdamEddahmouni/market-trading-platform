@@ -78,6 +78,7 @@
         "src/market_platform_foundation/errors.py",
         "src/market_platform_foundation/evidence.py",
         "src/market_platform_foundation/market_sessions.py",
+        "src/market_platform_foundation/nyse_calendar.py",
         "src/market_platform_foundation/numeric.py",
         "src/market_platform_foundation/operating_modes.py",
         "src/market_platform_foundation/operational_identity.py",
@@ -511,6 +512,7 @@
       "id": "safety-and-governance-support",
       "classification": "RETAINED_SUPPORTING",
       "scope": [
+        "src/market_platform_foundation/build_identity.py",
         "src/market_platform_foundation/credential_audit.py",
         "src/market_platform_foundation/git_ref.py",
         "src/market_platform_foundation/offline_guard.py",
@@ -570,6 +572,7 @@
         "tools/live_execution_safety",
         "tools/paper_execution_qualification",
         "tools/platform",
+        "tools/release",
         "tools/release_candidate",
         "tools/e2e",
         "tools/provider_readiness.py",

@@ -1282,7 +1282,9 @@ describe("App mode launcher integration", () => {
     await enterMode("Live");
     await openLiveCanary();
     expect(await screen.findByTestId("live-canary-control-plane")).toBeInTheDocument();
-    expect(screen.getByText(/REAL MONEY/i)).toBeInTheDocument();
+    // The mocked canary broker is tradier.paper: sandbox, never labelled as real money.
+    expect(screen.getByText(/BROKER PAPER CANARY.*SANDBOX/i)).toBeInTheDocument();
+    expect(screen.queryByText(/REAL MONEY/i)).not.toBeInTheDocument();
   });
 
   it("opens Control from navigation with operating state and authority sections", async () => {
