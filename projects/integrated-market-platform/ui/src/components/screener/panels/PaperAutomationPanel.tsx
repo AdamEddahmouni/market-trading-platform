@@ -259,7 +259,9 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
 
           <h4>Overnight positions</h4>
           <p>Approved to hold: {Object.keys(status.carry?.approved ?? {}).join(", ") || "none"}.</p>
-          <p>Awaiting closure after an unplanned carry: {Object.keys(status.carry?.pending ?? {}).join(", ") || "none"}.</p>
+          <p>Last cycle carry snapshot: {Object.keys(status.carry?.pending ?? {}).join(", ") || "none"}. This is the saved controller cycle, not the current ledger.</p>
+          {(status.carry_ledger?.pending_still_open.length ?? 0) > 0 && <p>Still open on the ledger: {status.carry_ledger!.pending_still_open.join(", ")}.</p>}
+          {(status.carry_ledger?.pending_absent_from_ledger.length ?? 0) > 0 && <p>Recorded in that snapshot and absent from the current ledger: {status.carry_ledger!.pending_absent_from_ledger.join(", ")}.</p>}
           <h4>Risk and Paper account</h4>
           {status.risk && <p>Open positions {status.risk.open_positions}/{status.risk.max_open_positions} · exposure {money(status.risk.exposure_minor)} of {money(status.risk.max_aggregate_exposure_minor)} · day P&amp;L {money(status.risk.day_pnl_minor)} (halt at −{money(status.risk.max_daily_loss_minor)}) · equity {money(status.risk.equity_minor)} · realized {money(status.risk.realized_pnl_minor)} · unrealized {money(status.risk.unrealized_pnl_minor)} · valuation {text(status.risk.valuation_quality)}</p>}
           {(status.positions?.length ?? 0) > 0 ? <table><caption>Open Paper positions</caption>

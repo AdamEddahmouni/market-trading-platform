@@ -292,12 +292,18 @@ describe("Paper automation controls", () => {
     expect(api.configure.mock.calls[0][1].risk).toMatchObject({ max_overnight_positions: 5,
       max_overnight_exposure_minor: 2500000, max_hold_sessions: 5 });
   });
-  it("shows approved holds and positions waiting for the next open", async () => {
-    api.status.mockResolvedValue({ ...running, carry: { approved: { AAPL: {} }, pending: { NVDA: {} } } });
+  it("shows the last cycle carry snapshot apart from current ledger holdings", async () => {
+    api.status.mockResolvedValue({ ...running, carry: { approved: { AAPL: {} }, pending: { NVDA: {}, BTGO: {} } },
+      carry_ledger: { semantics: "LAST_CYCLE_CARRY_SNAPSHOT", current_holdings: "LEDGER_POSITIONS",
+        pending_still_open: ["BTGO"], pending_absent_from_ledger: ["NVDA"] },
+      positions: [...running.positions, { instrument_id: "BTGO", side: "SHORT", quantity: -1, average_fill_minor: 500, mark_minor: 480, unrealized_pnl_minor: 20 }] });
     api.history.mockResolvedValue({ events: [] }); api.report.mockResolvedValue(report);
     render(<PaperAutomationPanel scope={scope} />); open();
     expect(await screen.findByText("Approved to hold: AAPL.")).toBeInTheDocument();
-    expect(screen.getByText("Awaiting closure after an unplanned carry: NVDA.")).toBeInTheDocument();
+    expect(screen.getByText("Last cycle carry snapshot: NVDA, BTGO. This is the saved controller cycle, not the current ledger.")).toBeInTheDocument();
+    expect(screen.getByText("Still open on the ledger: BTGO.")).toBeInTheDocument();
+    expect(screen.getByText("Recorded in that snapshot and absent from the current ledger: NVDA.")).toBeInTheDocument();
+    expect(screen.queryByText(/Awaiting closure after an unplanned carry/)).not.toBeInTheDocument();
   });
 
 });

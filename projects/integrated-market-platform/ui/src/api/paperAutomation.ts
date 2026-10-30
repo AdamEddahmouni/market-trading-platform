@@ -62,6 +62,8 @@ export const PaperAutomationStatusSchema = z.object({ schema_version: z.literal(
   last_cycle: Cycle.nullable().optional(),
   carry: z.object({ session_date: z.string().optional(), approved: z.record(z.string(), z.unknown()).optional(),
     pending: z.record(z.string(), z.unknown()).optional() }).passthrough().optional(),
+  carry_ledger: z.object({ semantics: z.literal("LAST_CYCLE_CARRY_SNAPSHOT"), current_holdings: z.literal("LEDGER_POSITIONS"),
+    pending_still_open: z.array(z.string()), pending_absent_from_ledger: z.array(z.string()) }).optional(),
   universe: z.object({ active_run_id: z.string().nullable(), last_result: UniverseResult.nullable(), adopted_run_id: z.string().nullable().optional(),
     withheld: z.object({ at: z.string(), reason: z.string() }).nullable().optional() }).passthrough().nullable().optional(),
   scheduling: Scheduling.optional(),

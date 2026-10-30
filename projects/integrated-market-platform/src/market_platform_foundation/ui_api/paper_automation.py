@@ -266,6 +266,26 @@ def _automation_quantities(ledger):
     return {iid: parts[0] for iid, parts in buckets.items() if parts[0]}
 
 
+def carry_ledger_projection(carry, positions):
+    """Separate a saved controller cycle's carry record from the ledger's current holdings.
+
+    The stored snapshot is not rewritten. A pending name is a current holding only when
+    the ledger still has that instrument. Historical names stay visible as cycle evidence.
+    """
+    pending = (carry or {}).get('pending') or {}
+    held = set()
+    for position in positions or ():
+        for key in ('instrument_id', 'symbol'):
+            value = position.get(key)
+            if value:
+                held.add(value)
+    return dict(
+        semantics='LAST_CYCLE_CARRY_SNAPSHOT',
+        current_holdings='LEDGER_POSITIONS',
+        pending_still_open=[key for key in pending if key in held],
+        pending_absent_from_ledger=[key for key in pending if key not in held])
+
+
 class PaperAutomationService:
     def __init__(self, store, *, repository=None, reevaluation=None, runs=None, clock=time.time, owner_id=None,
                  session=market_session, provider_health=None, submit_lock=None, sleep=time.sleep, lease_wait=None):
@@ -2214,6 +2234,7 @@ class PaperAutomationService:
         return dict(
             schema_version=STATUS_SCHEMA, status=str(status), status_label=labels[status], blockers=blockers,
             carry=copy.deepcopy(controller.get('carry') or {}),
+            carry_ledger=carry_ledger_projection(controller.get('carry'), positions),
             account_id=controller['account_id'], experiment_id=controller.get('experiment_id'), policy=policy,
             armed=bool(controller.get('arming')), arming=controller.get('arming'), emergency=controller.get('emergency'),
             desired_state=controller['desired_state'], run=controller.get('run'), session=session, session_eligible=eligible,
