@@ -8578,3 +8578,8 @@ US_EQUITIES identities reach XA-01 only in memory, when an entry is admitted. Af
 - Confirmed the API and read-only canary page hard-coded REAL MONEY for the existing tradier.paper fixture contexts. New backend and UI assertions failed first (one backend assertion, three UI mode cases).
 - Paper broker identities now display BROKER PAPER CANARY / SANDBOX / READ-ONLY; non-Paper identities retain the existing human-confirmation real-money warning. Operational identities, mode routing, query enablement, execution gates and controls are unchanged.
 - Account isolation/operator control plane: 21/21 pass. Canary UI: 4/4 pass with network blocked, including the retained non-Paper warning and no POSTs. Evidence: canary-label-green-f747582e.json and canary-ui-green-f747582e.txt. No production install.
+
+## 2026-10-29 — bind irreversible confirmation to experiment identity (AUD-043)
+
+- Final review identified that a refetch replacing active experiment A with B could retain the boolean confirmation and close B. The A-to-B rerender regression failed before the correction.
+- Confirmation now carries its initiating experiment ID, is hidden immediately when identity no longer matches, and clears on an identity change. The new experiment requires a fresh confirmation. Confirmation and canary UI tests: 22/22 pass (`confirmation-identity-green-afbe619b.txt`). No live mutation.

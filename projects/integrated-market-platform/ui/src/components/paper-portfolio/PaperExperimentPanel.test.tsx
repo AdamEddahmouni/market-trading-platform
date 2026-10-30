@@ -277,6 +277,22 @@ describe("PaperExperimentPanel", () => {
     expect(mocks.close).toHaveBeenCalledWith("PPE-TEST0001");
   });
 
+  it("requires fresh confirmation when a refetch replaces the active experiment (AUD-043)", () => {
+    const view = renderPanel(experimentPortfolio());
+    fireEvent.click(screen.getByRole("button", { name: "Close experiment" }));
+    const replacement = PaperPortfolioResponseSchema.parse(experimentPortfolio());
+    if (!replacement.experiment) throw new Error("fixture experiment missing");
+    replacement.experiment.experiment_id = "PPE-TEST0002";
+    view.rerender(<MemoryRouter>
+      <PaperExperimentPanel data={replacement} canAct onViewTrace={onViewTrace} />
+    </MemoryRouter>);
+    expect(screen.queryByRole("button", { name: "Close permanently" })).not.toBeInTheDocument();
+    expect(mocks.close).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Close experiment" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close permanently" }));
+    expect(mocks.close).toHaveBeenCalledTimes(1);
+    expect(mocks.close).toHaveBeenCalledWith("PPE-TEST0002");
+  });
   it("surfaces the fail-closed reason when close is refused", () => {
     mocks.closeError = new Error("OPEN_POSITIONS_REMAIN: flatten every position before closing the experiment");
     renderPanel(experimentPortfolio());

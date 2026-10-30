@@ -130,7 +130,9 @@ export function PaperExperimentPanel({ data, canAct, onViewTrace }: Props) {
   const experiment = data.experiment;
   const valuation = data.valuation;
   const close = useClosePaperExperimentMutation();
-  const [confirmingClose, setConfirmingClose] = useState(false);
+  const [confirmingCloseId, setConfirmingCloseId] = useState<string | null>(null);
+  const confirmingClose = Boolean(experiment && confirmingCloseId === experiment.experiment_id);
+  useEffect(() => { setConfirmingCloseId(null); }, [experiment?.experiment_id]);
   const confirmCloseRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (confirmingClose) confirmCloseRef.current?.focus();
@@ -189,13 +191,13 @@ export function PaperExperimentPanel({ data, canAct, onViewTrace }: Props) {
               data-testid="experiment-close-confirm">
               <span>Close this experiment permanently? It cannot be reopened, and the account stops trading.</span>
               <button ref={confirmCloseRef} type="button" disabled={close.isPending}
-                onClick={() => { setConfirmingClose(false); close.mutate(experiment.experiment_id); }}>
+                onClick={() => { setConfirmingCloseId(null); close.mutate(experiment.experiment_id); }}>
                 Close permanently
               </button>
-              <button type="button" disabled={close.isPending} onClick={() => setConfirmingClose(false)}>Cancel</button>
+              <button type="button" disabled={close.isPending} onClick={() => setConfirmingCloseId(null)}>Cancel</button>
             </span>
           ) : (
-            <button type="button" onClick={() => setConfirmingClose(true)} disabled={close.isPending}>
+            <button type="button" onClick={() => setConfirmingCloseId(experiment.experiment_id)} disabled={close.isPending}>
               Close experiment
             </button>
           )
