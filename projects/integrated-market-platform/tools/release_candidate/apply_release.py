@@ -6,8 +6,10 @@
 
 verify reads only. apply first checks every pre-image and every preserved file against RC_MANIFEST.json, refuses
 while a Python process is running from the target, saves each file it will replace, then copies the delta and
-verifies the result. rollback restores the saved files and removes the files apply added, and refuses to remove an
-added file that has changed since. Neither touches a database: source rollback alone does not undo a schema
+verifies the result. When the collector's RELEASE_MANIFEST.json lists a replaced file, apply updates that hash
+only after the installed bytes match the release and the manifest still named the pre-image. It does not add
+files the collector was not already checking. rollback restores the saved manifest bytes with the saved sources.
+Neither touches a database: source rollback alone does not undo a schema
 migration (see DEPLOYMENT_DECISION_PACKAGE.md). The same functions are exercised by rehearsal/deploy_rehearsal.py.
 """
 import argparse
@@ -35,11 +37,56 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
 
 
+def discover_collector_manifest(target):
+    """The collector's integrity file lives beside the application, not inside it.
+
+    An explicit ``IMP_COLLECTOR_RELEASE_MANIFEST`` wins. Otherwise the portable
+    layout ``<root>/collector/RELEASE_MANIFEST.json`` is used when that file exists.
+    A tree with no collector manifest is a valid rehearsal target.
+    """
+    override = os.environ.get('IMP_COLLECTOR_RELEASE_MANIFEST', '')
+    if override:
+        return Path(override)
+    candidate = target.parent.parent / 'collector' / 'RELEASE_MANIFEST.json'
+    return candidate if candidate.is_file() else None
+
+
+def load_collector_manifest(path):
+    body = json.loads(Path(path).read_text(encoding='utf-8-sig'))
+    if not isinstance(body, dict) or not isinstance(body.get('files'), dict) or not body['files']:
+        raise RuntimeError('COLLECTOR_MANIFEST_UNREADABLE')
+    record = body.get('release_applications', [])
+    if not isinstance(record, list):
+        raise RuntimeError('COLLECTOR_MANIFEST_RECORD_INVALID')
+    return body
+
+
+def collector_problems(target, manifest, manifest_path, entries=None):
+    """A listed file may be replaced only when the manifest still names its current bytes.
+
+    Files the collector does not list are its own concern and are not added here.
+    """
+    if manifest_path is None or not Path(manifest_path).is_file():
+        return []
+    try:
+        files = load_collector_manifest(manifest_path)['files']
+    except (OSError, ValueError, RuntimeError, json.JSONDecodeError):
+        return ['COLLECTOR_MANIFEST_UNREADABLE']
+    problems = []
+    for item in manifest['files'] if entries is None else entries:
+        rel = item['path'].replace('\\', '/')
+        if rel not in files:
+            continue
+        if files[rel] != sha(target / item['path']):
+            problems.append(f"COLLECTOR_MANIFEST_DIVERGED {rel}")
+    return problems
+
+
 def load_manifest(rc=RC):
     return json.loads((rc / 'RC_MANIFEST.json').read_text(encoding='utf-8'))
 
 
-def verify(target, manifest):
+def verify(target, manifest, collector_manifest=None):
     """Problems that must stop an apply: a changed pre-image, a changed preserved file, an unresolved conflict."""
     problems = [f"CONFLICT {item['path']}: {item['conflict']}" for item in manifest['conflicts']]
     for item in manifest['files']:
@@ -48,6 +95,8 @@ def verify(target, manifest):
     for item in manifest['preserve']:
         if sha(target / item['path']) != item['sha256']:
             problems.append(f"PRESERVED_FILE_CHANGED {item['path']}")
+    path = discover_collector_manifest(target) if collector_manifest is None else collector_manifest
+    problems.extend(collector_problems(target, manifest, path))
     return problems
 
 
@@ -71,9 +120,51 @@ def running_from(target):
             if line.partition('|')[0] != own and needle.replace('/', '\\') in line.lower().replace('/', '\\')]
 
 
-def apply(target, preimage_dir, manifest, *, rc=RC, entries=None):
+def _sync_collector_manifest(target, preimage_dir, manifest, manifest_path, record):
+    """Point listed hashes at the bytes just installed, and keep every other entry.
+
+    The previous manifest is saved byte for byte so rollback restores the same
+    source/manifest pair. A file this release does not list is left alone, and a
+    hash that already matches is not rewritten.
+    """
+    body = load_collector_manifest(manifest_path)
+    updates = []
+    for item in manifest['files']:
+        rel = item['path'].replace('\\', '/')
+        if rel not in body['files']:
+            continue
+        installed = sha(target / item['path'])
+        if installed != item['sha256']:
+            raise RuntimeError(f'COLLECTOR_MANIFEST_INSTALL_MISMATCH {rel}')
+        if body['files'][rel] == installed:
+            continue
+        body['files'][rel] = installed
+        updates.append(rel)
+    saved = preimage_dir / 'collector' / 'RELEASE_MANIFEST.json'
+    saved.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(manifest_path, saved)
+    record['collector_manifest'] = {'path': str(manifest_path), 'updated': updates, 'preimage': str(saved)}
+    (preimage_dir / RECORD).write_text(json.dumps(record, indent=1), encoding='utf-8')
+    if not updates:
+        return
+    body.setdefault('release_applications', []).append({
+        'at': datetime.now(timezone.utc).isoformat(),
+        'release': manifest['release'],
+        'commit': manifest['commit'],
+        'files': updates,
+    })
+    temporary = manifest_path.with_suffix('.json.tmp')
+    temporary.write_text(json.dumps(body, indent=2) + '\n', encoding='utf-8')
+    temporary.replace(manifest_path)
+
+
+def apply(target, preimage_dir, manifest, *, rc=RC, entries=None, collector_manifest=None):
     """Save what will be replaced, then copy. ``entries`` limits the copy (the rehearsal's interrupted apply)."""
     entries = manifest['files'] if entries is None else entries
+    manifest_path = discover_collector_manifest(target) if collector_manifest is None else collector_manifest
+    diverged = collector_problems(target, manifest, manifest_path, entries)
+    if diverged:
+        raise RuntimeError(diverged[0])
     preimage_dir.mkdir(parents=True, exist_ok=False)
     record = {'release': manifest['release'], 'commit': manifest['commit'], 'target': str(target),
               'started_utc': datetime.now(timezone.utc).isoformat(), 'replaced': [], 'added': [], 'complete': False}
@@ -106,6 +197,8 @@ def apply(target, preimage_dir, manifest, *, rc=RC, entries=None):
         (preimage_dir / RECORD).write_text(json.dumps(record, indent=1), encoding='utf-8')
         record['identity'].update(write_build_identity.write(target, revision=manifest['commit'],
                                                              release=manifest['release'], replace=True))
+    if record['complete'] and manifest_path is not None and Path(manifest_path).is_file():
+        _sync_collector_manifest(target, preimage_dir, manifest, Path(manifest_path), record)
     record['finished_utc'] = datetime.now(timezone.utc).isoformat()
     (preimage_dir / RECORD).write_text(json.dumps(record, indent=1), encoding='utf-8')
     return record
@@ -130,13 +223,17 @@ def rollback(target, preimage_dir, manifest):
         while parent != target and not any(parent.iterdir()):  # folders the release created
             parent.rmdir()
             parent = parent.parent
+    collector = record.get('collector_manifest')
+    if collector is not None:
+        shutil.copy2(preimage_dir / 'collector' / 'RELEASE_MANIFEST.json', collector['path'])
     identity = record.get('identity')
     if identity is not None:
         if identity.get('preexisting'):
             shutil.copy2(preimage_dir / 'files' / IDENTITY, target / IDENTITY)
         elif (target / IDENTITY).exists():
             (target / IDENTITY).unlink()
-    remaining = verify(target, manifest)
+    collector_path = (record.get('collector_manifest') or {}).get('path')
+    remaining = verify(target, manifest, collector_path)
     return {'restored': len(record['replaced']), 'removed': len(record['added']) - len(kept), 'added_files_left_because_changed': kept,
             'tree_matches_pre_release_manifest': not remaining and not kept, 'problems': remaining}
 
@@ -146,12 +243,14 @@ def main():
     parser.add_argument('command', choices=('verify', 'apply', 'rollback'))
     parser.add_argument('--target', type=Path, required=True)
     parser.add_argument('--preimage-dir', type=Path)
+    parser.add_argument('--collector-manifest', type=Path)
     args = parser.parse_args()
     target, manifest = args.target.resolve(), load_manifest()
     if not (target / 'tools/ui1/run_ui_api.py').is_file():
         raise SystemExit('TARGET_IS_NOT_AN_APPLICATION_TREE')
+    collector_manifest = args.collector_manifest.resolve() if args.collector_manifest else None
     if args.command == 'verify':
-        problems = verify(target, manifest)
+        problems = verify(target, manifest, collector_manifest)
         not_applied = applied_state(target, manifest)
         print(json.dumps({'release': manifest['release'], 'commit': manifest['commit'], 'target': str(target),
                           'delta_files': len(manifest['files']), 'ready_to_apply': not problems,
@@ -166,11 +265,11 @@ def main():
         print(json.dumps({'refused': 'APPLICATION_RUNNING_FROM_TARGET', 'processes': running}, indent=1))
         raise SystemExit(2)
     if args.command == 'apply':
-        problems = verify(target, manifest)
+        problems = verify(target, manifest, collector_manifest)
         if problems:
             print(json.dumps({'refused': 'TARGET_DOES_NOT_MATCH_THE_REVIEWED_PRE_IMAGES', 'problems': problems[:20]}, indent=1))
             raise SystemExit(1)
-        record = apply(target, preimage_dir, manifest)
+        record = apply(target, preimage_dir, manifest, collector_manifest=collector_manifest)
         wrong = applied_state(target, manifest)
         preserved = [item['path'] for item in manifest['preserve'] if sha(target / item['path']) != item['sha256']]
         print(json.dumps({'applied': record['complete'] and not wrong and not preserved, 'replaced': len(record['replaced']),
