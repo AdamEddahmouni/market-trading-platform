@@ -118,14 +118,14 @@ def collection_session(source: str, epoch: float) -> dict[str, Any]:
     """Whether a source is expected to produce data now. Collection eligibility only; not an AI or trading window."""
     if source == 'kraken':
         return {'label': 'CONTINUOUS', 'data_expected': True}
-    from ..intelligence.forward_qualification.evidence01.continuity import _DEFAULT_HOLIDAYS, is_trading_day
+    from .. import nyse_calendar
     from ..market_sessions import ET, us_equity_screener_session
 
     moment = datetime.fromtimestamp(epoch, timezone.utc).astimezone(ET)
-    if moment.year not in {int(day[:4]) for day in _DEFAULT_HOLIDAYS}:
+    if not nyse_calendar.covers(moment.date()):
         return {'label': 'CALENDAR_UNAVAILABLE', 'data_expected': False}
     label = us_equity_screener_session(moment)
-    if label in {'PREMARKET', 'REGULAR', 'AFTER_HOURS'} and not is_trading_day(moment.date()):
+    if label in {'PREMARKET', 'REGULAR', 'AFTER_HOURS'} and not nyse_calendar.is_trading_day(moment.date()):
         label = 'CLOSED'
     # Overnight quotes may arrive and are stored; their absence is not a fault.
     return {'label': label, 'data_expected': label in {'PREMARKET', 'REGULAR', 'AFTER_HOURS'}}

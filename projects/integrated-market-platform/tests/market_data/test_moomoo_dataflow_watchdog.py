@@ -221,7 +221,7 @@ class WatchdogJudgementTests(unittest.TestCase):
         self.assertEqual(self.runtime.feed.reconnects, ["WATCHDOG_SESSION_LOOP_BLOCKED"])
 
     def test_calendar_fallback_keeps_watching_but_never_ends_the_process(self) -> None:
-        expected, label, fallback = feed_watchdog.data_expected(int(1_800_025_200 * S))  # Fri 2027-01-15 10:00 ET
+        expected, label, fallback = feed_watchdog.data_expected(int(1_831_474_800 * S))  # Fri 2028-01-14 10:00 ET, past calendar coverage
         self.assertTrue(fallback)
         self.assertEqual((expected, label), (True, "REGULAR"))
         watchdog = self.make(escalate=True, expected=lambda now: (True, "REGULAR", True))

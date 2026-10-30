@@ -198,19 +198,27 @@ def generation_of(controller):
 
 
 def market_session(epoch):
-    """US regular-session facts from the existing label and the frozen holiday calendar. No date is guessed."""
-    from ..intelligence.forward_qualification.evidence01.continuity import _DEFAULT_HOLIDAYS, is_trading_day
+    """US regular-session facts from the existing label and the versioned NYSE execution calendar. No date is guessed:
+    outside the calendar's coverage the session is CALENDAR_UNAVAILABLE (fail closed). On an early-close day the
+    regular session ends at 13:00 ET, so minutes_to_close, the entry guard and the EOD flatten see the real close."""
+    from .. import nyse_calendar
     moment = datetime.fromtimestamp(epoch, UTC).astimezone(ET)
-    covered = {int(day[:4]) for day in _DEFAULT_HOLIDAYS}
-    if moment.year not in covered:
-        return dict(label='CALENDAR_UNAVAILABLE', trading_day=False, session_date=moment.date().isoformat(), minutes_to_close=None,
-                    early_close_metadata='UNAVAILABLE')
-    trading = is_trading_day(moment.date())
+    day = moment.date()
+    coverage = nyse_calendar.coverage(day)
+    if not nyse_calendar.covers(day):
+        return dict(label='CALENDAR_UNAVAILABLE', trading_day=False, session_date=day.isoformat(), minutes_to_close=None,
+                    early_close_metadata='UNAVAILABLE', **coverage)
+    trading = nyse_calendar.is_trading_day(day)
     label = us_equity_session_label(moment) if trading else 'CLOSED'
-    minutes = 16 * 60 - (moment.hour * 60 + moment.minute) if label == 'REGULAR' else None
-    # The canonical calendar has no early-close list; the regular 16:00 close is used and that is stated.
-    return dict(label=label, trading_day=trading, session_date=moment.date().isoformat(), minutes_to_close=minutes,
-                early_close_metadata='UNAVAILABLE')
+    minutes = None
+    if trading:
+        close = nyse_calendar.close_minutes(day)
+        if label == 'REGULAR' and moment.hour * 60 + moment.minute >= close:
+            label = 'AFTER_HOURS'  # after an early close the regular session is over
+        minutes = close - (moment.hour * 60 + moment.minute) if label == 'REGULAR' else None
+    early = 'EARLY_CLOSE' if trading and nyse_calendar.is_early_close(day) else 'REGULAR_CLOSE' if trading else 'NO_SESSION'
+    return dict(label=label, trading_day=trading, session_date=day.isoformat(), minutes_to_close=minutes,
+                early_close_metadata=early, **coverage)
 
 
 def _automation_quantities(ledger):
@@ -1761,29 +1769,31 @@ class PaperAutomationService:
                                           approved={}, reviewed={}, pending={}, closing=[], blocked=[])
         work['carry'] = carry
         if first_cycle or carry['session_date'] != day or not session.get('trading_day'):
-            from datetime import date, timedelta
-            from ..intelligence.forward_qualification.evidence01.continuity import is_trading_day
-            previous = date.fromisoformat(day) - timedelta(days=1)
-            while not is_trading_day(previous):
-                previous -= timedelta(days=1)
-            self._detect_unplanned_carry(work, previous.isoformat())
+            from datetime import date
+            from .. import nyse_calendar
+            try:
+                previous = nyse_calendar.previous_trading_day(date.fromisoformat(day))
+            except nyse_calendar.CalendarUnavailable:
+                previous = None  # outside coverage no previous session can be named; none is guessed
+            if previous is not None:
+                self._detect_unplanned_carry(work, previous.isoformat())
             # A holiday/weekend detects missed closes but never erases a valid
             # approval from the most recent completed equity session.
             if session.get('trading_day'):
                 carry.update(session_date=day, approved={}, reviewed={}, closing=[], blocked=[])
 
     def _hold_sessions(self, position, session):
-        from ..intelligence.forward_qualification.evidence01.continuity import is_trading_day, _DEFAULT_HOLIDAYS
+        from .. import nyse_calendar
         entry = position.get('first_entry_time_ns')
         if not entry:
             return 999  # unknown position age cannot authorize an overnight hold
         entry_date = datetime.fromtimestamp(entry / 1e9, UTC).astimezone(ET).date().isoformat()
         if entry_date > session['session_date']:
             return 999
-        years = {int(day[:4]) for day in _DEFAULT_HOLIDAYS}
+        years = nyse_calendar.COVERED_YEARS
         if any(year not in years for year in range(int(entry_date[:4]), int(session['session_date'][:4]) + 1)):
             return 999
-        return sessions_held(entry_date, session['session_date'], is_trading_day)
+        return sessions_held(entry_date, session['session_date'], nyse_calendar.is_trading_day)
 
     def _review_context(self, iid, work, policy):
         session = self.session(self.clock())

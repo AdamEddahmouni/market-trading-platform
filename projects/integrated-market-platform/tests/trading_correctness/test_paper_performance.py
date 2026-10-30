@@ -58,7 +58,7 @@ class PaperPerformanceTests(unittest.TestCase):
         self.assertEqual(session_bounds(date(2026,12,24))[1]-session_bounds(date(2026,12,24))[0],int(3.5*3600*1e9))
         self.assertEqual((session_bounds(date(2026,11,2))[0]-session_bounds(date(2026,10,30))[0])//10**9,3*86400+3600)
         with self.assertRaisesRegex(ValueError,"CALENDAR_UNAVAILABLE"):
-            session_bounds(date(2027,1,4))
+            session_bounds(date(2028,1,3))  # coverage ends 2027-12-31 (AUD-003); 2027 is tested in test_nyse_calendar
 
 class TotalReturnTests(unittest.TestCase):
     def test_reinvestment_start_day_entitlement_and_split(self):

@@ -1,27 +1,27 @@
-"""Reporting-only NYSE calendar, frozen from the official 2026 calendar.
-Source: https://www.nyse.com/publicdocs/nyse/ICE_NYSE_2026_Yearly_Trading_Calendar.pdf
-Never used to authorize execution or to extend the execution calendar.
-"""
-from datetime import date, datetime, time, timedelta
-from zoneinfo import ZoneInfo
+"""Reporting-only NYSE calendar for Paper performance evaluation.
 
-VERSION = "paper-performance-nyse-2026/1"
-ET = ZoneInfo("America/New_York")
+Version 1 ("paper-performance-nyse-2026/1") was frozen from the official 2026 calendar
+(https://www.nyse.com/publicdocs/nyse/ICE_NYSE_2026_Yearly_Trading_Calendar.pdf) and expired on 2026-12-31, so a
+20-session enrollment window starting after 2026-12-04 could not be formed (AUD-003). Version 2 reads the same
+dates from the versioned execution-session table (nyse_calendar.py): the 2026 holidays and early closes are
+unchanged, and 2027 is added. Runs record the version they were enrolled under; version-1 runs keep their meaning.
+Never used to authorize execution.
+"""
+from datetime import date, datetime, timedelta
+
+from .. import nyse_calendar
+
+VERSION = "paper-performance-nyse/2"
+ET = nyse_calendar.ET
 NS = 1_000_000_000
-HOLIDAYS = frozenset(("2026-01-01","2026-01-19","2026-02-16","2026-04-03","2026-05-25",
-                      "2026-06-19","2026-07-03","2026-09-07","2026-11-26","2026-12-25"))
-EARLY = frozenset(("2026-11-27","2026-12-24"))
+HOLIDAYS = nyse_calendar.HOLIDAYS
+EARLY = nyse_calendar.EARLY_CLOSES
 
 def trading_day(day: date) -> bool:
-    if day.year != 2026:
-        raise ValueError("CALENDAR_UNAVAILABLE")
-    return day.weekday() < 5 and day.isoformat() not in HOLIDAYS
+    return nyse_calendar.is_trading_day(day)
 
 def session_bounds(day: date) -> tuple[int,int]:
-    if not trading_day(day):
-        raise ValueError("NOT_A_TRADING_SESSION")
-    opening = datetime.combine(day,time(9,30),ET)
-    closing = datetime.combine(day,time(13 if day.isoformat() in EARLY else 16),ET)
+    opening,closing = nyse_calendar.session_bounds(day)
     return int(opening.timestamp())*NS,int(closing.timestamp())*NS
 
 def sessions_after(day: date, count: int) -> list[date]:
