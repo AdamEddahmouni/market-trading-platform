@@ -8556,3 +8556,8 @@ US_EQUITIES identities reach XA-01 only in memory, when an entry is admitted. Af
 
 - Completed the previously deferred handler timing after security integration. `ui_api.request_completed` records slow responses (default >=1 second), including refused requests, with bounded route/method fields and no request body, header or query values. Invalid thresholds fall back to 1 second; zero is an explicit diagnostic setting.
 - Isolated real HTTP regressions reproduced absent telemetry, then passed: duration/privacy, a delayed handler, fast-request suppression and browser-refusal timing. Duration plus security suite: 26/26 pass, zero guard denials (`recovery-duration-green2-20261030.json`). No production change.
+
+## 2026-10-29 — prevent duplicate services during startup recovery (AUD-046)
+
+- Independent source review identified that background constructor retry can overlap an HTTP status request. A deterministic two-thread regression produced two services on the old factory. Construction/publication is now serialized with a second cache check; existing instances use the fast path, and failed construction is never published.
+- Startup plus automation regression: 110/110 pass in disposable C: state, zero guard denials (`factory-green-bd1fb026.json`); duplicate-construction test failed first (`factory-red-bd1fb026.json`). No runtime action or policy change.

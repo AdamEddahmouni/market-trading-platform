@@ -462,3 +462,11 @@ and `test_live_feature_corpus.py`.
   themselves are returned, and the last evaluating cycle's blockers are carried
   across the closed session rather than cleared, so an operator reading the
   state and the blockers together sees both.
+
+## Startup service publication (AUD-046)
+
+Boot storage retries and HTTP requests share one fully constructed automation
+service per store. The factory serializes construction and rechecks the cached
+instance before publication. Failed construction publishes nothing. The factory
+lock is released before resume, controller start, status, or any trading action;
+existing lease, arming and execution checks remain mandatory.

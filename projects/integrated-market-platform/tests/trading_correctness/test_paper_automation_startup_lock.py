@@ -132,3 +132,74 @@ class BootWrapperTests(__import__('unittest').TestCase):
         result, calls, slept = self.run_wrapper(1, error='no such table: x')
         self.assertEqual(result, dict(resumed=False, reason='OperationalError'))
         self.assertEqual((len(calls), slept), (1, []))
+
+class ServiceFactoryConcurrencyTests(__import__('unittest').TestCase):
+    def test_boot_retry_and_status_publish_one_fully_constructed_service(self):
+        import threading
+        from types import SimpleNamespace
+        from unittest import mock
+        from market_platform_foundation.ui_api import paper_automation as module
+
+        entered, release = threading.Event(), threading.Event()
+        second_started = threading.Event()
+        constructors, results, errors = [], [], []
+        store = SimpleNamespace()
+
+        class Service:
+            def __init__(self, _store):
+                constructors.append(self)
+                entered.set()
+                if not release.wait(2):
+                    raise RuntimeError('constructor release timed out')
+                self.ready = True
+
+        def get_service(second=False):
+            if second:
+                second_started.set()
+            try:
+                service = module.paper_automation_service(store)
+                results.append((service, service.ready))
+            except Exception as exc:
+                errors.append(exc)
+
+        with mock.patch.object(module, 'PaperAutomationService', Service):
+            first = threading.Thread(target=get_service)
+            second = threading.Thread(target=lambda: get_service(True))
+            first.start()
+            self.assertTrue(entered.wait(1))
+            second.start()
+            self.assertTrue(second_started.wait(1))
+            # Give the second caller time to reach the factory while construction is blocked.
+            second.join(.1)
+            release.set()
+            first.join(2)
+            second.join(2)
+            self.assertFalse(first.is_alive() or second.is_alive())
+            self.assertEqual(errors, [])
+            self.assertEqual(len(constructors), 1)
+            self.assertEqual(len(results), 2)
+            self.assertIs(results[0][0], results[1][0])
+            self.assertTrue(all(ready for _, ready in results))
+            self.assertIs(store._paper_automation_service, results[0][0])
+
+    def test_failed_construction_is_not_published_and_later_retry_can_succeed(self):
+        from types import SimpleNamespace
+        from unittest import mock
+        from market_platform_foundation.ui_api import paper_automation as module
+
+        attempts = []
+        store = SimpleNamespace()
+
+        class Service:
+            def __init__(self, _store):
+                attempts.append(self)
+                if len(attempts) == 1:
+                    raise sqlite3.OperationalError('database is locked')
+
+        with mock.patch.object(module, 'PaperAutomationService', Service):
+            with self.assertRaises(sqlite3.OperationalError):
+                module.paper_automation_service(store)
+            self.assertFalse(hasattr(store, '_paper_automation_service'))
+            service = module.paper_automation_service(store)
+            self.assertIs(module.paper_automation_service(store), service)
+            self.assertEqual(len(attempts), 2)

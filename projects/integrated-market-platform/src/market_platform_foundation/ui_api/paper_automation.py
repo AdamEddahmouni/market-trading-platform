@@ -2460,9 +2460,18 @@ def _record_worker_fault(service, exc, *, phase, transient, consecutive, slot):
         pass
 
 
+# A constructor may block on storage while the boot retry and HTTP handlers overlap.
+# Publish once, only after full construction; do not hold this lock during controller operations.
+_SERVICE_FACTORY_LOCK = threading.Lock()
+
+
 def paper_automation_service(store):
     service = getattr(store, '_paper_automation_service', None)
-    if not isinstance(service, PaperAutomationService):
-        service = PaperAutomationService(store)
-        store._paper_automation_service = service
+    if isinstance(service, PaperAutomationService):
+        return service
+    with _SERVICE_FACTORY_LOCK:
+        service = getattr(store, '_paper_automation_service', None)
+        if not isinstance(service, PaperAutomationService):
+            service = PaperAutomationService(store)
+            store._paper_automation_service = service
     return service
