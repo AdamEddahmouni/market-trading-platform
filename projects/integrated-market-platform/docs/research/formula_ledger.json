@@ -822,16 +822,16 @@
     },
     {
       "id": "options.implied_volatility",
-      "version": "bsm_newton_v1",
+      "version": "bsm_bracketed_newton_v2",
       "family": "options",
       "units": "annualized σ",
-      "window_policy": "Single contract; max_iter=50, tolerance=1e-6",
+      "window_policy": "Single contract; max_iter=50, tolerance=1e-6 (price units); bracket expands to σ≤1000",
       "variance_convention": "n/a",
-      "fail_closed": "Non-convergence → None",
-      "test_file": "projects/integrated-market-platform/tests/options/test_options_o2.py",
+      "fail_closed": "Price outside the open European bounds (discounted strike) or no σ within tolerance → None",
+      "test_file": "projects/integrated-market-platform/tests/options/test_iv_european_bounds.py",
       "capability_class": "exact_metric",
       "implementation": "projects/integrated-market-platform/src/market_platform_foundation/options/iv.py",
-      "title": "Newton IV solver"
+      "title": "Bracketed Newton IV solver (European BSM)"
     },
     {
       "id": "options.bsm_greeks",
