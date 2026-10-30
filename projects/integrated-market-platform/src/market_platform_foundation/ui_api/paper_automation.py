@@ -37,6 +37,7 @@ from ..intelligence.inference.paper_automation import (
     size_entry, spending_gate, universe_fingerprint, universe_material_change, universe_scopes,
     overnight_limits, sessions_held, select_overnight_carry,
 )
+from ..local_state.connection import transient_storage_error
 from ..local_state.paper_automation import paper_automation_repository
 from ..market_data.freshness_contract import timestamp
 from ..market_sessions import ET, us_equity_session_label
@@ -335,6 +336,13 @@ class PaperAutomationService:
     def _event(self, kind, **payload):
         return self.repository.append_event(self._account(), kind, dict(payload, at_iso=_iso(self.clock())), now=self.clock())
 
+    def _event_if_writable(self, kind, **payload):
+        """An event whose loss must not end a recovery path: the store that refused a read may refuse this write."""
+        try:
+            return self._event(kind, **payload)
+        except sqlite3.OperationalError:
+            return None
+
     def _save(self, controller, *, fenced=False):
         controller['updated_epoch'] = self.clock()
         self.repository.save_controller(controller, owner_id=self.owner_id if fenced else None)
@@ -616,7 +624,22 @@ class PaperAutomationService:
         Nothing is replayed for the time the process was down, and a failed check leaves
         the controller stopped with the reason recorded; it is never worked around.
         """
-        controller = self.repository.get_controller(self._account())
+        try:
+            controller = self.repository.get_controller(self._account())
+        except sqlite3.OperationalError as exc:
+            # AUD-046: a locked first read used to escape the transient retry, and the whole process lifetime then
+            # left an armed, RUNNING controller with no worker. It is retried like a locked start; every retry
+            # re-reads the controller, so arming and the desired state are still checked before anything starts.
+            if not transient_storage_error(exc):
+                raise
+            deadline = self.clock() + STARTUP_RESUME_RETRY_LIMIT_SECONDS
+            self._event_if_writable('STARTUP_RESUME_RETRYING', reason=_code(exc), attempt=1,
+                                    retry_in_seconds=STARTUP_RESUME_RETRY_SECONDS, gives_up_at=_iso(deadline), stage='READ')
+            if threaded:
+                threading.Thread(target=self._resume_after_lease, args=(STARTUP_RESUME_RETRY_SECONDS, True, deadline),
+                                 name='paper-automation-resume', daemon=True).start()
+                return dict(resumed=False, reason='RETRYING')
+            return self._resume_after_lease(STARTUP_RESUME_RETRY_SECONDS, False, deadline)
         if controller is None or not controller.get('arming'):
             return dict(resumed=False, reason='NOT_ARMED')
         if controller['desired_state'] != 'RUNNING':
@@ -661,7 +684,22 @@ class PaperAutomationService:
         attempt = 1
         while True:
             self.sleep(max(0.0, float(wait_seconds)))
-            controller = self.repository.get_controller(self._account())
+            try:
+                controller = self.repository.get_controller(self._account())
+            except sqlite3.OperationalError as exc:
+                # A locked read inside the retry window is one more transient refusal, not the end of the thread.
+                code = _code(exc)
+                if transient_storage_error(exc) and deadline is not None and self.clock() + STARTUP_RESUME_RETRY_SECONDS <= deadline:
+                    attempt += 1
+                    wait_seconds = STARTUP_RESUME_RETRY_SECONDS
+                    if attempt % 2 == 0:
+                        self._event_if_writable('STARTUP_RESUME_RETRYING', reason=code, attempt=attempt,
+                                                retry_in_seconds=wait_seconds, gives_up_at=_iso(deadline), stage='READ')
+                    continue
+                try:
+                    return self._refuse_resume(code)
+                except sqlite3.OperationalError:
+                    return dict(resumed=False, reason=code)
             if controller is None or not controller.get('arming') or controller['desired_state'] != 'RUNNING' or controller.get('emergency'):
                 # The operator stopped, paused, disarmed or latched it while this process waited: nothing is resumed.
                 reason = 'NOT_ARMED' if controller is None or not controller.get('arming') else 'NOT_RUNNING_BEFORE_RESTART'

@@ -510,18 +510,47 @@ def recover_interrupted_runs() -> dict[str, Any]:
         return {"interrupted_runs": None, "reason": type(exc).__name__}
 
 
-def resume_paper_automation(store: ReplayStore) -> dict[str, Any]:
+RESUME_STORAGE_RETRY_SECONDS = 30.0
+RESUME_STORAGE_RETRY_LIMIT_SECONDS = 900.0
+
+
+def resume_paper_automation(store: ReplayStore, *, sleep: Any = time.sleep, threaded: bool = True) -> dict[str, Any]:
     """Continue an armed, running Paper automation policy after a restart, if every check still passes.
 
     Nothing is configured, armed or started here: with no persisted armed policy this is a read.
-    A failure is reported and leaves the controller stopped; it never prevents serving.
+    A failure is reported and leaves the controller stopped; it never prevents serving. A store that is only
+    locked (AUD-046, 2026-10-29 22:10Z) is tried again in the background for a bounded window instead of
+    becoming a permanent no-resume; each attempt is the ordinary resume, so every check runs again.
     """
-    try:
+    from market_platform_foundation.local_state.connection import transient_storage_error
+
+    def attempt() -> dict[str, Any]:
         from market_platform_foundation.ui_api.paper_automation import paper_automation_service
 
         return paper_automation_service(store).resume_on_startup()
+
+    def retry(deadline: float) -> dict[str, Any]:
+        while True:
+            sleep(RESUME_STORAGE_RETRY_SECONDS)
+            try:
+                result = attempt()
+            except Exception as exc:  # noqa: BLE001 - startup recovery never blocks the API
+                if transient_storage_error(exc) and time.monotonic() + RESUME_STORAGE_RETRY_SECONDS <= deadline:
+                    continue
+                result = {"resumed": False, "reason": type(exc).__name__, "retried": True}
+            print(json.dumps({"event": "ui_api.paper_automation_startup_retry", **result}), flush=True)
+            return result
+
+    try:
+        return attempt()
     except Exception as exc:  # noqa: BLE001 - startup recovery never blocks the API
-        return {"resumed": False, "reason": type(exc).__name__}
+        if not transient_storage_error(exc):
+            return {"resumed": False, "reason": type(exc).__name__}
+        deadline = time.monotonic() + RESUME_STORAGE_RETRY_LIMIT_SECONDS
+        if not threaded:
+            return retry(deadline)
+        threading.Thread(target=retry, args=(deadline,), name="paper-automation-boot-retry", daemon=True).start()
+        return {"resumed": False, "reason": "RETRYING", "cause": type(exc).__name__}
 
 
 WARMUP_UNIVERSES = ("US_EQUITIES", "US_ETFS", "FUTURES")
