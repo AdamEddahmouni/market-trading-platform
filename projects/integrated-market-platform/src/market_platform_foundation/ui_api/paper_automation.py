@@ -222,6 +222,15 @@ def market_session(epoch):
                 early_close_metadata=early, **coverage)
 
 
+def _with_latest_order_state(intents, ledger):
+    """AUD-015: an intent keeps the order state it recorded when it acted (``order_state``, history); the operator
+    also needs the order's state now. ``latest_order_state`` is read from the ledger and never written back."""
+    if not any(intent.get('order_id') for intent in intents):
+        return [dict(intent, latest_order_state=None) for intent in intents]
+    states = {str(order.get('order_id')): order.get('state') for order in ledger.project_orders()}  # one projection
+    return [dict(intent, latest_order_state=states.get(str(intent.get('order_id') or ''))) for intent in intents]
+
+
 def _automation_quantities(ledger):
     """Replay immutable fills into signed automation/manual ownership buckets.
 
@@ -2219,7 +2228,8 @@ class PaperAutomationService:
                                                                            'mark_minor', 'mark_quality', 'unrealized_pnl_minor')} for p in positions],
             working_orders=[{k: o.get(k) for k in ('order_id', 'instrument_id', 'side', 'state', 'client_order_id')}
                             for o in ledger.project_orders() if str(o.get('state')) in _WORKING],
-            recent_intents=self.repository.intents(controller['account_id'], limit=10), provider=last.get('provider'),
+            recent_intents=_with_latest_order_state(self.repository.intents(controller['account_id'], limit=10), ledger),
+            provider=last.get('provider'),
             engine=self.reevaluation.engine_state(), spending=spending_gate(policy, self.reevaluation.engine_state()),
             required_configuration=required_fields(), arm_acknowledgement=ARM_ACKNOWLEDGEMENT, boundary=boundary,
             durability=self.repository.durability, evaluated_at=_iso(now))

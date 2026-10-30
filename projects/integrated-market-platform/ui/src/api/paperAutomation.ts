@@ -46,6 +46,7 @@ const Risk = z.object({ open_positions: z.number(), max_open_positions: z.number
   realized_pnl_minor: z.number().nullable().optional(), unrealized_pnl_minor: z.number().nullable().optional(), total_pnl_minor: z.number().nullable().optional() }).passthrough();
 const Intent = z.object({ intent_id: z.string(), decision_id: z.string(), instrument_id: z.string(), action: z.string(), state: z.string(), reason_codes: z.array(z.string()),
   decision_origin: z.string().optional(), quantity: z.number().optional(), side: z.string().optional(), order_state: z.string().nullable().optional(),
+  latest_order_state: z.string().nullable().optional(),
   filled_quantity: z.number().optional(), fill_price_minor: z.number().nullable().optional(), updated_at: z.string() }).passthrough();
 export const AUTOMATION_STATES = ["NOT_CONFIGURED", "DISARMED", "STOPPED", "PAUSED", "EMERGENCY_STOPPED", "WAITING_FOR_MARKET", "BLOCKED_BY_AUTHORITY",
   "BLOCKED_BY_DATA", "BLOCKED_BY_RISK", "BLOCKED_BY_BUDGET", "RUNNING", "ERROR"] as const;
