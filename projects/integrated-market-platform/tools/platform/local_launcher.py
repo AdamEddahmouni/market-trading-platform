@@ -38,6 +38,27 @@ BACKEND_RUNTIME_IMPORT = "import sklearn"
 PLATFORM_PORTS = ((API_HOST, API_PORT), (UI_HOST, UI_PORT), (CONTROL_HOST, CONTROL_PORT))
 PORT_RELEASE_ATTEMPTS = 40
 PORT_RELEASE_INTERVAL_SECONDS = 0.25
+# AUD-019: service logs were appended for ever. At each spawn a log past this size is renamed with a UTC stamp and a
+# fresh file is started. Nothing is deleted or compressed here: retention needs an owner policy.
+LOG_ROLLOVER_BYTES = 64 * 1024 * 1024
+
+
+def roll_over_log(log_path: Path, *, limit: int = LOG_ROLLOVER_BYTES) -> Path | None:
+    """Rename ``log_path`` to ``<stem>.<UTC stamp><suffix>`` when it is larger than ``limit``; return the new name."""
+    try:
+        if log_path.stat().st_size <= limit:
+            return None
+    except OSError:
+        return None
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    target = log_path.with_name(f"{log_path.stem}.{stamp}{log_path.suffix}")
+    if target.exists():
+        return None  # never replace an earlier archive
+    try:
+        os.replace(log_path, target)
+    except OSError:
+        return None  # in use or not permitted: keep appending, as before
+    return target
 # While the API's whole-store integrity check is visibly running (a fresh heartbeat in
 # <store>.verify-status.json), readiness polls are not spent; the wait is capped here instead. A slow disk then
 # delays the start rather than ending in a rollback that starts the same check again (2026-10-27).
@@ -129,6 +150,7 @@ class WindowsSystem:
         log_path: Path,
     ) -> int:
         log_path.parent.mkdir(parents=True, exist_ok=True)
+        roll_over_log(log_path)
         creation_flags = 0
         if os.name == "nt":
             from tools.platform.detached_process import windows_detached_creationflags

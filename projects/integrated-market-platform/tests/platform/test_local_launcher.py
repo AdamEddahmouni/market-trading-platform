@@ -714,6 +714,25 @@ class LocalLauncherTests(unittest.TestCase):
             self.assertEqual(controller.start(open_browser=False), 1)
             self.assertEqual(fake.spawn_calls, [])
 
+    def test_a_large_service_log_is_renamed_not_deleted_before_a_spawn(self) -> None:
+        from tools.platform.local_launcher import roll_over_log
+
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "platform-backend.log"
+            log.write_bytes(b"x" * 100)
+            self.assertIsNone(roll_over_log(log, limit=1000))  # small: kept as is
+            archived = roll_over_log(log, limit=10)
+            self.assertIsNotNone(archived)
+            self.assertFalse(log.exists())
+            self.assertEqual(archived.read_bytes(), b"x" * 100)
+            self.assertTrue(archived.name.startswith("platform-backend.") and archived.name.endswith(".log"))
+            log.write_bytes(b"y" * 100)
+            archived.write_bytes(b"x" * 100)
+            # An archive with the same stamp is never replaced.
+            with mock.patch("tools.platform.local_launcher.time.strftime", return_value=archived.stem.split(".", 1)[1]):
+                self.assertIsNone(roll_over_log(log, limit=10))
+            self.assertEqual(archived.read_bytes(), b"x" * 100)
+
     def test_operator_docs_name_one_click_start_logs_and_safe_stop(self) -> None:
         repository = Path(__file__).resolve().parents[2]
         docs = (repository / "README.md").read_text(encoding="utf-8") + (repository / "ui/README.md").read_text(
