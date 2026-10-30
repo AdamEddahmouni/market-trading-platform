@@ -260,7 +260,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             return RoutePolicy(capability="paper.order.submit", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path in {"/paper/forward-tests/sessions", "/paper/forward-tests/decisions", "/paper/forward-tests/lock",
                     "/paper/forward-tests/observe", "/paper/forward-tests/evaluate"}:
-            return RoutePolicy(capability="state.write")
+            # Mutations always target the active Paper ledger; a view_mode query cannot change that account.
+            return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path in {"/paper/broker/orders/poll", "/paper/broker/reconciliation"}:
             # Both append broker-paper results to the Paper ledger; neither submits an order.
             return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)

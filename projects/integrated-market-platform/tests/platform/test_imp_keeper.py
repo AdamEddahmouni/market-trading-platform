@@ -533,6 +533,52 @@ class CloseWindowGuardTests(KeeperCase):
             self.clock.value += TICK_SECONDS
         return None
 
+    def test_recent_reboot_keeps_dead_controller_restart_stop_first(self):
+        self.enable()
+        self.clock.value = self.BEFORE_CLOSE + 20 * 60
+        self.ops.paper = self.status(25)
+        keeper = self.keeper()
+        keeper.tick()
+        keeper.reboot_at = self.clock.value
+        self.run_ticks(keeper, 8)
+        starts = self.ops.actions('platform_start')
+        self.assertEqual(len(starts), 1)
+        self.assertTrue(starts[0][1])
+        self.assertEqual(self.log('PLATFORM', 'RESTART')[0]['cause'], 'REBOOT')
+
+    def test_recent_reboot_does_not_disable_one_close_window_reserve(self):
+        self.enable()
+        self.clock.value = self.BEFORE_CLOSE + 20 * 60
+        self.ops.paper = self.status(25)
+        keeper = self.keeper()
+        keeper.tick()
+        keeper.reboot_at = self.clock.value
+        keeper.state['allowances']['PLATFORM'].update(attempts=[], cool_off_until=self.clock.value + 3600)
+        self.run_ticks(keeper, 12)
+        starts = self.ops.actions('platform_start')
+        self.assertEqual(len(starts), 1)
+        self.assertTrue(starts[0][1])
+        reserve = self.log('PLATFORM', 'CLOSE_WINDOW_RESERVE')
+        self.assertEqual(len(reserve), 1)
+        self.assertEqual(reserve[0]['cause'], 'CONTROLLER_NOT_ALIVE')
+    def test_next_open_guard_requires_a_covered_trading_session(self):
+        self.enable()
+        keeper = self.keeper()
+        keeper.state['platform']['carry_pending'] = True
+        cases = ((2026, 11, 3, 'OPEN:2026-11-03'), (2026, 11, 26, None), (2028, 11, 27, None))
+        for year, month, day, expected in cases:
+            with self.subTest(day=(year, month, day)):
+                now = eastern_epoch(year, month, day, 9, 25)
+                self.assertEqual(keeper._close_window(now), expected)
+    def test_next_open_guard_fails_closed_when_timezone_support_is_unavailable(self):
+        from unittest import mock
+        from zoneinfo import ZoneInfoNotFoundError
+        self.enable()
+        keeper = self.keeper()
+        keeper.state['platform']['carry_pending'] = True
+        with mock.patch('market_platform_foundation.nyse_calendar.is_trading_day',
+                        side_effect=ZoneInfoNotFoundError('unavailable')):
+            self.assertIsNone(keeper._close_window(eastern_epoch(2026, 11, 3, 9, 25)))
     def test_disabled_the_guard_changes_nothing(self):
         started = self.ticks_until_start(self.keeper())
         # Only the ordinary rule applies: first observed at the first check, restarted 960 s later.

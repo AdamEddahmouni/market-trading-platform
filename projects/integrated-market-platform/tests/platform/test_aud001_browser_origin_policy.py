@@ -205,6 +205,27 @@ class RoutePolicyFailClosedTests(unittest.TestCase):
                         role == OperatorRole.OPERATOR and minimum_role == OperatorRole.OPERATOR)
                     self.assertEqual(isinstance(result, AuthorizedPrincipal), permitted)
 
+    def test_forward_mutations_enforce_active_account_permissions_even_with_demo_query(self) -> None:
+        from market_platform_foundation.operational_identity import derive_paper_identity
+        from market_platform_foundation.ui_api import request_auth
+        store = mock.Mock()
+        store.paper_ledger.events = [object()]
+        store.paper_ledger.paper_account_id = 'fixture-paper-b'
+        store.paper_ledger.execution_provider = 'INTERNAL'
+        store.paper_ledger.data_mode = 'FIXTURE_REPLAY'
+        identity = derive_paper_identity(paper_account_id='fixture-paper-b', execution_provider='INTERNAL',
+                                         data_mode='FIXTURE_REPLAY')
+        for operation in ('sessions', 'decisions', 'lock', 'observe', 'evaluate'):
+            for permitted in (False, True):
+                principal = AuthorizedPrincipal('fixture', 'fixture', OperatorRole.OPERATOR,
+                    frozenset({identity.account_id if permitted else 'different-account'}))
+                with self.subTest(operation=operation, permitted=permitted), mock.patch.object(
+                    request_auth, 'authenticate_session_token', return_value=principal
+                ):
+                    result = authorize_http_request(store, method='POST',
+                        path='/paper/forward-tests/' + operation, headers={}, query={'view_mode': ['DEMO']},
+                        body={'account_id': identity.account_id})
+                    self.assertEqual(isinstance(result, AuthorizedPrincipal), permitted)
     def test_enforced_roles_viewer_cannot_mutate_operator_can(self) -> None:
         viewer = AuthorizedPrincipal("v", "v", OperatorRole.VIEWER, frozenset({"*"}))
         operator = AuthorizedPrincipal("o", "o", OperatorRole.OPERATOR, frozenset({"*"}))

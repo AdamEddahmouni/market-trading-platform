@@ -8561,3 +8561,8 @@ US_EQUITIES identities reach XA-01 only in memory, when an entry is admitted. Af
 
 - Independent source review identified that background constructor retry can overlap an HTTP status request. A deterministic two-thread regression produced two services on the old factory. Construction/publication is now serialized with a second cache check; existing instances use the fast path, and failed construction is never published.
 - Startup plus automation regression: 110/110 pass in disposable C: state, zero guard denials (`factory-green-bd1fb026.json`); duplicate-construction test failed first (`factory-red-bd1fb026.json`). No runtime action or policy change.
+
+## 2026-10-29 — close audit authorization and optional keeper review gaps
+
+- AUD-039: five forward-test mutations now authorize the active Paper ledger account as well as state.write. Restricted-account regressions reproduced five unauthorized approvals; corrected checks pass (41/41 focused security tests). A view_mode=DEMO query cannot substitute a different authorization identity.
+- AUD-045/047: preserve the raw restart condition for stop-first and the one-window reserve; REBOOT remains log attribution. Two fake-clock regressions failed before the correction. The default-off next-open guard now uses the versioned NYSE calendar and refuses holidays/uncovered years; two calendar subcases failed before correction. Keeper tests: 47/47 pass (`keeper-calendar-green-c5e3ee69.json`). No marker was enabled on the live installation.

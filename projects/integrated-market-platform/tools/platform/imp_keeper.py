@@ -522,14 +522,15 @@ class Keeper:
             if s["failures"] < self.platform_threshold:
                 return "NOT_ANSWERING"
             cause, down_since = "NOT_ANSWERING", float(s["down_since"])
+        restart_condition = cause
         cause = self._cause(now, cause)
         attempt = self._may_restart("PLATFORM", now, cause)
         if attempt is None:
-            attempt = self._close_window_reserve(now, cause)
+            attempt = self._close_window_reserve(now, restart_condition)
         if attempt is None:
             return "WAITING_FOR_ALLOWANCE"
         # An answering API would make 'start' report "already running": both restart causes stop it first.
-        stop_first = cause in ("FEED_UNRECOVERABLE", "CONTROLLER_NOT_ALIVE")
+        stop_first = restart_condition in ("FEED_UNRECOVERABLE", "CONTROLLER_NOT_ALIVE")
         if self.dry_run:
             return self._platform_finished("DRY_RUN_NOT_STARTED", None, cause=cause, attempt=attempt,
                                            down_since=down_since, stop_first=stop_first)
@@ -599,9 +600,19 @@ class Keeper:
             return f"CLOSE:{s.get('session_date')}"
         eastern = _eastern(now)
         (start_h, start_m), (end_h, end_m) = OPEN_WINDOW
-        if (s.get("carry_pending") and eastern.weekday() < 5
+        if (s.get("carry_pending")
                 and (start_h, start_m) <= (eastern.hour, eastern.minute) < (end_h, end_m)):
-            return f"OPEN:{eastern.date().isoformat()}"
+            # A weekday can be a holiday. Use the versioned execution calendar, and fail closed
+            # when its coverage or timezone support is unavailable. This import is opt-in only.
+            try:
+                source = str(ROOT / "src")
+                if source not in sys.path:
+                    sys.path.insert(0, source)
+                from market_platform_foundation.nyse_calendar import is_trading_day
+                if is_trading_day(eastern.date()):
+                    return f"OPEN:{eastern.date().isoformat()}"
+            except (ImportError, LookupError, OSError, ValueError):
+                return None
         return None
 
     def _close_window_reserve(self, now: float, cause: str) -> int | None:

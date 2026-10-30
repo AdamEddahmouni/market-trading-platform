@@ -67,3 +67,8 @@ principal authentication. This remediation does not change the deployment's auth
 Unmapped mutations fail closed. Explicit POST reads (preview, stored evaluation
 reproduction, bounded viewport demand) remain declared separately from writes.
 Paper submit and replace retain account scope and order authority.
+
+Forward-test session, decision, lock, observation and evaluation mutations are
+account-scoped to the active Paper ledger. A viewer cannot mutate them and an
+operator authorized for another account is refused. Read-view query parameters
+cannot substitute a different account for mutation authorization (AUD-039).
