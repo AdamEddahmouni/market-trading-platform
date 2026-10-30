@@ -17,7 +17,10 @@ Every ``TICK_SECONDS`` it looks at the three in dependency order and brings back
    stops answering, or when its own feed watchdog reports the Moomoo feed unrecoverable while OpenD is healthy
    (only a fresh process clears a wedged SDK session). A platform that does not answer while a whole-store
    integrity check is visibly running (local_state/integrity_receipt.py) is waited for, not restarted: a restart
-   would only start the same check again (2026-10-27).
+   would only start the same check again (2026-10-27). Also restarted, stopping it first, when the API answers but
+   the Paper controller is armed and RUNNING with no live worker anywhere (``CONTROLLER_NOT_ALIVE``) for longer than
+   ``CONTROLLER_DEAD_RESTART_SECONDS``: on 2026-10-29 /context answered all night while the controller was dead
+   (AUD-045/046), and only a fresh process resumes it, through every start check of ``resume_on_startup``.
 4. The store: once per night, inside ``STORE_VERIFY_WINDOW`` (US/Eastern), when the verified-store receipt is
    missing, invalid or older than ``STORE_VERIFY_FRESH_SECONDS``, tools/platform/verify_state_store.py checks the
    whole store read-only and renews the receipt, so a daytime restart only checks the critical tables. Once the
@@ -81,6 +84,11 @@ PLATFORM_STOP_TIMEOUT_SECONDS = 180
 API_BASE = "http://127.0.0.1:8766"
 COLLECTOR_CONFIRM_SECONDS = 15
 PAPER_OUTCOME_SECONDS = 600
+CONTROLLER_LIVENESS_CHECK_SECONDS = 60
+# Longer than the platform's own bounded boot-resume retry (900 s), so a process still retrying is not restarted.
+CONTROLLER_DEAD_RESTART_SECONDS = 960
+# The launcher's output, kept for the restart log (it was discarded; START_FAILED reasons were lost on 2026-10-29).
+PLATFORM_START_LOG_MAX_BYTES = 2 * 1024 * 1024
 REBOOT_TOLERANCE_SECONDS = 120
 # A component restarted this soon after a detected reboot is recorded with the reboot as its cause.
 REBOOT_CAUSE_SECONDS = 900
@@ -251,7 +259,7 @@ def _fresh_state() -> dict[str, Any]:
             "opend": {"failures": 0, "last_check": 0.0, "healthy": None, "down_since": None, "cause": None},
             "collector": {"down_since": None, "waiting_for": None, "disabled": False},
             "platform": {"failures": 0, "down_since": None, "last_feed_check": 0.0, "feed_wait_logged": False,
-                         "verify_wait_logged": False},
+                         "verify_wait_logged": False, "last_controller_check": 0.0, "controller_dead_since": None},
             "store_verify": {"window": None, "started_at": None, "pid": None},
             "paper_watch": None}
 
@@ -481,9 +489,11 @@ class Keeper:
                 else:
                     s["feed_wait_logged"] = False
             if cause is None:
+                cause = self._controller_liveness(now)
+            if cause is None:
                 s["down_since"] = None
                 return "ANSWERING"
-            down_since = now
+            down_since = float(s.get("controller_dead_since") or now) if cause == "CONTROLLER_NOT_ALIVE" else now
         else:
             if s.get("down_since") is None:
                 s["down_since"] = self._down_since(now)
@@ -503,7 +513,8 @@ class Keeper:
         attempt = self._may_restart("PLATFORM", now, cause)
         if attempt is None:
             return "WAITING_FOR_ALLOWANCE"
-        stop_first = cause == "FEED_UNRECOVERABLE"
+        # An answering API would make 'start' report "already running": both restart causes stop it first.
+        stop_first = cause in ("FEED_UNRECOVERABLE", "CONTROLLER_NOT_ALIVE")
         if self.dry_run:
             return self._platform_finished("DRY_RUN_NOT_STARTED", None, cause=cause, attempt=attempt,
                                            down_since=down_since, stop_first=stop_first)
@@ -524,6 +535,29 @@ class Keeper:
         self.log.record("PLATFORM", "RESTART_STARTED", cause=cause, outcome="STARTING", attempt=attempt,
                         pid=s["start"]["pid"], stopped_first=stop_first)
         return "STARTING"
+
+    def _controller_liveness(self, now: float) -> str | None:
+        """``CONTROLLER_NOT_ALIVE`` once the Paper controller has been wanted running with no live worker anywhere for
+        ``CONTROLLER_DEAD_RESTART_SECONDS``; otherwise None. Read only (the status GET), at most once a minute, and
+        never while a restart's own resume outcome is still being awaited."""
+        s = self.state["platform"]
+        if self.state.get("paper_watch") or now - float(s.get("last_controller_check") or 0) < CONTROLLER_LIVENESS_CHECK_SECONDS:
+            return None
+        s["last_controller_check"] = now
+        if not controller_not_alive(self.ops.paper_status()):
+            if s.get("controller_dead_since") is not None:
+                self.log.record("PAPER_CONTROLLER", "LIVENESS", cause="CONTROLLER_NOT_ALIVE", outcome="ALIVE_AGAIN",
+                                dead_seconds=round(now - float(s["controller_dead_since"]), 1))
+            s["controller_dead_since"] = None
+            return None
+        if s.get("controller_dead_since") is None:
+            s["controller_dead_since"] = now
+            self.log.record("PAPER_CONTROLLER", "LIVENESS", cause="CONTROLLER_NOT_ALIVE", outcome="OBSERVED",
+                            restart_after_seconds=CONTROLLER_DEAD_RESTART_SECONDS)
+            return None
+        if now - float(s["controller_dead_since"]) < CONTROLLER_DEAD_RESTART_SECONDS:
+            return None
+        return "CONTROLLER_NOT_ALIVE"
 
     def _platform_pending(self, now: float) -> str | None:
         """The state of a start this keeper launched: None when there is none, else STARTING or its outcome."""
@@ -556,7 +590,8 @@ class Keeper:
         self.log.record("PLATFORM", "RESTART", cause=cause, outcome=outcome, attempt=attempt,
                         down_seconds=self.clock() - down_since, exit_code=code, stopped_first=stop_first, **extra)
         if outcome == "READY":
-            s.update(failures=0, down_since=None, last_feed_check=self.clock(), feed_wait_logged=False)
+            s.update(failures=0, down_since=None, last_feed_check=self.clock(), feed_wait_logged=False,
+                     controller_dead_since=None, last_controller_check=self.clock())
             self.state["paper_watch"] = {"since": self.clock()}
         return outcome
 
@@ -679,6 +714,18 @@ def paper_outcome(status: dict[str, Any] | None, *, since: float) -> tuple[str |
     if error.get("code") and _after(error.get("at"), since):
         return "REFUSED", {"reason": error.get("code")}
     return None, {}
+
+
+def controller_not_alive(status: dict[str, Any] | None) -> bool:
+    """Armed, wanted RUNNING, not latched, and the platform itself reports no live worker anywhere.
+
+    ``RUNNING_ELSEWHERE`` (another live owner holds the lease) is not this: restarting would not help."""
+    if not isinstance(status, dict) or not status.get("armed") or status.get("emergency"):
+        return False
+    if status.get("desired_state") != "RUNNING":
+        return False
+    codes = {blocker.get("code") for blocker in status.get("blockers") or [] if isinstance(blocker, dict)}
+    return "CONTROLLER_NOT_ALIVE" in codes
 
 
 def _after(iso: Any, since: float) -> bool:
@@ -862,10 +909,29 @@ class WindowsOperations:
                                capture_output=True, timeout=PLATFORM_STOP_TIMEOUT_SECONDS, creationflags=NO_WINDOW)
             except subprocess.TimeoutExpired:
                 pass  # the start below reports whatever state the stop left
-        # No pipes: nobody reads them while the child runs, and a full pipe would stall it.
-        return subprocess.Popen([python, "-B", str(self.paths.run_imp), "start", "--no-browser"],
-                                cwd=str(self.paths.portable), env=env, stdin=subprocess.DEVNULL,
-                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=NO_WINDOW)
+        # No pipes: nobody reads them while the child runs, and a full pipe would stall it. The output goes to a
+        # bounded file instead of DEVNULL, so a START_FAILED keeps its reason (CA-9).
+        output = self._start_log()
+        try:
+            return subprocess.Popen([python, "-B", str(self.paths.run_imp), "start", "--no-browser"],
+                                    cwd=str(self.paths.portable), env=env, stdin=subprocess.DEVNULL,
+                                    stdout=output, stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
+        finally:
+            output.close()  # the child holds its own handle
+
+    def _start_log(self) -> Any:
+        path = self.paths.state_dir / "platform-start.log"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            if path.stat().st_size > PLATFORM_START_LOG_MAX_BYTES:
+                os.replace(path, path.with_suffix(".log.1"))
+        except OSError:
+            pass
+        output = open(path, "ab")
+        stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        output.write(f"\n=== {stamp} RUN_IMP.py start (keeper) ===\n".encode("utf-8"))
+        output.flush()
+        return output
 
     def _store(self) -> Path | None:
         directory = self.paths.state_directory()

@@ -549,8 +549,13 @@ class PlatformController:
             if open_browser:
                 self.system.open_browser(OPERATOR_URL)
             return 0
-        if existing and self.stop():
-            return 1
+        if existing:
+            if self.stop():
+                return 1
+            # AUD-045: the keeper's NOT_ANSWERING restart runs 'start' over a hung tree. Killing it here and checking
+            # the ports at once failed every other restart on 2026-10-29 (6 of 6 START_FAILED), because Windows had
+            # not yet released the exclusive-bind API socket; restart() already waited for that.
+            self._wait_for_port_release()
 
         for name, host, port in (("API", API_HOST, API_PORT), ("UI", UI_HOST, UI_PORT), ("CONTROL", CONTROL_HOST, CONTROL_PORT)):
             if self.system.port_is_open(host, port):
@@ -606,13 +611,16 @@ class PlatformController:
         """Stop launcher-owned services and start a fresh platform stack."""
         if self.stop():
             return 1
+        self._wait_for_port_release()
+        return self.start(open_browser=open_browser)
+
+    def _wait_for_port_release(self) -> None:
         # taskkill returns before Windows releases the listening sockets; starting at once
         # reported "port already in use by a process not owned by this launcher".
         for _ in range(PORT_RELEASE_ATTEMPTS):
             if not any(self.system.port_is_open(host, port) for host, port in PLATFORM_PORTS):
                 break
             self.system.sleep(PORT_RELEASE_INTERVAL_SECONDS)
-        return self.start(open_browser=open_browser)
 
     def stop(self) -> int:
         services = self._read_state()

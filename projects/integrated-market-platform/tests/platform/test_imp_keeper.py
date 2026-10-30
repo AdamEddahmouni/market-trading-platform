@@ -450,6 +450,60 @@ class PauseAndPaperTests(KeeperCase):
         self.assertNotIn('IMP_LIVE', source)
 
 
+class ControllerLivenessTests(KeeperCase):
+    """AUD-045/046: on 2026-10-29 /context answered all night while the armed, RUNNING controller had no worker; the
+    keeper only probed /context and logged NOT_RESUMED_IN_TIME. A dead controller is now a platform restart cause."""
+
+    DEAD = dict(status='ERROR', armed=True, desired_state='RUNNING', emergency=None,
+                blockers=[{'category': 'AUTHORITY', 'code': 'CONTROLLER_NOT_ALIVE'}],
+                liveness={'owner': None, 'worker_alive': False})
+
+    def test_a_dead_controller_is_restarted_with_a_stop_first_after_the_threshold_only(self):
+        keeper = self.keeper()
+        self.ops.paper = dict(self.DEAD)
+        threshold = imp_keeper.CONTROLLER_DEAD_RESTART_SECONDS
+        self.run_ticks(keeper, int(threshold // TICK_SECONDS) - 1)
+        self.assertEqual(self.ops.actions('platform_start'), [])
+        self.assertEqual([e['outcome'] for e in self.log('PAPER_CONTROLLER', 'LIVENESS')], ['OBSERVED'])
+        self.run_ticks(keeper, 4)
+        starts = self.ops.actions('platform_start')
+        self.assertEqual([call[1] for call in starts], [True])
+        restart = self.log('PLATFORM', 'RESTART')[0]
+        self.assertEqual((restart['cause'], restart['outcome']), ('CONTROLLER_NOT_ALIVE', 'READY'))
+        self.assertGreaterEqual(restart['down_seconds'], threshold)
+        self.assertIsNotNone(keeper.state['paper_watch'])  # the resume outcome is then recorded as before
+
+    def test_a_controller_that_comes_back_by_itself_is_not_restarted(self):
+        keeper = self.keeper()
+        self.ops.paper = dict(self.DEAD)
+        self.run_ticks(keeper, 10)
+        self.ops.paper = dict(status='RUNNING', armed=True, desired_state='RUNNING', blockers=[],
+                              liveness={'owner': 'THIS_PROCESS', 'worker_alive': True})
+        self.run_ticks(keeper, 60)
+        self.assertEqual(self.ops.actions('platform_start'), [])
+        self.assertEqual([e['outcome'] for e in self.log('PAPER_CONTROLLER', 'LIVENESS')], ['OBSERVED', 'ALIVE_AGAIN'])
+
+    def test_stopped_disarmed_emergency_or_elsewhere_controllers_are_never_a_cause(self):
+        for paper in (dict(self.DEAD, desired_state='STOPPED'), dict(self.DEAD, armed=False),
+                      dict(self.DEAD, emergency={'at': 'x'}),
+                      dict(self.DEAD, blockers=[{'category': 'AUTHORITY', 'code': 'RUNNING_ELSEWHERE'}]), None):
+            with self.subTest(paper=paper):
+                self.assertFalse(imp_keeper.controller_not_alive(paper))
+        self.assertTrue(imp_keeper.controller_not_alive(self.DEAD))
+
+    def test_a_controller_that_never_comes_back_is_restarted_at_a_bounded_pace(self):
+        keeper = self.keeper()
+        self.ops.paper = dict(self.DEAD)  # never comes back
+        self.run_ticks(keeper, 4 * 3600 // TICK_SECONDS)
+        times = [call[-1] for call in self.ops.actions('platform_start')]
+        self.assertGreaterEqual(len(times), 2)
+        # Each restart first awaits its resume outcome, then a full threshold of observed death: never a tight loop,
+        # and never more than the platform allowance in any hour.
+        gaps = [later - earlier for earlier, later in zip(times, times[1:])]
+        self.assertTrue(all(gap >= PAPER_OUTCOME_SECONDS + imp_keeper.CONTROLLER_DEAD_RESTART_SECONDS for gap in gaps), gaps)
+        self.assertLessEqual(max(sum(1 for t in times if start <= t < start + 3600) for start in times), ALLOWANCES['PLATFORM'][0])
+
+
 class DryRunAndLockTests(KeeperCase):
     def test_a_dry_run_starts_nothing_writes_nothing_and_reads_no_store(self):
         self.ops.opend_running = self.ops.collector_running = self.ops.answering = False

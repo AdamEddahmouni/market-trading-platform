@@ -679,6 +679,41 @@ class LocalLauncherTests(unittest.TestCase):
             self.assertEqual(len(sleeps), 2)
             self.assertEqual(len(fake.spawn_calls), 6)
 
+    def test_start_over_a_hung_tree_waits_for_its_ports_before_checking_them(self) -> None:
+        # AUD-045: the keeper's NOT_ANSWERING restart runs 'start' while the old API hangs. start() kills the tree;
+        # its exclusive-bind socket lingers, and checking the ports at once returned 1 on every other restart.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            fake.ready = {"http://127.0.0.1:8766/context": True, "http://127.0.0.1:5173/": True}
+            controller = PlatformController(root=root, system=fake, environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                                            python_runtime_probe=always_usable)
+            self.assertEqual(controller.start(open_browser=False), 0)
+            fake.ready["http://127.0.0.1:8766/context"] = False  # the API hangs
+            fake.open_ports.add(8766)
+            sleeps: list[float] = []
+
+            def sleep(seconds: float) -> None:
+                sleeps.append(seconds)
+                if len(sleeps) == 3:
+                    fake.open_ports.discard(8766)
+                    fake.ready["http://127.0.0.1:8766/context"] = True
+
+            fake.sleep = sleep  # type: ignore[method-assign]
+            self.assertEqual(controller.start(open_browser=False), 0)
+            self.assertGreaterEqual(len(sleeps), 3)
+            self.assertEqual(len(fake.spawn_calls), 6)
+
+    def test_start_still_refuses_a_port_held_by_a_foreign_process(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            fake.open_ports.add(8766)  # never released: not a launcher-owned linger
+            controller = PlatformController(root=root, system=fake, environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                                            python_runtime_probe=always_usable)
+            self.assertEqual(controller.start(open_browser=False), 1)
+            self.assertEqual(fake.spawn_calls, [])
+
     def test_operator_docs_name_one_click_start_logs_and_safe_stop(self) -> None:
         repository = Path(__file__).resolve().parents[2]
         docs = (repository / "README.md").read_text(encoding="utf-8") + (repository / "ui/README.md").read_text(
