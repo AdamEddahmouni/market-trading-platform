@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Mutable current program state and material limitations |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.88` |
-| Last Verified | `2026-10-26` (Step 10 Phase C deployment and autonomous internal Paper activation; see [Current operating state](#current-operating-state-2026-10-26)). Earlier historical campaign rows were not re-verified. |
+| Version | `1.89` |
+| Last Verified | `2026-10-29` (bounded read-only runtime check at 21:02 ET and audit source integration; see the dated continuation below). Earlier historical campaign rows were not re-verified. |
 | **CURRENT_MAIN** (`origin/main` mutable tip; alias **CURRENT_GIT_MAIN**) | Verified 2026-10-23: `origin/main` = `b4743f68` ([#498](https://github.com/AdamEddahmouni/market-trading-platform/pull/498), 2026-10-12). The workstation's running release is **not** on main; see [Current operating state](#current-operating-state-2026-10-26). Earlier record: `a1f9a3a1bfcfcd21e5407f48b2c1c2feb8c99bcd` — verified 2026-10-11 source base, portable live-startup merge [#493](https://github.com/AdamEddahmouni/market-trading-platform/pull/493) (after [#490](https://github.com/AdamEddahmouni/market-trading-platform/pull/490)–[#492](https://github.com/AdamEddahmouni/market-trading-platform/pull/492)). The earlier OCT1-10 source base `42088bcbb3fbebc98af7d317df03dc5ea565d7cf` ([#465](https://github.com/AdamEddahmouni/market-trading-platform/pull/465)) is a historical checkpoint. Later integration tips/checks are recorded in their PR/task ledgers; verify with `git rev-parse origin/main`. Frozen campaign runtimes below are unchanged. |
 | **CURRENT_SOFTWARE_IMPLEMENTATION** | Accepted source base `a1f9a3a1bfcfcd21e5407f48b2c1c2feb8c99bcd` ([#493](https://github.com/AdamEddahmouni/market-trading-platform/pull/493)); it contains the OCT1-10 lifecycle view (base `42088bcb…`, [#465](https://github.com/AdamEddahmouni/market-trading-platform/pull/465)) and later accepted increments whose integration receipts are linked below. Software does not establish empirical evidence. Live execution remains **OFF**; calibration **not** executed. |
 | **RTH_OBS_NEWS_20260923_FROZEN_RUNTIME** / frozen observational SHA | `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` — campaign `RTH-OBS-NEWS-20260923` armed `2026-09-23 13:03:32.789458 -04:00`; status **`PARTIAL_LATE_ARM`** (pre-arm window **`NOT_OBSERVED`**, no backfill). Closed `RTH_CLOSE_SHUTDOWN` `2026-09-23 17:40:52 -04:00` (`LATE_GOVERNED_CLOSE`). **Not** **CURRENT_MAIN**; do **not** retarget; do **not** re-arm this freeze. |
@@ -21,6 +21,30 @@
 
 This is the current program-state authority. It summarizes accepted state and
 links to evidence; it does not redefine architecture or executable behavior.
+
+## Audit continuation snapshot (2026-10-29)
+
+The 21:02 ET read-only automation status reported an armed policy requesting
+RUNNING, but `CONTROLLER_NOT_ALIVE`, five carried equity positions and degraded
+valuation quality. Reported equity was $100,008.14. This is a dated observation,
+not a claim that recovery has occurred. Next-open closing requires a live
+controller; no restart, arming or policy change was performed in the continuation.
+
+The existing branch `claude/audit-remediation-20261029` now integrates options,
+calendars, provenance and the recovered security changes. Follow-up corrections
+cover service-construction races, account authorization, optional keeper recovery
+and IV rounding. Code is committed locally and undergoing integrated regression;
+it is not deployed. The close-window keeper marker remains disabled by default.
+
+The serving audit source baseline is `993c202a`; release metadata retains an older
+base revision and must not be mistaken for a complete source identity. The next
+release must ship and verify its immutable build identity. Continuation evidence
+and the unresolved audit register are maintained in
+`C:\IMP-work\report\REMEDIATION-20261030.md` and the original
+`destination-tests/20261029-full-audit/` package. Production deployment and
+operational recovery require their explicit approval gates.
+
+The operating-state section below retains its October 26 historical cutoff.
 
 ## Current operating state (2026-10-26)
 
