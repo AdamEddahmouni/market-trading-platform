@@ -60,3 +60,12 @@ Each provider has `IMP_*_LIVE=1` gate + credential vars. See `.env.example` and 
 API does not hot-reload env. Use `tools/ui1/restart_ui_api.ps1` or restart launcher.
 
 Full provider-specific docs: [docs/providers/](../providers/).
+
+## API request timing (AUD-048)
+
+`IMP_API_SLOW_REQUEST_SECONDS` controls UI API completion telemetry. The default
+is `1` second; `0` explicitly logs every parsed request for isolated diagnosis.
+Invalid, negative or non-finite values use the default. The event records method,
+a route capped at 160 characters, response status and elapsed milliseconds after
+headers are parsed. It omits query strings, headers and bodies. Routine fast
+polls are omitted by default. Existing launcher log archival applies on restart.

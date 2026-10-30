@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import math
+import os
 import threading
 import time
 from http import HTTPStatus
@@ -94,6 +96,40 @@ def with_engine_lock(payload: dict[str, Any], read_lock: Any) -> dict[str, Any]:
 
 class UiApiHandler(BaseHTTPRequestHandler):
     store: ReplayStore
+
+    def handle_one_request(self) -> None:
+        # Start after header parsing so idle client connections do not look like slow handlers.
+        self._request_started: float | None = None
+        self._request_status: int | None = None
+        try:
+            super().handle_one_request()
+        finally:
+            if self._request_started is not None:
+                seconds = time.perf_counter() - self._request_started
+                try:
+                    threshold = float(os.environ.get("IMP_API_SLOW_REQUEST_SECONDS", "1"))
+                except ValueError:
+                    threshold = 1.0
+                if not math.isfinite(threshold) or threshold < 0:
+                    threshold = 1.0
+                if seconds >= threshold:
+                    # Never log query parameters, headers or request bodies. Bound the route field.
+                    try:
+                        route = urlparse(self.path).path[:160]
+                    except ValueError:
+                        route = "INVALID_PATH"
+                    log_server_event("ui_api.request_completed", method=self.command[:16], route=route,
+                                     status=self._request_status, duration_ms=round(seconds * 1000, 3))
+
+    def parse_request(self) -> bool:
+        parsed = super().parse_request()
+        if parsed:
+            self._request_started = time.perf_counter()
+        return parsed
+
+    def send_response(self, code: int, message: str | None = None) -> None:
+        self._request_status = int(code)
+        super().send_response(code, message)
 
     def log_message(self, format: str, *args: object) -> None:
         return

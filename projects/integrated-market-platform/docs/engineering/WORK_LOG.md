@@ -8551,3 +8551,8 @@ US_EQUITIES identities reach XA-01 only in memory, when an entry is admitted. Af
 - Review found malformed Origin parsing and an unknown evaluation rerun inheriting read authority. Reproducing regressions failed (one assertion failure, one parsing error); both now pass. Role checks cover lifecycle, automation, order replacement, provider configuration, synthesis configuration and evaluation creation.
 - Closing a Paper experiment requires an explicit permanent-close confirmation; cancel sends no request. Focused backend 86/86 pass; network-blocked UI confirmation 17/17 pass. A separate 91-test run had one guard-denied Git subprocess in pre-existing control-status diagnostics, retained in the evidence. Integrated regression and full UI checks remain pending.
 - No deployment, service restart, policy change, or live mutating request. Evidence: C:\IMP-work\results\recovery-security-green-20261030.json and recovery-ui-confirmation.txt.
+
+## 2026-10-29 — API slow-request telemetry (AUD-048)
+
+- Completed the previously deferred handler timing after security integration. `ui_api.request_completed` records slow responses (default >=1 second), including refused requests, with bounded route/method fields and no request body, header or query values. Invalid thresholds fall back to 1 second; zero is an explicit diagnostic setting.
+- Isolated real HTTP regressions reproduced absent telemetry, then passed: duration/privacy, a delayed handler, fast-request suppression and browser-refusal timing. Duration plus security suite: 26/26 pass, zero guard denials (`recovery-duration-green2-20261030.json`). No production change.
