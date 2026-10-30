@@ -504,6 +504,79 @@ class ControllerLivenessTests(KeeperCase):
         self.assertLessEqual(max(sum(1 for t in times if start <= t < start + 3600) for start in times), ALLOWANCES['PLATFORM'][0])
 
 
+class CloseWindowGuardTests(KeeperCase):
+    """AUD-047: the mandatory exits run only in a live controller cycle; the opt-in guard gets one running in time."""
+
+    # Monday 2026-11-02, 15:15 ET (EST, UTC-5): 45 minutes before the 16:00 close.
+    BEFORE_CLOSE = 1_793_650_500.0
+    DEAD = ControllerLivenessTests.DEAD
+
+    def setUp(self):
+        super().setUp()
+        self.clock.value = self.BEFORE_CLOSE
+        self.ops.boot = self.clock.value - 3600
+
+    def enable(self):
+        self.paths.state_dir.mkdir(parents=True, exist_ok=True)
+        (self.paths.state_dir / imp_keeper.CLOSE_WINDOW_GUARD_FILE).write_text('owner-approved', encoding='utf-8')
+
+    def status(self, minutes_to_close, **extra):
+        return dict(self.DEAD, session={'label': 'REGULAR', 'minutes_to_close': minutes_to_close,
+                                        'session_date': '2026-11-02'}, **extra)
+
+    def ticks_until_start(self, keeper, limit=200):
+        for index in range(limit):
+            self.ops.paper = self.status(max(0, 45 - (index * TICK_SECONDS) // 60))
+            keeper.tick()
+            if self.ops.actions('platform_start'):
+                return self.clock.value
+            self.clock.value += TICK_SECONDS
+        return None
+
+    def test_disabled_the_guard_changes_nothing(self):
+        started = self.ticks_until_start(self.keeper())
+        # Only the ordinary rule applies: first observed at the first check, restarted 960 s later.
+        self.assertGreaterEqual(started, self.BEFORE_CLOSE + imp_keeper.CONTROLLER_DEAD_RESTART_SECONDS)
+        self.assertEqual(self.log('PLATFORM', 'CLOSE_WINDOW_RESERVE'), [])
+
+    def test_enabled_a_dead_controller_inside_the_close_window_is_restarted_after_two_minutes(self):
+        self.enable()
+        started = self.ticks_until_start(self.keeper())
+        window_start = self.BEFORE_CLOSE + (45 * 60 - imp_keeper.CLOSE_WINDOW_LEAD_SECONDS)
+        self.assertIsNotNone(started)
+        self.assertLessEqual(started, window_start + imp_keeper.CLOSE_WINDOW_DEAD_RESTART_SECONDS + 3 * 60)
+        self.assertLess(started, self.BEFORE_CLOSE + 35 * 60)  # before the 15:50 ET flatten window opens
+        self.assertEqual([call[1] for call in self.ops.actions('platform_start')], [True])
+
+    def test_enabled_a_hung_platform_in_cool_off_gets_one_reserve_restart_per_window(self):
+        self.enable()
+        keeper = self.keeper()
+        self.ops.paper = self.status(45, carry={'pending': {}})
+        self.run_ticks(keeper, 2)  # the keeper learns today's close from the status
+        allowance = keeper.state['allowances']['PLATFORM']
+        allowance.update(attempts=[], cool_off_until=self.clock.value + 3600)  # the 19:06Z situation
+        self.ops.answering, self.ops.start_code = False, 1  # hung, and every start fails
+        self.run_ticks(keeper, 60)  # through the whole window
+        reserve = self.log('PLATFORM', 'CLOSE_WINDOW_RESERVE')
+        self.assertEqual([entry['outcome'] for entry in reserve], ['RESTARTING'])
+        self.assertEqual(reserve[0]['detail']['window'], 'CLOSE:2026-11-02')
+        self.assertEqual(len(self.ops.actions('platform_start')), 1)
+
+    def test_enabled_carried_positions_at_the_open_are_a_reason_to_restart_early(self):
+        self.enable()
+        keeper = self.keeper()
+        # Tuesday 2026-11-03, 09:10 ET: the controller is found dead with five positions carried overnight. The
+        # ordinary 960 s rule would restart it at about 09:27; the open window (from 09:20) restarts it sooner.
+        nine_ten = 1_793_714_400.0 + 600
+        self.clock.value = nine_ten
+        self.ops.paper = dict(self.DEAD, session={'label': 'PRE_MARKET', 'minutes_to_close': None, 'session_date': '2026-11-03'},
+                              carry={'pending': {'BTGO': {'quantity': -1}}})
+        self.run_ticks(keeper, 40)
+        first = self.ops.actions('platform_start')[0][-1]
+        self.assertGreaterEqual(first, nine_ten + 600)       # not before 09:20
+        self.assertLess(first, nine_ten + 600 + 4 * 60)      # by 09:24, before the 09:30 open
+
+
 class DryRunAndLockTests(KeeperCase):
     def test_a_dry_run_starts_nothing_writes_nothing_and_reads_no_store(self):
         self.ops.opend_running = self.ops.collector_running = self.ops.answering = False

@@ -89,6 +89,17 @@ CONTROLLER_LIVENESS_CHECK_SECONDS = 60
 CONTROLLER_DEAD_RESTART_SECONDS = 960
 # The launcher's output, kept for the restart log (it was discarded; START_FAILED reasons were lost on 2026-10-29).
 PLATFORM_START_LOG_MAX_BYTES = 2 * 1024 * 1024
+# AUD-047 close-window guard. Off unless the owner creates .local/keeper/close-window-guard.enabled. The mandatory
+# exits (EOD flatten 15:50-16:00 ET, next-open close of carried positions) run only inside a live controller cycle;
+# on 2026-10-29 no cycle ran through the close because the platform was hung and the keeper was cooling off. Inside
+# these windows a dead controller is restarted sooner, and one restart per window may use a reserve beyond the
+# allowance. The keeper still only restarts the platform: the exits run in the controller's own cycle, under its
+# own policy, risk checks and idempotent submit path; nothing here can place, size or cancel an order.
+CLOSE_WINDOW_GUARD_FILE = "close-window-guard.enabled"
+CLOSE_WINDOW_LEAD_SECONDS = 40 * 60  # from 40 min before the session close the platform last reported ...
+CLOSE_WINDOW_TAIL_SECONDS = 5 * 60   # ... to 5 min before it (a restart needs ~2 min to be ready)
+OPEN_WINDOW = ((9, 20), (9, 50))      # US/Eastern, Monday-Friday, only while carried positions are pending
+CLOSE_WINDOW_DEAD_RESTART_SECONDS = 120
 REBOOT_TOLERANCE_SECONDS = 120
 # A component restarted this soon after a detected reboot is recorded with the reboot as its cause.
 REBOOT_CAUSE_SECONDS = 900
@@ -259,7 +270,9 @@ def _fresh_state() -> dict[str, Any]:
             "opend": {"failures": 0, "last_check": 0.0, "healthy": None, "down_since": None, "cause": None},
             "collector": {"down_since": None, "waiting_for": None, "disabled": False},
             "platform": {"failures": 0, "down_since": None, "last_feed_check": 0.0, "feed_wait_logged": False,
-                         "verify_wait_logged": False, "last_controller_check": 0.0, "controller_dead_since": None},
+                         "verify_wait_logged": False, "last_controller_check": 0.0, "controller_dead_since": None,
+                         "session_close_epoch": None, "session_date": None, "carry_pending": False,
+                         "reserve_window": None},
             "store_verify": {"window": None, "started_at": None, "pid": None},
             "paper_watch": None}
 
@@ -512,6 +525,8 @@ class Keeper:
         cause = self._cause(now, cause)
         attempt = self._may_restart("PLATFORM", now, cause)
         if attempt is None:
+            attempt = self._close_window_reserve(now, cause)
+        if attempt is None:
             return "WAITING_FOR_ALLOWANCE"
         # An answering API would make 'start' report "already running": both restart causes stop it first.
         stop_first = cause in ("FEED_UNRECOVERABLE", "CONTROLLER_NOT_ALIVE")
@@ -544,7 +559,9 @@ class Keeper:
         if self.state.get("paper_watch") or now - float(s.get("last_controller_check") or 0) < CONTROLLER_LIVENESS_CHECK_SECONDS:
             return None
         s["last_controller_check"] = now
-        if not controller_not_alive(self.ops.paper_status()):
+        status = self.ops.paper_status()
+        self._remember_session(now, status)
+        if not controller_not_alive(status):
             if s.get("controller_dead_since") is not None:
                 self.log.record("PAPER_CONTROLLER", "LIVENESS", cause="CONTROLLER_NOT_ALIVE", outcome="ALIVE_AGAIN",
                                 dead_seconds=round(now - float(s["controller_dead_since"]), 1))
@@ -555,9 +572,49 @@ class Keeper:
             self.log.record("PAPER_CONTROLLER", "LIVENESS", cause="CONTROLLER_NOT_ALIVE", outcome="OBSERVED",
                             restart_after_seconds=CONTROLLER_DEAD_RESTART_SECONDS)
             return None
-        if now - float(s["controller_dead_since"]) < CONTROLLER_DEAD_RESTART_SECONDS:
+        threshold = CLOSE_WINDOW_DEAD_RESTART_SECONDS if self._close_window(now) else CONTROLLER_DEAD_RESTART_SECONDS
+        if now - float(s["controller_dead_since"]) < threshold:
             return None
         return "CONTROLLER_NOT_ALIVE"
+
+    def _remember_session(self, now: float, status: dict[str, Any] | None) -> None:
+        """The session close and carried positions as the platform last reported them (its calendar, early closes
+        included), so the close window is still known while the platform itself is not answering."""
+        if not isinstance(status, dict):
+            return
+        s = self.state["platform"]
+        session = status.get("session") or {}
+        minutes = session.get("minutes_to_close")
+        if session.get("label") == "REGULAR" and isinstance(minutes, (int, float)):
+            s.update(session_close_epoch=now + float(minutes) * 60, session_date=session.get("session_date"))
+        s["carry_pending"] = bool((status.get("carry") or {}).get("pending"))
+
+    def _close_window(self, now: float) -> str | None:
+        """The current close-out window's key when the guard is enabled, else None."""
+        if self.dry_run or not (self.paths.state_dir / CLOSE_WINDOW_GUARD_FILE).exists():
+            return None
+        s = self.state["platform"]
+        close = s.get("session_close_epoch")
+        if close and float(close) - CLOSE_WINDOW_LEAD_SECONDS <= now <= float(close) - CLOSE_WINDOW_TAIL_SECONDS:
+            return f"CLOSE:{s.get('session_date')}"
+        eastern = _eastern(now)
+        (start_h, start_m), (end_h, end_m) = OPEN_WINDOW
+        if (s.get("carry_pending") and eastern.weekday() < 5
+                and (start_h, start_m) <= (eastern.hour, eastern.minute) < (end_h, end_m)):
+            return f"OPEN:{eastern.date().isoformat()}"
+        return None
+
+    def _close_window_reserve(self, now: float, cause: str) -> int | None:
+        """One restart per close-out window beyond the spent allowance, for a hung platform or a dead controller."""
+        window = self._close_window(now)
+        s = self.state["platform"]
+        if window is None or cause not in ("NOT_ANSWERING", "CONTROLLER_NOT_ALIVE") or s.get("reserve_window") == window:
+            return None
+        s["reserve_window"] = window
+        allowance = self._allowance("PLATFORM")
+        allowance.state["attempts"] = allowance.state["attempts"] + [now]
+        self.log.record("PLATFORM", "CLOSE_WINDOW_RESERVE", cause=cause, outcome="RESTARTING", window=window)
+        return len(allowance.state["attempts"])
 
     def _platform_pending(self, now: float) -> str | None:
         """The state of a start this keeper launched: None when there is none, else STARTING or its outcome."""
