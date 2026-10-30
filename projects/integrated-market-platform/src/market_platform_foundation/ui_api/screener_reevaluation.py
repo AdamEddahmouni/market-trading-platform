@@ -22,6 +22,7 @@ from ..intelligence.inference.reevaluation import (
     material_fingerprint, missed_slots, provider_states, reevaluation_pick, slot_at_or_after,
     stability_decision, worst_case_calls,
 )
+from ..local_state.connection import transient_storage_error
 from ..local_state.reevaluation import reevaluation_repository
 from ..market_data.freshness_contract import timestamp
 from ..market_sessions import ET, us_equity_session_label
@@ -886,11 +887,18 @@ class LeaseKeeper:
     A dead worker renews nothing, because the keeper lives only inside the cycle that worker is running.
     """
 
+    # A renewal the shared store refused for contention (AUD-042, 2026-10-27 and 10-29: 'database is locked') used to
+    # end this thread silently, and a cycle longer than the lease then lost it. It is now retried sooner, so one
+    # lock hold costs a few seconds of renewal, not the lease.
+    TRANSIENT_RETRY_DIVISOR = 4
+
     def __init__(self, renew, interval, *, wait=None):
         self.renew, self.interval = renew, interval
         self.stopped = threading.Event()
         self.wait = wait or self.stopped.wait
         self.renewals = 0
+        self.transient_errors = 0
+        self.last_transient_error = None
         self.thread = threading.Thread(target=self.run, name='imp-reevaluation-lease', daemon=True)
 
     def __enter__(self):
@@ -901,11 +909,24 @@ class LeaseKeeper:
         self.stopped.set()  # the default wait wakes at once; a renewal already under way is refused or harmless
 
     def run(self):
+        interval = self.interval
         while True:
-            self.wait(self.interval)
-            if self.stopped.is_set() or not self.renew():
+            self.wait(interval)
+            if self.stopped.is_set():
+                return
+            try:
+                renewed = self.renew()
+            except Exception as exc:  # noqa: BLE001 - only store contention is retried; anything else ends as before
+                if not transient_storage_error(exc):
+                    raise
+                self.transient_errors += 1
+                self.last_transient_error = f'{type(exc).__name__}: {exc}'
+                interval = self.interval / self.TRANSIENT_RETRY_DIVISOR
+                continue
+            if not renewed:
                 return
             self.renewals += 1
+            interval = self.interval
 
 
 class ReevaluationWorker:
