@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import os
+import re
 import sqlite3
 import sys
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +33,18 @@ _DEFAULT_BUSY_TIMEOUT_MS = 15000
 _DEFAULT_TRANSACTION_WAIT_SECONDS = 5.0
 # Critical unattended writes (automation receipts, leases, risk stops) opt into the explicit window.
 CRITICAL_WRITE_RETRY_SECONDS = 5.0
+# AUD-044 (2026-10-29): a write that met a foreign write lock used to wait out the whole busy timeout while holding
+# the shared connection lock, so every API read queued behind it (15.7 s behind one waiting write, 39.3 s behind
+# three). Writes now wait in short slices and release the shared lock between them, within the same total budget,
+# and plain SELECTs from threads that do not hold the shared lock read through their own query-only connections
+# (a WAL reader never waits for a writer). IMP_STATE_LEGACY_SHARED_LOCK=1 restores the previous behaviour.
+_SHORT_BUSY_TIMEOUT_MS = 50
+_DEFAULT_READ_POOL_SIZE = 4
+# A wait for the write lock longer than this is logged with its timestamps (CA-7: lock waits were unmeasurable).
+_SLOW_LOCK_WAIT_SECONDS = 1.0
+_PRAGMA_BUSY_TIMEOUT = re.compile(r"\s*PRAGMA\s+busy_timeout\s*=\s*(\d+)\s*;?\s*$", re.IGNORECASE)
+
+_log = logging.getLogger(__name__)
 
 
 def transient_storage_error(exc: BaseException) -> bool:
@@ -96,6 +111,26 @@ def _transaction_wait_seconds(default: float = 0.0) -> float:
         return default
 
 
+def _legacy_shared_lock() -> bool:
+    return os.environ.get("IMP_STATE_LEGACY_SHARED_LOCK") == "1"
+
+
+def _read_pool_size() -> int:
+    try:
+        return max(0, int(os.environ.get("IMP_STATE_READ_POOL", _DEFAULT_READ_POOL_SIZE)))
+    except (TypeError, ValueError):
+        return _DEFAULT_READ_POOL_SIZE
+
+
+def _plain_select(sql: str) -> bool:
+    """A single read statement that a query-only connection can answer with the same rows."""
+    return sql.lstrip()[:6].upper() == "SELECT"
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
 def verified_by_supervisor() -> bool:
     """A supervised collection child opens the store its supervisor's own connection verified moments earlier."""
     return bool(os.environ.get("IMP_PF01_SUPERVISOR_OWNER"))
@@ -157,6 +192,60 @@ class _MaterializedCursor:
         self.close()
 
 
+class _ReadPool:
+    """Query-only connections for plain SELECTs, so a read never queues behind a write waiting on SQLite's lock.
+
+    Each statement borrows one idle connection (or opens one, up to ``size``) and materialises its rows before
+    returning it. An autocommit SELECT starts its own WAL read snapshot, so it sees every committed write.
+    """
+
+    def __init__(self, path: Path, size: int, busy_timeout_ms: int) -> None:
+        self._uri = path.resolve().as_uri() + "?mode=rw"
+        self._busy_timeout_ms = busy_timeout_ms
+        self._idle: list[sqlite3.Connection] = []
+        self._guard = threading.Lock()
+        self._slots = threading.BoundedSemaphore(size)
+        self._closed = False
+
+    def _open(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self._uri, uri=True, check_same_thread=False, isolation_level=None)
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute(f"PRAGMA busy_timeout={self._busy_timeout_ms}")
+            conn.execute("PRAGMA query_only=ON")
+        except Exception:
+            conn.close()
+            raise
+        return conn
+
+    def execute(self, sql: str, params: tuple[Any, ...]) -> "_MaterializedCursor":
+        with self._slots:
+            with self._guard:
+                if self._closed:
+                    raise sqlite3.ProgrammingError("Cannot operate on a closed database.")
+                conn = self._idle.pop() if self._idle else None
+            if conn is None:
+                conn = self._open()
+            reusable = False
+            try:
+                cursor = _MaterializedCursor(conn.execute(sql, params))
+                reusable = True
+                return cursor
+            finally:
+                with self._guard:
+                    if reusable and not self._closed:
+                        self._idle.append(conn)
+                    else:
+                        conn.close()
+
+    def close(self) -> None:
+        with self._guard:
+            self._closed = True
+            idle, self._idle = self._idle, []
+        for conn in idle:
+            conn.close()
+
+
 def _checker_label() -> str:
     return os.environ.get("IMP_STATE_VERIFY_LABEL") or Path(sys.argv[0] if sys.argv and sys.argv[0] else "python").name
 
@@ -183,6 +272,10 @@ class LocalStateConnection:
         self._tx_owner: int | None = None
         self._tx_depth = 0
         self._critical_tables = receipts.CRITICAL_TABLES if critical_tables is None else tuple(critical_tables)
+        self._busy_timeout_ms = _busy_timeout_ms()
+        self._read_pool: _ReadPool | None = None
+        # Telemetry for waits on SQLite's write lock (AUD-044 / CA-7).
+        self.lock_waits: dict[str, Any] = {"count": 0, "slow": 0, "max_seconds": 0.0, "last_slow": None}
         if require_existing:
             if not self.path.is_file():
                 raise FileNotFoundError("STATE_STORAGE_MISSING")
@@ -210,12 +303,15 @@ class LocalStateConnection:
         except Exception:
             self._conn.close()
             raise
+        pool_size = _read_pool_size()
+        if pool_size and not _legacy_shared_lock() and self.path.is_file():
+            self._read_pool = _ReadPool(self.path, pool_size, self._busy_timeout_ms)
 
     def _configure(self) -> None:
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
         self._conn.execute("PRAGMA foreign_keys=ON")
-        self._conn.execute(f"PRAGMA busy_timeout={_busy_timeout_ms()}")
+        self._conn.execute(f"PRAGMA busy_timeout={self._busy_timeout_ms}")
 
     def _verify_or_raise(self) -> None:
         status = receipts.full_check(self._conn)
@@ -278,12 +374,77 @@ class LocalStateConnection:
             receipts.invalidate(self.path.resolve(), f"RUNTIME:{exc}", label=_checker_label())
 
     def execute(self, sql: str, params: tuple[Any, ...] = ()) -> _MaterializedCursor:
-        with self._lock:
+        pool = self._read_pool
+        if pool is not None and _plain_select(sql) and not self._lock._is_owned():
+            # Not inside this thread's transaction or locked section: read without queueing behind writers.
             try:
-                return _MaterializedCursor(self._conn.execute(sql, params))
+                return pool.execute(sql, params)
             except sqlite3.DatabaseError as exc:
                 self._note_corruption(exc)
                 raise
+        configured = _PRAGMA_BUSY_TIMEOUT.match(sql)
+        pragma = sql.lstrip()[:6].upper() == "PRAGMA"  # reads or sets a connection setting: never sliced
+        if self._lock._is_owned() or _legacy_shared_lock() or pragma:
+            with self._lock:
+                try:
+                    cursor = _MaterializedCursor(self._conn.execute(sql, params))
+                except sqlite3.DatabaseError as exc:
+                    self._note_corruption(exc)
+                    raise
+                if configured:
+                    self._busy_timeout_ms = int(configured.group(1))
+                return cursor
+        # One autocommit statement is atomic: a BUSY failure applied nothing, so it is safe to try again.
+        return self._contended(lambda: _MaterializedCursor(self._conn.execute(sql, params)),
+                               self._busy_timeout_ms / 1000.0, "STATEMENT")
+
+    def _set_busy_timeout(self, milliseconds: int) -> None:
+        self._conn.execute(f"PRAGMA busy_timeout={int(milliseconds)}")
+
+    def _record_lock_wait(self, waited: float, started_at: str, what: str) -> None:
+        waits = self.lock_waits
+        waits["count"] += 1
+        waits["max_seconds"] = max(float(waits["max_seconds"]), round(waited, 3))
+        if waited >= _SLOW_LOCK_WAIT_SECONDS:
+            waits["slow"] += 1
+            waits["last_slow"] = {"what": what, "started_at": started_at, "ended_at": _utc_now(),
+                                  "seconds": round(waited, 3)}
+            _log.warning("SQLITE_WRITE_LOCK_WAIT store=%s what=%s started_at=%s waited_s=%.3f thread=%s",
+                         self.path.name, what, started_at, waited, threading.current_thread().name)
+
+    def _contended(self, operation: Any, budget_seconds: float, what: str) -> Any:
+        """Run ``operation`` on the shared connection, waiting for SQLite's write lock in short slices.
+
+        The shared lock is held for each attempt only, so other threads' statements interleave while this
+        one waits; the total wait stays within ``budget_seconds`` as SQLite's own busy timeout did.
+        """
+        started, started_at = time.monotonic(), None
+        deadline = started + max(0.0, budget_seconds)
+        delay = 0.01
+        while True:
+            with self._lock:
+                self._set_busy_timeout(_SHORT_BUSY_TIMEOUT_MS)
+                try:
+                    result = operation()
+                except sqlite3.OperationalError as exc:
+                    if not lock_contention_error(exc) or time.monotonic() >= deadline:
+                        if started_at is not None:
+                            self._record_lock_wait(time.monotonic() - started, started_at, what + ":GAVE_UP")
+                        if corruption_error(exc):
+                            self._note_corruption(exc)
+                        raise
+                except sqlite3.DatabaseError as exc:
+                    self._note_corruption(exc)
+                    raise
+                else:
+                    if started_at is not None:
+                        self._record_lock_wait(time.monotonic() - started, started_at, what)
+                    return result
+                finally:
+                    self._set_busy_timeout(self._busy_timeout_ms)
+            started_at = started_at or _utc_now()
+            time.sleep(min(delay, max(0.0, deadline - time.monotonic())))
+            delay = min(delay * 2, 0.25)
 
     def fetchone(self, sql: str, params: tuple[Any, ...] = ()) -> Any:
         """Read one row with the fetch inside the connection lock.
@@ -343,6 +504,8 @@ class LocalStateConnection:
         return version
 
     def close(self) -> None:
+        if self._read_pool is not None:
+            self._read_pool.close()
         with self._lock:
             try:
                 if self._conn.in_transaction:
@@ -381,18 +544,57 @@ class StateTransaction:
 
     def __enter__(self) -> LocalStateConnection:
         conn = self.connection
+        # A thread that already holds the shared lock (an outer locked section) cannot release it while it waits.
+        held_outside = conn._lock._is_owned()
         conn._lock.acquire()
         try:
             if conn._tx_owner == threading.get_ident():
                 conn._tx_depth += 1
                 self._nested = True
                 return conn
-            self._begin_immediate(conn)
+            if held_outside or _legacy_shared_lock():
+                self._begin_immediate(conn)
+            else:
+                self._begin_immediate_sliced(conn)
             conn._tx_owner, conn._tx_depth = threading.get_ident(), 1
             return conn
         except Exception:
             conn._lock.release()
             raise
+
+    def _begin_immediate_sliced(self, conn: LocalStateConnection) -> None:
+        """BEGIN IMMEDIATE within SQLite's busy timeout plus ``retry_seconds``, as ``_begin_immediate`` allows,
+        but sleeping between short attempts with the shared lock released (AUD-044). Returns holding the lock."""
+        started, started_at = time.monotonic(), None
+        deadline = started + conn._busy_timeout_ms / 1000.0 + self.retry_seconds
+        delay = 0.01
+        while True:
+            conn._set_busy_timeout(_SHORT_BUSY_TIMEOUT_MS)
+            try:
+                conn._conn.execute("BEGIN IMMEDIATE")
+                begun = conn._conn.in_transaction
+            except sqlite3.OperationalError as exc:
+                if not lock_contention_error(exc) or time.monotonic() >= deadline:
+                    if started_at is not None:
+                        conn._record_lock_wait(time.monotonic() - started, started_at, "BEGIN_IMMEDIATE:GAVE_UP")
+                    raise
+                begun = False
+            finally:
+                conn._set_busy_timeout(conn._busy_timeout_ms)
+            if begun:
+                if started_at is not None:
+                    conn._record_lock_wait(time.monotonic() - started, started_at, "BEGIN_IMMEDIATE")
+                return
+            # Also covers a refused BEGIN whose failure was lost: the body must not run in autocommit.
+            if time.monotonic() >= deadline:
+                raise sqlite3.OperationalError("database is locked: transaction did not start")
+            started_at = started_at or _utc_now()
+            conn._lock.release()
+            try:
+                time.sleep(min(delay, max(0.0, deadline - time.monotonic())))
+            finally:
+                conn._lock.acquire()
+            delay = min(delay * 2, 0.25)
 
     def _begin_immediate(self, conn: LocalStateConnection) -> None:
         deadline = time.monotonic() + self.retry_seconds
