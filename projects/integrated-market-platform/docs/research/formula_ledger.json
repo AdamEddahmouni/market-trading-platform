@@ -822,7 +822,7 @@
     },
     {
       "id": "options.implied_volatility",
-      "version": "bsm_bracketed_newton_v2",
+      "version": "bsm_bracketed_newton_v3",
       "family": "options",
       "units": "annualized σ",
       "window_policy": "Single contract; max_iter=50, tolerance=1e-6 (price units); bracket expands to σ≤1000",

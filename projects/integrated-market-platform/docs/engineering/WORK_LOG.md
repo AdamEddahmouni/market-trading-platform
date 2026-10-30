@@ -8566,3 +8566,9 @@ US_EQUITIES identities reach XA-01 only in memory, when an entry is admitted. Af
 
 - AUD-039: five forward-test mutations now authorize the active Paper ledger account as well as state.write. Restricted-account regressions reproduced five unauthorized approvals; corrected checks pass (41/41 focused security tests). A view_mode=DEMO query cannot substitute a different authorization identity.
 - AUD-045/047: preserve the raw restart condition for stop-first and the one-window reserve; REBOOT remains log attribution. Two fake-clock regressions failed before the correction. The default-off next-open guard now uses the versioned NYSE calendar and refuses holidays/uncovered years; two calendar subcases failed before correction. Keeper tests: 47/47 pass (`keeper-calendar-green-c5e3ee69.json`). No marker was enabled on the live installation.
+
+## 2026-10-29 — honor IV return-price tolerance (AUD-038)
+
+- Independent 1,400-case repricing found two returned IVs whose eight-decimal rounding exceeded the documented 1e-6 price tolerance (maximum error 1.0323274e-6). Tightening the existing grid assertion from 1e-5 to the actual contract reproduced the failure.
+- Solver v3 retains its converged value when rounding would exceed tolerance; otherwise the eight-decimal output is unchanged. Formula ledger version updated; financial math plus the strengthened IV regressions: 506/506 pass (`iv-financial-green-336b07dc.json`).
+- The audit grid's 33 remaining volatility-threshold misses all reprice within 1e-6; 279 numerically unidentifiable cases and the explicitly documented nonpositive-time/volatility sentinel contract remain limitations, not universal solver correctness claims. Historical records unchanged.

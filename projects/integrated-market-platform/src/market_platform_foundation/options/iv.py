@@ -8,7 +8,8 @@ from typing import Literal
 CallPut = Literal["call", "put"]
 # v2 (2026-10-29, AUD-036/038): European discounted-strike admission bounds and a bracketed Newton solver.
 # v1 compared against undiscounted spot intrinsic and ran unguarded Newton from 0.3.
-IV_SOLVER_VERSION = "bsm_bracketed_newton_v2"
+# v3 preserves the requested price tolerance when eight-decimal IV rounding would exceed it.
+IV_SOLVER_VERSION = "bsm_bracketed_newton_v3"
 # Above this volatility a price is treated as indistinguishable from the upper no-arbitrage bound.
 _MAX_VOLATILITY = 1000.0
 
@@ -87,7 +88,9 @@ def implied_volatility(
     for _ in range(max_iter):
         diff = price_at(sigma) - market_price
         if abs(diff) < tolerance:
-            return round(sigma, 8)
+            rounded = round(sigma, 8)
+            # Rounding can move a converged price back outside the requested tolerance.
+            return rounded if abs(price_at(rounded) - market_price) < tolerance else sigma
         if diff < 0:
             lo = sigma
         else:

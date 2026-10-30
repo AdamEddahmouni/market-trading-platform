@@ -102,7 +102,7 @@ class ConvergenceTests(unittest.TestCase):
             solved = implied_volatility(price, spot, 100.0, time_years, rate, call_put)
             if solved is not None:
                 # Whatever is returned must reprice the input within the solver's price tolerance.
-                self.assertLess(abs(reference_price(spot, 100.0, time_years, rate, solved, call_put) - price), 1e-5)
+                self.assertLess(abs(reference_price(spot, 100.0, time_years, rate, solved, call_put) - price), 1e-6)
             if price - lower >= 0.01 and vega >= 0.05:
                 identifiable += 1
                 with self.subTest(spot=spot, time_years=time_years, rate=rate, sigma=sigma, call_put=call_put):
