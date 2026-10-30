@@ -261,7 +261,7 @@ class LifecycleTests(SupplyCase):
     def test_year_without_a_calendar_is_not_labelled_a_closed_session(self):
         moomoo = StubProvider()
         supply = self.supply(self.TARGETS[:1], {'moomoo': moomoo})
-        self.now[0] = epoch('2027-03-01T15:00:00')
+        self.now[0] = epoch('2028-03-01T15:00:00')  # past calendar coverage (2027 is covered since AUD-003)
         supply.step()
         self.now[0] += headless_supply.STALE_SECONDS + 1
         status = supply.status()
