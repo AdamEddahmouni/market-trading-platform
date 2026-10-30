@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from http import HTTPStatus
 from typing import Any, Mapping
-from urllib.parse import urlparse
 
 from ..operational_identity import OperationalIdentityError
 from ..platform.security.access_control import (
@@ -16,6 +15,7 @@ from ..platform.security.access_control import (
     authorize_capability,
     authorize_operational_identity,
 )
+from ..platform.security.origin_policy import browser_request_refusal
 from ..platform.security.redaction import build_log_line
 from ..platform.security.route_policy import (
     AccountScopeKind,
@@ -47,6 +47,12 @@ def authorize_http_request(
     body: dict[str, Any] | None = None,
 ) -> AuthorizedPrincipal | AuthorizationFailure:
     policy = policy_for_route(method, path)
+    if policy.refused:
+        # AUD-039: a mutating route without an explicit policy is refused in every mode, never read-authorized.
+        return AuthorizationFailure(
+            AuthorizationErrorCode.CAPABILITY_DENIED,
+            f"ROUTE_POLICY_UNMAPPED: no explicit policy for {method.upper()} {path}",
+        )
     if policy.public_in_enforced_mode:
         token = extract_session_token(headers)
         principal = authenticate_session_token(token)
@@ -95,25 +101,14 @@ def authorize_http_request(
     return principal
 
 
-_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
-
-
 def loopback_request_origin(headers: Mapping[str, str]) -> bool:
-    """False when a browser says the request comes from a page on another site.
+    """False when a browser request does not come from an allowlisted IMP UI origin (AUD-001).
 
-    Browsers send ``Origin`` on every cross-origin POST and ``Sec-Fetch-Site`` on modern engines. A
-    request without either (curl, tests, the CLI) is not a browser page and is left to the normal
-    capability check."""
+    Kept for the provider-settings route's own check; the same exact-origin policy now runs for every
+    route in ``UiApiHandler`` before dispatch. A request without browser markers (curl, tests, the CLI)
+    is not a page and is left to the normal capability check."""
 
-    lowered = {str(key).lower(): str(value) for key, value in headers.items()}
-    if lowered.get("sec-fetch-site", "").strip().lower() == "cross-site":
-        return False
-    origin = lowered.get("origin", "").strip()
-    if not origin:
-        return True
-    parsed = urlparse(origin)
-    host = (parsed.hostname or "").lower()
-    return parsed.scheme in {"http", "https"} and (host in _LOOPBACK_HOSTS or host.endswith(".localhost"))
+    return browser_request_refusal("GET", headers) is None
 
 
 def authorization_http_status(failure: AuthorizationFailure) -> HTTPStatus:

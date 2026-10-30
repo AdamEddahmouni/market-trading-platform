@@ -262,10 +262,26 @@ describe("PaperExperimentPanel", () => {
     expect(block).toHaveTextContent("not evidence of a profitable strategy");
   });
 
+  it("asks for confirmation before an irreversible close and sends nothing on cancel (AUD-043)", () => {
+    renderPanel(experimentPortfolio());
+    fireEvent.click(screen.getByRole("button", { name: "Close experiment" }));
+    expect(mocks.close).not.toHaveBeenCalled();
+    expect(screen.getByTestId("experiment-close-confirm")).toHaveTextContent("cannot be reopened");
+    expect(screen.getByRole("button", { name: "Close permanently" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(mocks.close).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("experiment-close-confirm")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close experiment" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close permanently" }));
+    expect(mocks.close).toHaveBeenCalledTimes(1);
+    expect(mocks.close).toHaveBeenCalledWith("PPE-TEST0001");
+  });
+
   it("surfaces the fail-closed reason when close is refused", () => {
     mocks.closeError = new Error("OPEN_POSITIONS_REMAIN: flatten every position before closing the experiment");
     renderPanel(experimentPortfolio());
     fireEvent.click(screen.getByRole("button", { name: "Close experiment" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close permanently" }));
     expect(mocks.close).toHaveBeenCalledWith("PPE-TEST0001");
     expect(screen.getByTestId("experiment-close-error")).toHaveTextContent("OPEN_POSITIONS_REMAIN");
     expect(screen.getByTestId("experiment-close-error")).toHaveTextContent("never sells positions for you");

@@ -141,6 +141,10 @@ _REASON_CODE_TO_CATEGORY: dict[str, CanonicalErrorCategory] = {
     # Provider setup rejects only invalid or environment-overridden settings (400/409), never a server fault.
     "OPERATOR_CONFIG_FAILED": CanonicalErrorCategory.VALIDATION_ERROR,
     "OPERATOR_CONFIG_ORIGIN_REJECTED": CanonicalErrorCategory.AUTH_ERROR,
+    # AUD-001 browser-origin policy (platform/security/origin_policy.py)
+    "ORIGIN_NOT_ALLOWED": CanonicalErrorCategory.AUTH_ERROR,
+    "CROSS_SITE_REQUEST": CanonicalErrorCategory.AUTH_ERROR,
+    "CONTENT_TYPE_NOT_JSON": CanonicalErrorCategory.AUTH_ERROR,
     "OPERATOR_RECENT_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
     "OPERATOR_WORKSPACE_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
     "OPERATOR_PREFERENCES_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,

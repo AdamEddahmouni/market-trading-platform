@@ -14,6 +14,7 @@ from urllib.parse import parse_qs, urlparse
 from ..canonical import canonical_bytes, write_canonical_json
 from ..platform.security.access_control import AuthorizationFailure, authenticate_session_token
 from ..platform.security.leak_audit import assert_no_secrets_in_payload
+from ..platform.security.origin_policy import allowed_request_origin, browser_request_refusal
 from ..platform.security.route_policy import (
     PAPER_AUTOMATION_BASE,
     PAPER_AUTOMATION_READ_PATHS,
@@ -132,7 +133,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self._send_cors_origin()
         if deprecated_successor:
             self.send_header("Deprecation", "true")
             self.send_header("Link", f'<{deprecated_successor}>; rel="successor-version"')
@@ -143,9 +144,35 @@ class UiApiHandler(BaseHTTPRequestHandler):
     def _send_error_json(self, code: str, message: str, *, status: HTTPStatus) -> None:
         self._send_json(build_error_response_payload(code, message), status=status)
 
+    def _send_cors_origin(self) -> None:
+        # AUD-001: reflect an allowlisted IMP UI origin only; never a wildcard.
+        origin = allowed_request_origin(dict(self.headers.items()))
+        if origin is not None:
+            self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Vary", "Origin")
+
+    def _refuse_foreign_browser_request(self, method: str) -> bool:
+        """True (and a 403 sent) when a browser request is not from an allowlisted IMP UI origin.
+
+        Runs before any body read, authorization or handler, for every route (AUD-001)."""
+        refusal = browser_request_refusal(method, dict(self.headers.items()))
+        if refusal is None:
+            return False
+        log_server_event("ui_api.browser_request_refused", method=method, path=urlparse(self.path).path,
+                         reason=refusal)
+        self._send_error_json(refusal, "Request refused: browser requests are accepted only from the IMP UI "
+                                       "with a JSON body.", status=HTTPStatus.FORBIDDEN)
+        return True
+
     def do_OPTIONS(self) -> None:
+        if browser_request_refusal("OPTIONS", dict(self.headers.items())) is not None:
+            self.send_response(HTTPStatus.FORBIDDEN)
+            self.send_header("Vary", "Origin")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         self.send_response(HTTPStatus.NO_CONTENT)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self._send_cors_origin()
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-IMP-Session")
         self.end_headers()
@@ -200,6 +227,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
         return True
 
     def do_GET(self) -> None:
+        if self._refuse_foreign_browser_request("GET"):
+            return
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
@@ -1664,6 +1693,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
             self._send_error_json("UI_INTERNAL_ERROR", str(exc), status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def do_PUT(self) -> None:
+        if self._refuse_foreign_browser_request("PUT"):
+            return
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         length = int(self.headers.get("Content-Length", "0"))
@@ -1750,6 +1781,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
         self._send_error_json("UI_ROUTE_NOT_FOUND", f"Unknown path: {path}", status=HTTPStatus.NOT_FOUND)
 
     def do_POST(self) -> None:
+        if self._refuse_foreign_browser_request("POST"):
+            return
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         length = int(self.headers.get("Content-Length", "0"))

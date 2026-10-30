@@ -490,14 +490,16 @@ class CliParityTests(unittest.TestCase):
 
 
 class OriginGuardTests(unittest.TestCase):
-    def test_loopback_pages_and_non_browser_clients_are_allowed(self) -> None:
+    def test_the_imp_ui_and_non_browser_clients_are_allowed(self) -> None:
         for headers in ({}, {"Origin": "http://127.0.0.1:5173", "Sec-Fetch-Site": "same-origin"},
-                        {"origin": "http://localhost:5173"}, {"Origin": "http://[::1]:5173"},
-                        {"Origin": "http://imp.localhost:5173"}):
+                        {"origin": "http://localhost:5173"}):
             self.assertTrue(loopback_request_origin(headers), headers)
 
     def test_other_sites_are_refused(self) -> None:
+        # AUD-001: an exact UI allowlist; another page served from loopback is not the IMP UI.
         for headers in ({"Origin": "https://evil.example"}, {"Origin": "null"},
+                        {"Origin": "http://[::1]:5173"}, {"Origin": "http://imp.localhost:5173"},
+                        {"Origin": "http://127.0.0.1:8080"},
                         {"Origin": "http://127.0.0.1.evil.example"}, {"Sec-Fetch-Site": "cross-site"},
                         {"Origin": "http://localhost:5173", "Sec-Fetch-Site": "cross-site"}):
             self.assertFalse(loopback_request_origin(headers), headers)
@@ -553,8 +555,9 @@ class HttpRouteTests(unittest.TestCase):
                                     {"provider": "gemini", "values": {"GEMINI_API_KEY": SECRET}},
                                     {"Origin": "https://evil.example"})
         self.assertEqual(status, 403, text)
+        # AUD-001: the server-wide origin policy now refuses it before the route's own check is reached.
         self.assertEqual((json.loads(text)["reason_code"], json.loads(text)["error_category"]),
-                         ("OPERATOR_CONFIG_ORIGIN_REJECTED", "AUTH_ERROR"))
+                         ("ORIGIN_NOT_ALLOWED", "AUTH_ERROR"))
         self.assertNotIn("GEMINI_API_KEY", self.store.private_path.read_text(encoding="utf-8")
                          if self.store.private_path.exists() else "")
 
@@ -562,15 +565,15 @@ class HttpRouteTests(unittest.TestCase):
         status, text = self.request("POST", "/operator/config/provider", {"provider": "kraken", "switch": "ON"},
                                     {"Origin": "https://evil.example"})
         self.assertEqual(status, 403, text)
-        self.assertEqual(json.loads(text)["reason_code"], "OPERATOR_CONFIG_ORIGIN_REJECTED")
+        self.assertEqual(json.loads(text)["reason_code"], "ORIGIN_NOT_ALLOWED")
         self.assertNotIn("IMP_CRYPTO_LIVE", self.store.private_path.read_text(encoding="utf-8")
                          if self.store.private_path.exists() else "")
         status, text = self.request("POST", "/operator/config/provider", {"provider": "kraken", "switch": "ON"},
-                                    {"Origin": "http://localhost:5177"})
+                                    {"Origin": "http://localhost:5173"})
         self.assertEqual(status, 200, text)
         self.assertEqual(json.loads(text)["result"]["switch"], "ON")
         status, text = self.request("POST", "/operator/config/provider", {"provider": "kraken", "switch": "OFF"},
-                                    {"Origin": "http://localhost:5177"})
+                                    {"Origin": "http://localhost:5173"})
         self.assertEqual((status, json.loads(text)["result"]["gates_removed"]), (200, ["IMP_CRYPTO_LIVE"]))
 
     def test_validation_and_override_errors_are_readable_and_value_free(self) -> None:
